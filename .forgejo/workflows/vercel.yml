@@ -24,7 +24,7 @@ jobs:
       - checkout
     steps:
       - name: Cache repository
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-repository
         with:
           path: repository
