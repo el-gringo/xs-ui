@@ -1,0 +1,17 @@
+on: [push]
+jobs:
+  deploy:
+    runs-on: docker
+    steps:
+      - run: echo "${{ github.action_path }}" >> $GITHUB_PATH
+        shell: bash
+      - uses: actions/checkout@v4
+      - uses: msrd0/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: ./build.sh release
+      - run: npm -g install vercel
+      - if: github.ref != 'refs/heads/main'
+        run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}
+      - if: github.ref == 'refs/heads/main'
+        run: vercel -y --prod --token ${{ secrets.VERCEL_TOKEN }}
