@@ -1,7 +1,7 @@
 on: [push]
 jobs:
   checkout:
-    runs-on: archlinux
+    runs-on: docker
     name: Checkout
     steps:
       - name: Cache repository
