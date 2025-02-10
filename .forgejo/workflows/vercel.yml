@@ -21,7 +21,7 @@ jobs:
     runs-on: docker
     name: "Build"
     needs:
-          - checkout
+      - checkout
     steps:
       - name: Cache repository
         uses: actions/cache@v3
@@ -40,6 +40,9 @@ jobs:
       - run: ./build.sh release
   deploy:
     runs-on: docker
+    needs:
+      - checkout
+      - build
     steps:
       - uses: actions/setup-node@v4
         with:
