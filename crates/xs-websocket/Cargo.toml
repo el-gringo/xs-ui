@@ -1,0 +1,9 @@
+[package]
+name = "xs-websocket"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-http = { workspace = true }
+xs-url = { workspace = true }

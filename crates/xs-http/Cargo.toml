@@ -1,0 +1,13 @@
+[package]
+name = "xs-http"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[features]
+default = []
+openssl = [ "dep:openssl" ]
+
+[dependencies]
+xs-url = { workspace = true }
+openssl = { version = "0.10", optional = true }

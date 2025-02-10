@@ -1,0 +1,9 @@
+[package]
+name = "app"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-layout = { workspace = true }
+xs-backend = { workspace = true }

@@ -1,0 +1,10 @@
+[package]
+name = "xs-backend"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+
+[target.wasm32-unknown-unknown.dependencies]
+xs-backend-browser = { workspace = true }

@@ -1,0 +1,8 @@
+[package]
+name = "xs-math"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+#bytemuck = { workspace = true }

@@ -1,0 +1,5 @@
+[package]
+name = "xs-renderer-opengl"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true

@@ -1,0 +1,45 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/xs-backend",
+
+  "tools/test_utils",
+  "tools/cli",
+  "examples/app",
+  "examples/xx", "crates/xs-renderer",
+]
+default-members = [
+  "examples/app"
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = [
+    "christophe.bosse@gmail.com"
+]
+edition = "2021"
+
+[workspace.dependencies]
+xs-http = { path = "crates/xs-http" }
+xs-websocket = { path = "crates/xs-websocket" }
+xs-url = { path = "crates/xs-url" }
+xs-layout = { path = "crates/xs-layout" }
+xs-math = { path = "crates/xs-math" }
+xs-renderer-webgl = { path = "crates/xs-renderer-webgl" }
+xs-backend = { path = "crates/xs-backend" }
+xs-backend-browser = { path = "crates/xs-backend-browser" }
+
+#tinyvec = { version = "1" }
+#bytemuck = { version = "1", default-features = false }
+test_utils = { path = "tools/test_utils" }
+
+# [profile.dev]
+# #opt-level = 3
+# lto = "fat"
+# strip = "symbols"
+
+# [profile.release]
+# lto = "fat"
+# codegen-units = 1
+# strip = "symbols"
+# panic = "abort"

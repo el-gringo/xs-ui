@@ -1,0 +1,11 @@
+[package]
+name = "xs-layout"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-math = { workspace = true }
+
+[dev-dependencies]
+test_utils = { workspace = true}

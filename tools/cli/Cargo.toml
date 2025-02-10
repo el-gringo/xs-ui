@@ -1,0 +1,14 @@
+[package]
+name = "xs-cli"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "xs"
+path = "src/main.rs"
+
+[dependencies]
+xs-http = { workspace = true }
+xs-websocket = { workspace = true }
+nanoserde = "*"

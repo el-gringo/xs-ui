@@ -1,0 +1,5 @@
+[package]
+name = "xs-backend-wayland"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true

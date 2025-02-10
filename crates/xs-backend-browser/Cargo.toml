@@ -1,0 +1,9 @@
+[package]
+name = "xs-backend-browser"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-layout = { workspace = true }
+xs-renderer-webgl = { workspace = true }
