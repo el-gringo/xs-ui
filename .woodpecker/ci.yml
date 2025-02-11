@@ -9,7 +9,7 @@ steps:
   build:
     image: rust
     commands:
-      - ./build.sh
+      - ./build.sh release
     when:
       event: [tag, push]
 
