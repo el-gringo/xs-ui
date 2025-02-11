@@ -2,7 +2,7 @@ steps:
   setup:
     image: rust:alpine
     commands:
-      - rustup add wasm32-unknown-unknown
+      - rustup target add wasm32-unknown-unknown
     when:
       event: [tag, push]
 
