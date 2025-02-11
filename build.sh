@@ -10,7 +10,7 @@ if [[ "$mode" == "release" ]]; then
         sed 's/MODE = "development"/MODE = "production"/' -i $index_html_path
         echo "Patched ${index_html_path}"
     }
-    mkdir dist
+    mkdir -pv dist
     cargo build --package app --target wasm32-unknown-unknown --release
     cp -v target/wasm32-unknown-unknown/release/app.wasm dist/
     cp -v tools/cli/src/assets/* dist/
