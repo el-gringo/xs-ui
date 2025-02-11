@@ -1,8 +1,8 @@
 steps:
   setup:
-    image: rust
+    image: rust:alpine
     commands:
-      - cargo add wasm32-unknown-unknown
+      - rustup add wasm32-unknown-unknown
     when:
       event: [tag, push]
 
@@ -14,7 +14,7 @@ steps:
       event: [tag, push]
 
   deploy:
-    image: node:20
+    image: node:20-alpine
     commands:
       - npm install -g vercel
       - vercel deploy --yes --token $VERCEL_TOKEN
