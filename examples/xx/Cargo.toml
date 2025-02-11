@@ -1,9 +1,0 @@
-[package]
-name = "xx"
-version.workspace = true
-authors.workspace = true
-edition.workspace = true
-
-[dependencies]
-#xs-layout = { workspace = true }
-#xs-math = { workspace = true }
