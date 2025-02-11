@@ -2,14 +2,13 @@
 
 mode=${1:-release}
 
-if [ "$mode" == "dev" ]; then
+if [ "$mode" = "dev" ]; then
     cargo watch \
       --why \
       -p app \
       -x "build --target wasm32-unknown-unknown" \
       -s "cp -v target/wasm32-unknown-unknown/release/app.wasm www/main.wasm"
-
-elif [ "$mode" == "release" ]; then
+elif [ "$mode" = "release" ]; then
     patch_index_html() {
         index_html_path=dist/index.html
         sed 's/assets\/script.js/script.js/' -i $index_html_path
