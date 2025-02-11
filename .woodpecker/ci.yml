@@ -1,0 +1,25 @@
+steps:
+  setup:
+    image: rust
+    commands:
+      - cargo add wasm32-unknown-unknown
+    when:
+      event: [tag, push]
+
+  build:
+    image: rust
+    commands:
+      - ./build.sh
+    when:
+      event: [tag, push]
+
+  deploy:
+    image: node:20
+    commands:
+      - npm install -g vercel
+      - vercel deploy --yes --token $VERCEL_TOKEN
+    environment:
+      VERCEL_TOKEN:
+        from_secret: VERCEL_TOKEN
+    when:
+      event: [tag, push]
