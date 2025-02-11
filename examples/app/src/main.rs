@@ -3,17 +3,7 @@ use xs_layout::*;
 
 
 pub fn main() {
-    /*
-    let mut driver = BrowserDriver::try_new(Box::new(App {})).unwrap();
-    loop {
-        let time = get_time();
-        driver.tick(time);
-        next_frame().await
-    }*/
-
-
     let mut backend = Backend::new();
-
     let widget_tree = sidebar();
     backend.log("test");
     backend.render(widget_tree);
