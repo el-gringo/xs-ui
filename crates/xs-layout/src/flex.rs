@@ -6,7 +6,7 @@ use super::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
 
 
 // What diboundsion the flex container should face.
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq)]
 pub enum Axis {
     // Place items in a row. The main axis is the `x` axis, and the cross axis
     // is the `y` axis.
@@ -25,7 +25,7 @@ impl Default for Axis {
 // How the children of a flex container should be aligned along the main axis.
 // For a vertical container, this is their vertical position. For a horizontal
 // container, this is their horizontal position.
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq)]
 pub enum MainAxisAlignment {
     Start,
     End,
@@ -44,7 +44,6 @@ impl Default for MainAxisAlignment {
 // How the children of a flex container should be aligned along the cross axis.
 // For a vertical container, this is their horizontal position. For a horizontal
 // container, this is their vertical position.
-#[derive(Copy, Clone)]
 pub enum CrossAxisAlignment {
     // Push children to the start of the container
     Start,
@@ -63,7 +62,7 @@ impl Default for CrossAxisAlignment {
 }
 
 // How large the flex widget should be along the main axis.
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq)]
 pub enum MainAxisSize {
     // Stretch to fill container
     Max,

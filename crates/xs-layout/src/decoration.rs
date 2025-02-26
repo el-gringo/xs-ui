@@ -43,10 +43,10 @@ impl Borders {
     #[must_use]
     pub fn all(color: Color, width: f32) -> Borders {
         Borders {
-            top: Some(BorderSide::new(color, width)),
-            bottom: Some(BorderSide::new(color, width)),
-            left: Some(BorderSide::new(color, width)),
-            right: Some(BorderSide::new(color, width)),
+            top: Some(BorderSide::new(color.clone(), width)),
+            bottom: Some(BorderSide::new(color.clone(), width)),
+            left: Some(BorderSide::new(color.clone(), width)),
+            right: Some(BorderSide::new(color.clone(), width)),
         }
     }
 
