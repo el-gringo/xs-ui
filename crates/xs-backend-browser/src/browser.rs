@@ -1,6 +1,6 @@
 
 use xs_layout::Layout;
-use xs_renderer_webgl::WebGLRenderer;
+use xs_renderer_webgl::RendererWebGL;
 use crate::bindings::{self, console_log};
 
 
@@ -31,7 +31,7 @@ impl Future for FutureFrame {
 */
 
 pub struct BackendBrowser {
-    renderer: WebGLRenderer
+    renderer: RendererWebGL
 }
 
 impl BackendBrowser {
@@ -39,7 +39,7 @@ impl BackendBrowser {
         unsafe {
             bindings::init_canvas();
         }
-        let renderer = WebGLRenderer::new();
+        let renderer = RendererWebGL::new();
         Self {
             renderer
         }

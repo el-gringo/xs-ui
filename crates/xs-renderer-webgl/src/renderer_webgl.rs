@@ -5,11 +5,11 @@ use crate::Shader;
 use crate::WebGl;
 
 
-pub struct WebGLRenderer {
+pub struct RendererWebGL {
     shaders: Shader
 }
 
-impl WebGLRenderer {
+impl RendererWebGL {
     pub fn new() -> Self {
         let shaders = Shader::new();
         Self {
