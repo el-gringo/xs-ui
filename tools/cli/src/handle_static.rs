@@ -7,6 +7,8 @@ use xs_http::{
     }
 };
 
+use crate::cargo_metadata::CargoMetadata;
+
 //static INDEX_HTML: &'static str = include_str!("ressource/index.html");
 //static SCRIPT_JS: &'static str = include_str!("ressource/script.js");
 
@@ -15,7 +17,6 @@ fn get_content_type(path: &std::path::PathBuf) -> &'static str {
         None => return "text/plain",
         Some(e) => e,
     };
-
     match extension.to_str().unwrap() {
         "gif" => "image/gif",
         "jpg" => "image/jpeg",
@@ -31,20 +32,30 @@ fn get_content_type(path: &std::path::PathBuf) -> &'static str {
     }
 }
 
-pub fn handle_static(request: HttpRequest, target_directory: &str) {
-    let pathname = &request.pathname[1..];
-
-    println!("pathname: {}", pathname);
-    let path = if pathname == "" {
-        &std::path::Path::new("tools/devserver/src/assets").join("index.html")
-    } else if pathname.starts_with("assets/") {
-        &std::path::Path::new("tools/devserver/src").join(pathname)
-    } else {
-        &std::path::Path::new(target_directory).join(pathname)
+pub fn handle_static(request: HttpRequest, config: &CargoMetadata, package: Option<&String>) {
+    let pathname = match request.pathname.split_once('?') {
+        Some((path, _)) => &path[1..],
+        None => &request.pathname[1..]
     };
+    println!("pathname: {:?}", pathname);
+    let path = if pathname == "" {
+        &std::path::Path::new("tools/cli/src/assets").join("index.html")
+    } else if pathname.starts_with("assets/") {
+        &std::path::Path::new("tools/cli/src").join(pathname)
+    } else if pathname == "app.wasm" {
+        let binary_name = package.unwrap_or(
+            &config.packages[0].name
+        );
+        &std::path::Path::new("tools/cli/src")
+            .join(&config.target_directory)
+            .join("wasm32-unknown-unknown")
+            .join("debug")
+            .join(binary_name.to_owned() + ".wasm")
+    } else {
+        &std::path::Path::new(&config.target_directory).join(pathname)
+    };
+    println!("path: {:?}", path);
     let file = std::fs::File::open(path);
-
-    println!("path: {} {}", path.display(), file.is_ok() && path.is_file());
     let response = if file.is_ok() && path.is_file() {
         let mut file = file.unwrap();
         let content_length = file.metadata().ok().map(|v| v.len() as usize)

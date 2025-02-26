@@ -15,7 +15,7 @@ const PORT: u16 = 8080;
 
 pub fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let package = args.first();
+    let package = args.first().clone();
 
     let (tx, rx) = std::sync::mpsc::channel();
     let config = cargo_metadata::get_config();
@@ -50,7 +50,7 @@ pub fn main() {
                     });
                 },
                 ("GET", _) => {
-                    handle_static(request, &target_directory);
+                    handle_static(request, &config, Some(&String::from("app")));
                 },
                 _ => {
                     let response = HttpResponse::new(404, HttpHeaders::new(), "Not found".as_bytes().to_vec());
@@ -70,7 +70,6 @@ pub fn main() {
             let message = WebSocketMessage::new(OpCode::Text, None, wasm_pathname.into());
             let buffer: Vec<u8> = message.into();
             listener.write_all(&buffer).unwrap();
-            println!("notified: {:?}", listener);
         }
     }
 }
