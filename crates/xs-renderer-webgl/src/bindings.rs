@@ -2,8 +2,7 @@
 //! The only way to get gl functions - actually tell the linker to link with
 //! their gl.js counterparts.
 
-#![allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]
-
+#![allow(non_snake_case, non_camel_case_types, non_upper_case_globals, dead_code)]
 pub type GLenum = ::core::ffi::c_uint;
 pub type GLboolean = ::core::ffi::c_uchar;
 pub type GLbitfield = ::core::ffi::c_uint;
@@ -306,14 +305,17 @@ pub const ERROR_INVALID_VERSION_ARB: u32 = 0x2095;
 pub const ERROR_INVALID_PROFILE_ARB: u32 = 0x2096;
 pub const ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB: u32 = 0x2054;
 
+/*
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct __GLsync {
     _unused: [u8; 0],
 }
 pub type GLsync = *mut __GLsync;
+*/
 
 extern "C" {
+    /*
     pub fn glActiveTexture(texture: GLenum);
     pub fn glAttachShader(program: GLuint, shader: GLuint);
     pub fn glBindAttribLocation(program: GLuint, index: GLuint, name: *const GLchar);
@@ -354,7 +356,7 @@ extern "C" {
     pub fn glClearDepthf(d: GLfloat);
     pub fn glClearStencil(s: GLint);
     pub fn glColorMask(red: GLboolean, green: GLboolean, blue: GLboolean, alpha: GLboolean);
-    pub fn glCompileShader(shader: GLuint);
+
     pub fn glCompressedTexImage2D(
         target: GLenum,
         level: GLint,
@@ -993,6 +995,48 @@ extern "C" {
         bufSize: GLsizei,
         params: *mut GLint,
     );
+    */
+
+    pub fn glClear(mask: GLbitfield);
+    pub fn glClearColor(red: GLfloat, green: GLfloat, blue: GLfloat, alpha: GLfloat);
+    pub fn glViewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei);
+    pub fn glBlendFunc(sfactor: GLenum, dfactor: GLenum);
+    pub fn glVertexAttribPointer(
+        index: GLuint,
+        size: GLint,
+        type_: GLenum,
+        normalized: GLboolean,
+        stride: GLsizei,
+        pointer: *const ::core::ffi::c_void,
+    );
+    pub fn glDrawArrays(mode: GLenum, first: GLint, count: GLsizei);
+    pub fn glEnableVertexAttribArray(index: GLuint);
+    pub fn glBufferData(
+        target: GLenum,
+        data: *const ::core::ffi::c_void,
+        size: GLsizeiptr,
+        usage: GLenum,
+    );
+    pub fn glEnable(cap: GLenum);
+    pub fn glBindBuffer(target: GLenum, buffer: GLuint);
+    pub fn glUniform1i(location: GLint, v0: GLint);
+    pub fn glUniform1f(location: GLint, v0: GLfloat);
+    pub fn glUniform2fv(location: GLint, count: GLsizei, value: *const GLfloat, len: GLuint);
+    pub fn glUseProgram(program: GLuint);
+    pub fn glGetUniformLocation(program: GLuint, name: *const GLchar, len: GLuint) -> GLint;
+    pub fn glUniform4fv(location: GLint, count: GLsizei, value: *const GLfloat, len: GLuint);
+    pub fn glCreateBuffer() -> GLuint;
+    pub fn glCreateProgram() -> GLuint;
+    pub fn glAttachShader(program: GLuint, shader: GLuint);
+pub fn glLinkProgram(program: GLuint);
+    pub fn glCreateShader(type_: GLenum) -> GLuint;
+    pub fn glShaderSource(
+        shader: GLuint,
+        source: *const GLchar,
+        length: GLsizei,
+    );
+    pub fn glCompileShader(shader: GLuint);
+    pub fn glGetAttribLocation(program: GLuint, name: *const GLchar, len: GLuint) -> GLint;
 }
 
 pub unsafe fn is_gl2() -> bool {

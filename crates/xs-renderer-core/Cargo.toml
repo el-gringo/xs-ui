@@ -1,0 +1,7 @@
+[package]
+name = "xs-renderer-core"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]

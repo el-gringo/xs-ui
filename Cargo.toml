@@ -1,11 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-  "crates/xs-backend",
-  "crates/xs-renderer",
-  "tools/test_utils",
   "tools/cli",
-  "examples/app"
+  "examples/app",
+  "examples/test"
 ]
 
 default-members = [
@@ -25,18 +23,26 @@ xs-websocket = { path = "crates/xs-websocket" }
 xs-url = { path = "crates/xs-url" }
 xs-layout = { path = "crates/xs-layout" }
 xs-math = { path = "crates/xs-math" }
+xs-renderer-core = { path = "crates/xs-renderer-core" }
+xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
 xs-renderer-webgl = { path = "crates/xs-renderer-webgl" }
 xs-backend = { path = "crates/xs-backend" }
 xs-backend-browser = { path = "crates/xs-backend-browser" }
+xs-backend-wayland = { path = "crates/xs-backend-wayland"}
 test_utils = { path = "tools/test_utils" }
 
-# [profile.dev]
-# #opt-level = 3
-# lto = "fat"
-# strip = "symbols"
+[profile.dev]
+#opt-level = "z"
+lto = "thin"
+#codegen-units = 1
+#strip = "debuginfo"
+#strip = "none"
+panic = "abort"
 
 [profile.release]
+opt-level = "z"
 lto = "fat"
 codegen-units = 1
-strip = "symbols"
+#strip = "symbols"
+strip = "debuginfo"
 panic = "abort"

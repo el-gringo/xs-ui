@@ -29,96 +29,79 @@ unsafe impl Zeroable for Vector2 {}
 
 impl Vector2 {
     /// Construct a new vector using the provided components.
-    #[must_use]
     pub fn new(x: f32, y: f32) -> Vector2 {
         Vector2 { x, y }
     }
 
     /// Construct a new vector where all components are 0.
-    #[must_use]
     pub fn zero() -> Vector2 {
         Vector2::new(0.0, 0.0)
     }
 
     /// Check if the vector is zero.
-    #[must_use]
     pub fn is_zero(self) -> bool {
         self == Vector2::zero()
     }
 
-    #[must_use]
     pub fn up() -> Vector2 {
         Vector2::new(0.0, 1.0)
     }
 
-    #[must_use]
     pub fn is_up(self) -> bool {
         self == Vector2::up()
     }
 
-    #[must_use]
     pub fn down() -> Vector2 {
         Vector2::new(0.0, -1.0)
     }
 
-    #[must_use]
     pub fn is_down(self) -> bool {
         self == Vector2::down()
     }
 
-    #[must_use]
     pub fn left() -> Vector2 {
         Vector2::new(-1.0, 0.0)
     }
 
-    #[must_use]
     pub fn is_left(self) -> bool {
         self == Vector2::left()
     }
 
-    #[must_use]
     pub fn right() -> Vector2 {
         Vector2::new(1.0, 0.0)
     }
 
-    #[must_use]
     pub fn is_right(self) -> bool {
         self == Vector2::right()
     }
 
     /// Calculate the sum of the x and y components of the vector.
-    #[must_use]
     pub fn sum(self) -> f32 {
         self.x + self.y
     }
 
     /// Calculate the product of the x and y components of the vector.
-    #[must_use]
     pub fn product(self) -> f32 {
         self.x * self.y
     }
 
     /// Get the dot product of two vectors.
-    #[must_use]
     pub fn dot(lhs: Vector2, rhs: Vector2) -> f32 {
         (lhs.x * rhs.x) + (lhs.y * rhs.y)
     }
 
     /// Get the magnitude, or length, of the vector.
-    #[must_use]
     pub fn magnitude(self) -> f32 {
         (self.x.powi(2) + self.y.powi(2)).sqrt()
     }
 
     /// Return a vector with a magnitude of 1.
-    #[must_use]
     pub fn normalized(self) -> Vector2 {
         let mag = self.magnitude();
         Vector2::new(self.x / mag, self.y / mag)
     }
 
     /// Get the smallest component of the vector.
-    #[must_use]
     pub fn min(self) -> f32 {
         if self.x < self.y {
             self.x
@@ -128,7 +111,6 @@ impl Vector2 {
     }
 
     /// Get the largest component of the vector.
-    #[must_use]
     pub fn max(self) -> f32 {
         if self.x > self.y {
             self.x
@@ -138,7 +120,6 @@ impl Vector2 {
     }
 
     // Clamp the x and y components between the bounds of another Vector
-    #[must_use]
     pub fn clamp(self, bounds: Vector2) -> Vector2 {
         Vector2::new(
             safe_clamp(self.x, bounds.x, bounds.y),
@@ -146,7 +127,6 @@ impl Vector2 {
         )
     }
 
-    #[must_use]
     pub fn clamp_between(self, min: Vector2, max: Vector2) -> Vector2 {
         Vector2::new(
             safe_clamp(self.x, min.x, max.x),

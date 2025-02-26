@@ -1,52 +1,23 @@
 on: [push]
 jobs:
-  checkout:
-    runs-on: docker
-    name: Checkout
-    steps:
-      - name: Cache repository
-        uses: actions/cache@v4
-        id: cache-repository
-        with:
-          path: repository
-          key: ${{ runner.os }}-repository-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-repository-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          path: repository
-          submodules: recursive
   build:
     runs-on: docker
-    name: "Build"
-    needs:
-      - checkout
+    container:
+      image: rust:alpine
     steps:
-      - name: Cache repository
-        uses: actions/cache@v4
-        id: cache-repository
-        with:
-          path: repository
-          key: ${{ runner.os }}-repository-${{ github.sha }}
-
-      - name: Verify that "Cache repostory" had a hit
-        if: ${{ steps.cache-repository.outputs.cache-hit != 'true' }}
-        run: exit 1
-
-      - uses: msrd0/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
+      - uses: actions/checkout@v4
+      - run: rustup target add wasm32-unknown-unknown
       - run: ./build.sh release
+
   deploy:
     runs-on: docker
     needs:
-      - checkout
       - build
     steps:
-      - uses: actions/setup-node@v4
+      - uses: actions/cache/restore@v4
         with:
-          node-version: 20
+          path: dist
+      - run: ls -la
       - run: npm -g install vercel
       - if: github.ref != 'refs/heads/main'
         run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}

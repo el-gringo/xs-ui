@@ -3,3 +3,7 @@ name = "xs-renderer-opengl"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
+
+[dependencies]
+xs-layout = { workspace = true }
+xs-renderer-core = { workspace = true }

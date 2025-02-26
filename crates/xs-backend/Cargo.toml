@@ -4,7 +4,8 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
-[dependencies]
-
 [target.wasm32-unknown-unknown.dependencies]
 xs-backend-browser = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+xs-backend-wayland = { workspace = true }

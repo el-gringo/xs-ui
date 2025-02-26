@@ -17,7 +17,7 @@ elif [ "$mode" = "release" ]; then
         echo "Patched ${index_html_path}"
     }
     mkdir -pv dist
-    cargo build --package app --target wasm32-unknown-unknown --release
+    cargo build --package app --target wasm32-unknown-unknown --release || exit 1
     cp -v target/wasm32-unknown-unknown/release/app.wasm dist/
     cp -v tools/cli/src/assets/* dist/
     patch_index_html

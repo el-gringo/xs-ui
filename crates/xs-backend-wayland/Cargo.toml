@@ -3,3 +3,7 @@ name = "xs-backend-wayland"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
+
+[dependencies]
+xs-layout = { workspace = true }
+xs-renderer-opengl = { workspace = true }
