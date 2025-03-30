@@ -1,25 +1,30 @@
 use xs_layout::Layout;
 use xs_renderer_opengl::RendererOpenGl;
 
-use crate::config::ConfigWayland;
+use crate::{config::ConfigWayland, linux_wayland::window};
 
-pub struct BackendWayland;
+
+
+pub struct BackendWayland {
+    width: i32,
+    height: i32,
+}
+
 impl BackendWayland {
-
-    pub fn new() -> Self {
-        Self
+    pub fn new(width: i32, height: i32) -> Self {
+        Self { width, height }
     }
 
-    pub fn render(&mut self, widget_tree: Box<dyn Layout>) {
-        let _config = ConfigWayland {
+    pub fn run<F>(&mut self, generate_scene: F)
+    where F: Fn() -> Box<dyn Layout> {
+        let config = ConfigWayland {
             window_title: String::from("Test"),
-            window_width: 960,
-            window_height: 540,
-            fullscreen: false,
-            use_fallback_decorations: true
+            window_width: self.width,
+            window_height: self.height,
+            fullscreen: false
         };
-        let mut renderer = RendererOpenGl::new();
-        renderer.render(widget_tree);
+        let mut renderer = RendererOpenGl::new(self.width, self.height);
+        window(&config, &mut renderer as _, generate_scene);
     }
 
     pub fn log(&self, _message: &str) {

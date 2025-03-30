@@ -4,8 +4,7 @@ members = [
   "tools/cli",
   "examples/app",
   "examples/test"
-]
-
+, "crates/xs-platform-event", "crates/xs-egl-sys", "crates/xs-gl-sys"]
 default-members = [
   "examples/app"
 ]
@@ -18,26 +17,31 @@ authors = [
 edition = "2021"
 
 [workspace.dependencies]
-xs-http = { path = "crates/xs-http" }
-xs-websocket = { path = "crates/xs-websocket" }
-xs-url = { path = "crates/xs-url" }
+xs-backend = { path = "crates/xs-backend" }
+xs-backend-browser = { path = "crates/xs-backend-browser" }
+xs-backend-wayland = { path = "crates/xs-backend-wayland" }
+xs-egl-sys = { path = "crates/xs-egl-sys" }
+xs-gl-sys = { path = "crates/xs-gl-sys" }
 xs-layout = { path = "crates/xs-layout" }
+xs-http = { path = "crates/xs-http" }
 xs-math = { path = "crates/xs-math" }
+xs-platform-event = { path = "crates/xs-platform-event"}
+xs-platform-linux = { path = "crates/xs-platform-linux" }
 xs-renderer-core = { path = "crates/xs-renderer-core" }
 xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
 xs-renderer-webgl = { path = "crates/xs-renderer-webgl" }
-xs-backend = { path = "crates/xs-backend" }
-xs-backend-browser = { path = "crates/xs-backend-browser" }
-xs-backend-wayland = { path = "crates/xs-backend-wayland"}
+xs-url = { path = "crates/xs-url" }
+xs-websocket = { path = "crates/xs-websocket" }
 test_utils = { path = "tools/test_utils" }
 
 [profile.dev]
-#opt-level = "z"
-lto = "thin"
-#codegen-units = 1
-#strip = "debuginfo"
-#strip = "none"
+lto = "off"
 panic = "abort"
+opt-level = 1 # mproves incremental builds
+
+[profile.dev-smartv]
+inherits = "dev"
+lto = "thin"
 
 [profile.release]
 opt-level = "z"
@@ -46,3 +50,7 @@ codegen-units = 1
 #strip = "symbols"
 strip = "debuginfo"
 panic = "abort"
+
+[profile.release-smartv]
+inherits = "release"
+lto = "thin"

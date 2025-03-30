@@ -5,5 +5,10 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+xs-egl-sys = { workspace = true }
+xs-gl-sys = { workspace = true }
 xs-layout = { workspace = true }
 xs-renderer-opengl = { workspace = true }
+xs-platform-event = { workspace = true }
+xs-platform-linux = { workspace = true }
+xs-renderer-core = { workspace = true }

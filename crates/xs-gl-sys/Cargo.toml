@@ -1,0 +1,8 @@
+[package]
+name = "xs-gl-sys"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-platform-linux = { workspace = true }

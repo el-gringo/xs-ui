@@ -1,16 +1,15 @@
 use nanoserde::DeJson;
 
-#[derive(Debug, DeJson)]
-pub struct CargoMetadataPackageTarget {
-    pub src_path: String
-}
+// #[derive(Debug, DeJson)]
+// pub struct CargoMetadataPackageTarget {
+//     pub src_path: String
+// }
 
 #[derive(Debug, DeJson)]
 pub struct CargoMetadataPackage {
     pub name: String,
-    pub targets: Vec<CargoMetadataPackageTarget>
+    //pub targets: Vec<CargoMetadataPackageTarget>
 }
-
 
 #[derive(Debug, DeJson)]
 pub struct CargoMetadata {

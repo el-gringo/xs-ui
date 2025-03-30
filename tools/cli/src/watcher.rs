@@ -165,7 +165,6 @@ pub fn watch_notify(target_directory: String, additional_args: Vec<String>, send
 
 pub fn watch(target_directory: String, additional_args: Vec<String>, sender: Sender<String>) {
     let mut args: Vec<String> = vec![
-        //"+1.80",
         "-Zbuild-std=panic_abort,std",
         "watch",
         "-d",

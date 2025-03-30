@@ -1,0 +1,97 @@
+use crate::libc_sys::{
+    RTLD_LAZY,
+    RTLD_LOCAL,
+    dlclose,
+    dlopen,
+    dlsym
+};
+use std::{
+    ffi::CString,
+    ptr::NonNull
+};
+
+#[derive(PartialEq, Eq, Clone)]
+pub enum Error {
+    DlOpenError(String),
+    DlSymError(String),
+}
+
+/// A module loader for loading shared libraries.
+pub struct Module(::std::ptr::NonNull<::std::os::raw::c_void>);
+
+impl Module {
+    /// Load a shared library by its path.
+    pub fn load(path: &str) -> Result<Self, ()> {
+        let path = CString::new(path).unwrap();
+
+        // Open the shared library with lazy loading and local visibility.
+        let module = unsafe { dlopen(path.as_ptr(), RTLD_LAZY | RTLD_LOCAL) };
+        if module.is_null() {
+            Err(())
+        } else {
+            Ok(Module(unsafe { NonNull::new_unchecked(module) }))
+        }
+    }
+
+    /// Get a symbol from the loaded module.
+    pub fn get_symbol<F: Sized>(&self, name: &str) -> Result<F, ()> {
+        let name = CString::new(name).unwrap();
+
+        let symbol = unsafe { dlsym(self.0.as_ptr(), name.as_ptr()) };
+
+        if symbol.is_null() {
+            return Err(());
+        }
+
+        // Transmute the symbol to the desired type.
+        Ok(unsafe { std::mem::transmute_copy::<_, F>(&symbol) })
+    }
+}
+
+impl Drop for Module {
+    fn drop(&mut self) {
+        // When the module loader is dropped, close the shared library.
+        unsafe { dlclose(self.0.as_ptr()) };
+    }
+}
+
+#[macro_export]
+macro_rules! declare_module {
+    ($name:ident,
+    $path:literal$(, $fallback:literal)*$(,)?
+    ...
+    // static
+    $($s_vis:vis $s_name:ident: $s_type:ty,)*
+    ...
+    // function
+    $($f_vis:vis fn $f_name:ident($($f_arg:ty),*$(,)?)$( -> $f_ret:ty )?,)*
+    ...
+    // function with variadic arguments
+    $($v_vis:vis fn $v_name:ident($($v_arg:ty),*, ...)$( -> $v_ret:ty )?,)*
+    ...
+    // extra field (should be `Default` so `try_load` can construct it)
+    $($vis:vis $field:ident: $field_ty:ty,)*) => {
+        #[derive(Clone)]
+        pub struct $name {
+            _module: std::rc::Rc<$crate::module::Module>,
+            $($s_vis $s_name: $s_type,)*
+            $($f_vis $f_name: unsafe extern "C" fn ($($f_arg),*)$( -> $f_ret)?,)*
+            $($v_vis $v_name: unsafe extern "C" fn ($($v_arg),*, ...)$( -> $v_ret)?,)*
+            $($vis $field: $field_ty)*
+        }
+        impl $name {
+            pub fn try_load() -> Result<Self, ()> {
+                $crate::module::Module::load($path)$(.or_else(|_| $crate::module::Module::load($fallback)))*
+                .map(|module|
+                    $name {
+                        $($s_name: module.get_symbol::<$s_type>(stringify!($s_name)).unwrap(),)*
+                        $($f_name: module.get_symbol::<unsafe extern "C" fn ($($f_arg),*)$( -> $f_ret)?>(stringify!($f_name)).unwrap(),)*
+                        $($v_name: module.get_symbol::<unsafe extern "C" fn ($($v_arg),*, ...)$( -> $v_ret)?>(stringify!($v_name)).unwrap(),)*
+                        $($field: Default::default(),)*
+                        _module: module.into(),
+                    }
+                )
+            }
+        }
+    }
+}

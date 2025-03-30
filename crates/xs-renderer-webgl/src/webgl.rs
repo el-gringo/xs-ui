@@ -39,6 +39,7 @@ pub fn set_viewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei) {
     }
 }
 
+#[allow(dead_code)]
 pub fn draw_line(
     program: GLuint,
     vertex_attribute_name: &str,
@@ -73,15 +74,19 @@ pub fn draw_line(
 pub fn draw_mesh(
     program: GLuint,
     vertex_attribute_name: &str,
-    buffer: &Buffer,
+    vertices: Vec<Vector3>
 ) {
     unsafe {
+        /*
         glEnable(GL_BLEND);
         glBlendFunc(
             GL_SRC_ALPHA,
             GL_ONE_MINUS_SRC_ALPHA,
         );
+        */
+        let buffer = new_array_buffer(&vertices);
         glBindBuffer(GL_ARRAY_BUFFER, buffer.buffer);
+
         // Upload to GPU
         glUseProgram(program);
         let location = glGetAttribLocation(

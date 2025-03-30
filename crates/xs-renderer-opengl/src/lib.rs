@@ -1,6 +1,5 @@
-pub mod egl_sys;
-mod gl_sys;
+mod shader;
+mod mesh;
+
 mod renderer_opengl;
-mod module_loader;
-mod libc_sys;
 pub use renderer_opengl::*;

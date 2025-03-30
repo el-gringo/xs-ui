@@ -1,4 +1,4 @@
-use crate::WebGl;
+use crate::webgl;
 use xs_math::{Rectangle, Vector2, Vector3, Vector4};
 use xs_layout::{BorderSide, Borders, Material};
 
@@ -20,7 +20,7 @@ pub struct StandardShader {
 
 impl StandardShader {
     pub fn new() -> StandardShader {
-        let program = WebGl::create_shader_program(VERTEX_SHADER, FRAGMENT_SHADER);
+        let program = webgl::create_shader_program(VERTEX_SHADER, FRAGMENT_SHADER);
         StandardShader {
             program,
             viewport: Vector2::zero(),
@@ -29,7 +29,7 @@ impl StandardShader {
     }
 
     pub fn set_viewport(&mut self, viewport: Vector2) {
-        WebGl::set_viewport(0, 0, viewport.x as i32, viewport.y as i32);
+        webgl::set_viewport(0, 0, viewport.x as i32, viewport.y as i32);
         self.viewport = viewport;
     }
 
@@ -38,19 +38,14 @@ impl StandardShader {
     }
 
     fn set_uniforms(&self) {
-        WebGl::set_uniform_vec2(self.program, "u_viewport", self.viewport);
+        webgl::set_uniform_vec2(self.program, "u_viewport", self.viewport);
     }
 
-    pub fn paint_mesh(&self, vertices: &[Vector3]) {
-        self.set_uniforms();
-        let buffer = WebGl::new_array_buffer(vertices);
-        WebGl::draw_mesh(self.program, "a_position", &buffer);
-    }
-
+    #[allow(dead_code)]
     pub fn paint_line(&self, vertices: &[Vector3]) {
         self.set_uniforms();
-        let buffer = WebGl::new_array_buffer(vertices);
-        WebGl::draw_line(self.program, "a_position", &buffer);
+        let buffer = webgl::new_array_buffer(vertices);
+        webgl::draw_line(self.program, "a_position", &buffer);
     }
 
     pub fn paint_rect(&mut self, rect: Rectangle, material: &Material) {
@@ -59,9 +54,10 @@ impl StandardShader {
         let min_y = rect.y;
         let max_x = rect.x + rect.width;
         let max_y = rect.y + rect.height;
-        WebGl::set_uniform_vec4(self.program, "u_color", self.color);
-        WebGl::set_uniform_vec2(self.program, "u_rect_min", Vector2::new(min_x, min_y));
-        WebGl::set_uniform_vec2(self.program, "u_rect_max", Vector2::new(max_x, max_y));
+        webgl::set_uniform_vec2(self.program, "u_viewport", self.viewport);
+        webgl::set_uniform_vec4(self.program, "u_color", self.color);
+        webgl::set_uniform_vec2(self.program, "u_rect_min", Vector2::new(min_x, min_y));
+        webgl::set_uniform_vec2(self.program, "u_rect_max", Vector2::new(max_x, max_y));
         self.set_borders(material.borders);
         let vertices: [Vector3; 6] = [
             Vector3::new(min_x, min_y, 0.0),
@@ -71,7 +67,7 @@ impl StandardShader {
             Vector3::new(max_x, min_y, 0.0),
             Vector3::new(max_x, max_y, 0.0),
         ];
-        self.paint_mesh(&vertices);
+        webgl::draw_mesh(self.program, "a_position", vertices.to_vec());
     }
 
     fn set_borders(&mut self, borders: Borders) {
@@ -86,12 +82,12 @@ impl StandardShader {
         match maybe_border {
             Some(border) => {
                 let BorderSide { color, width } = border;
-                WebGl::set_uniform_i32(self.program, &attribute_name(prefix.clone(), i as u32, "].enabled"), 1);
-                WebGl::set_uniform_f32(self.program, &attribute_name(prefix.clone(), i as u32, "].width"), width);
-                WebGl::set_uniform_vec4(self.program, &attribute_name(prefix.clone(), i as u32, "].color"), color.to_linear());
+                webgl::set_uniform_i32(self.program, &attribute_name(prefix.clone(), i as u32, "].enabled"), 1);
+                webgl::set_uniform_f32(self.program, &attribute_name(prefix.clone(), i as u32, "].width"), width);
+                webgl::set_uniform_vec4(self.program, &attribute_name(prefix.clone(), i as u32, "].color"), color.to_linear());
             },
             None => {
-                WebGl::set_uniform_i32(self.program, &attribute_name(prefix.clone(), i as u32, "].enabled"), 0);
+                webgl::set_uniform_i32(self.program, &attribute_name(prefix.clone(), i as u32, "].enabled"), 0);
             }
         };
     }

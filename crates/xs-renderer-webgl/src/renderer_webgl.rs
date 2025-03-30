@@ -1,27 +1,34 @@
 use xs_layout::{BoxConstraints, Color, Layout, LayoutTree};
 use xs_math::{Rectangle, Vector2};
+use xs_renderer_core::Renderer;
 
-use crate::Shader;
-use crate::WebGl;
+use crate::glsl::StandardShader;
+use crate::webgl;
 
 
-pub struct RendererWebGL {
-    shaders: Shader
+pub struct RendererWebGl {
+    shaders: StandardShader
 }
 
-impl RendererWebGL {
+impl RendererWebGl {
     pub fn new() -> Self {
-        let shaders = Shader::new();
+        let shaders = StandardShader::new();
         Self {
             shaders
         }
     }
+}
 
-    pub fn render(&mut self, widget_tree: Box<dyn Layout>) {
-        WebGl::clear(Color::black());
+impl Renderer for RendererWebGl {
+    fn init(&mut self, _egl_get_proc_address: unsafe extern "C" fn(*const i8) -> Option<unsafe extern "C" fn()>) {
+
+    }
+
+    fn draw_frame(&mut self, widget_tree: Box<dyn Layout>) {
+        webgl::clear(Color::black());
 
         let mut tree = LayoutTree::new();
-        let (width, height) = WebGl::screen_size();
+        let (width, height) = webgl::screen_size();
         let viewport = Vector2::new(width as f32, height as f32);
         self.shaders.set_viewport(viewport);
 

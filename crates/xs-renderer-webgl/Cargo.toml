@@ -7,4 +7,4 @@ edition.workspace = true
 [dependencies]
 xs-layout = { workspace = true }
 xs-math = { workspace = true }
-#bytemuck = { workspace = true }
+xs-renderer-core = { workspace = true }

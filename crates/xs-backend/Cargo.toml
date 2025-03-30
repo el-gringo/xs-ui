@@ -4,6 +4,9 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[dependencies]
+xs-layout = { workspace = true }
+
 [target.wasm32-unknown-unknown.dependencies]
 xs-backend-browser = { workspace = true }
 

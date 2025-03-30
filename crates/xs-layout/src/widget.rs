@@ -39,22 +39,15 @@ pub struct Stack {
 
 impl Layout for Stack {
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
-        //let mut children = Vec::new();
-        let children = self.children.iter().map(|child| {
-            let child = child.layout(tree, constraints);
-            let lbox = LayoutBox::from_child(child, Vector2::new(0.0, 0.0));
-            let id = tree.insert(lbox);
-            id
-        }).collect();
-
-        /*
-        for child in &self.children {
-            let child = child.layout(tree, constraints);
-            let lbox = LayoutBox::from_child(child, Vector2::new(0.0, 0.0));
-            let id = tree.insert(lbox);
-            children.push(id);
-        }
-        */
+        let children = self.children
+            .iter()
+            .map(|child| {
+                let child = child.layout(tree, constraints);
+                let lbox = LayoutBox::from_child(child, Vector2::new(0.0, 0.0));
+                let id = tree.insert(lbox);
+                id
+            })
+            .collect();
         SizedLayoutBox {
             size: constraints.max,
             children,

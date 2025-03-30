@@ -3,6 +3,5 @@ pub struct ConfigWayland {
     pub window_title: String,
     pub window_width: i32,
     pub window_height: i32,
-    pub fullscreen: bool,
-    pub use_fallback_decorations: bool,
+    pub fullscreen: bool
 }

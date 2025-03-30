@@ -1,32 +1,5 @@
 use xs_layout::*;
 
-
-#[allow(dead_code)]
-pub fn positioned() -> Box<dyn Layout> {
-    Box::new(Positioned {
-        position: (0.0, 0.0).into(),
-        child: Box::new(Container {
-            color: Color::red(),
-            width: Some(1920.0),
-            height: Some(1080.0),
-            child: Some(Box::new(Positioned {
-                position: (100.0, 100.0).into(),
-                child: Box::new(Positioned {
-                    position: (200.0, 200.0).into(),
-                    child: Box::new(Container {
-                        borders: Borders::right(Color::blue(), 10.0),
-                        color: Color::green(),
-                        width: Some(100.0),
-                        height: Some(100.0),
-                        ..Default::default()
-                    }),
-                }),
-            })),
-            ..Default::default()
-        })
-    })
-}
-
 #[allow(dead_code)]
 pub fn sidebar() -> Box<dyn Layout> {
     let border_color = Color::rgba(70.0, 70.0, 70.0, 255.0);

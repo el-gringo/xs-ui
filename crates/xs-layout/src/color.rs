@@ -71,4 +71,13 @@ impl Color {
         let a = self.a / 255.0;
         Vector4::new(r, g, b, a)
     }
+
+    #[must_use]
+    pub fn to_array(&self) -> [f32;4] {
+        let r = self.r / 255.0;
+        let g = self.g / 255.0;
+        let b = self.b / 255.0;
+        let a = self.a / 255.0;
+        [r, g, b, a]
+    }
 }

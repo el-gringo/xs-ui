@@ -1,6 +1,7 @@
 
 use xs_layout::Layout;
-use xs_renderer_webgl::RendererWebGL;
+use xs_renderer_core::Renderer;
+use xs_renderer_webgl::RendererWebGl;
 use crate::bindings::{self, console_log};
 
 
@@ -30,23 +31,30 @@ impl Future for FutureFrame {
 }
 */
 
+fn render<F>(renderer: &mut impl Renderer, generate_scene: F)
+where F: Fn() -> Box<dyn Layout>{
+    let widget_tree = generate_scene();
+    renderer.draw_frame(widget_tree);
+}
+
+#[allow(dead_code)]
 pub struct BackendBrowser {
-    renderer: RendererWebGL
+    width: i32,
+    height: i32
 }
 
 impl BackendBrowser {
-    pub fn new() -> Self {
+    pub fn new(width: i32, height: i32) -> Self {
         unsafe {
             bindings::init_canvas();
         }
-        let renderer = RendererWebGL::new();
-        Self {
-            renderer
-        }
+        Self { width, height }
     }
 
-    pub fn render(&mut self, widget_tree: Box<dyn Layout>) {
-        self.renderer.render(widget_tree);
+    pub fn run<F>(&mut self, generate_scene: F)
+    where F: Fn() -> Box<dyn Layout> {
+        let mut renderer = RendererWebGl::new();
+        render(&mut renderer, generate_scene);
     }
 
     pub fn get_time(self) -> f64 {
