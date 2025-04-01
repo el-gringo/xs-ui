@@ -319,7 +319,9 @@ macro_rules! gl_loader {
 
         $(
             pub unsafe fn $fn($($arg: $t),*) -> $res {
-                __pfns::$fn.unwrap()( $($arg),* )
+                unsafe {
+                    __pfns::$fn.unwrap()( $($arg),* )
+                }
             }
         )*
 

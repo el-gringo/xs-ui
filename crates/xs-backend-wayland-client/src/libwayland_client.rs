@@ -669,7 +669,7 @@ impl LibWaylandClient {
     ) -> *mut std::ffi::c_void {
         let id: *mut wl_proxy;
 
-        id = (self.wl_proxy_marshal_constructor_versioned)(
+        id = unsafe { (self.wl_proxy_marshal_constructor_versioned)(
             wl_registry as _,
             WL_REGISTRY_BIND,
             interface as _,
@@ -678,7 +678,7 @@ impl LibWaylandClient {
             (*interface).name,
             version,
             std::ptr::null_mut::<std::ffi::c_void>(),
-        );
+        ) };
 
         id as *mut _
     }

@@ -50,7 +50,7 @@ pub struct fd_set {
 pub const RTLD_LAZY: c_int = 1;
 pub const RTLD_LOCAL: c_int = 0;
 
-extern "C"{
+unsafe extern "C"{
     pub fn dlopen(filename: *const c_char, flag: c_int) -> *mut c_void;
     pub fn dlclose(handle: *mut c_void) -> c_int;
     pub fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *mut c_void;
@@ -76,15 +76,19 @@ extern "C"{
 }
 
 pub unsafe fn FD_SET(fd: c_int, set: *mut fd_set) -> () {
-    let fd = fd as usize;
-    let size =mem::size_of_val(&(*set).fds_bits[0]) * 8;
-    (*set).fds_bits[fd / size] |= 1 << (fd % size);
-    return
+    unsafe {
+        let fd = fd as usize;
+        let size =mem::size_of_val(&(*set).fds_bits[0]) * 8;
+        (*set).fds_bits[fd / size] |= 1 << (fd % size);
+        return
+    }
 }
 
 pub unsafe fn FD_ZERO(set: *mut fd_set) -> () {
-    for slot in (*set).fds_bits.iter_mut() {
-        *slot = 0;
+    unsafe {
+        for slot in (*set).fds_bits.iter_mut() {
+            *slot = 0;
+        }
     }
 }
 

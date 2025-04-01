@@ -1,21 +1,19 @@
 [workspace]
 resolver = "2"
 members = [
-    "tools/cli",
+    "crates/*",
     "examples/app",
-    "crates/xs-platform-event",
-    "crates/xs-egl-sys",
-    "crates/xs-gl-sys",
-    "crates/xs-backend-wayland-extensions",
-    "crates/xs-backend-wayland-client",
-    "crates/xs-backend-wayland-egl",
-    "crates/xs-backend-wayland-xkb"
+    "tools/cli"
 ]
-default-members = ["examples/app"]
+default-members = [
+    "examples/app"
+]
 
 [workspace.package]
 version = "0.1.0"
-authors = ["christophe.bosse@gmail.com"]
+authors = [
+    "christophe.bosse@gmail.com"
+]
 edition = "2024"
 
 [workspace.dependencies]
