@@ -145,13 +145,15 @@ impl Container {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use test_utils::assert_slice_eq;
+    use xs_math::Rectangle;
+    use super::*;
+    use crate::colors::{RED, GREEN};
 
     #[test]
     pub fn container_with_no_child_fills_constraints() {
         let container = Container {
-            color: Color::green(),
+            color: GREEN,
             ..Container::default()
         };
 
@@ -159,7 +161,7 @@ mod tests {
         let actual_layout = layout_with_constraints(&container, &constraints);
         let expected_layout = vec![LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
-            ..fixed_child_lbox(Color::green())
+            ..fixed_child_lbox(GREEN)
         }];
         assert_slice_eq(&expected_layout, &actual_layout);
     }
@@ -168,7 +170,7 @@ mod tests {
     pub fn container_with_no_child_and_has_height_fills_container_width() {
         let container = Container {
             height: Some(50.0),
-            color: Color::green(),
+            color: GREEN,
             ..Container::default()
         };
 
@@ -176,7 +178,7 @@ mod tests {
         let actual_layout = layout_with_constraints(&container, &constraints);
         let expected_layout = vec![LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, 100.0, 50.0),
-            ..fixed_child_lbox(Color::green())
+            ..fixed_child_lbox(GREEN)
         }];
         assert_slice_eq(&expected_layout, &actual_layout);
     }
@@ -185,7 +187,7 @@ mod tests {
     pub fn container_with_no_child_and_has_width_fills_container_height() {
         let container = Container {
             width: Some(50.0),
-            color: Color::green(),
+            color: GREEN,
             ..Container::default()
         };
 
@@ -193,7 +195,7 @@ mod tests {
         let actual_layout = layout_with_constraints(&container, &constraints);
         let expected_layout = vec![LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, 50.0, 100.0),
-            ..fixed_child_lbox(Color::green())
+            ..fixed_child_lbox(GREEN)
         }];
         assert_slice_eq(&expected_layout, &actual_layout);
     }
@@ -201,11 +203,11 @@ mod tests {
     #[test]
     pub fn container_with_child_has_same_size_as_child_in_unbounded_parent() {
         let container = Container {
-            color: Color::green(),
+            color: GREEN,
             child: Some(Box::new(Container {
                 width: Some(50.0),
                 height: Some(50.0),
-                color: Color::red(),
+                color: RED,
                 ..Container::default()
             })),
             ..Container::default()
@@ -216,12 +218,12 @@ mod tests {
         let expected_layout = vec![
             LayoutBox {
                 bounds: Rectangle::new(0.0, 0.0, 50.0, 50.0),
-                ..fixed_child_lbox(Color::red())
+                ..fixed_child_lbox(RED)
             },
             LayoutBox {
                 bounds: Rectangle::new(0.0, 0.0, 50.0, 50.0),
                 children: vec![0],
-                ..fixed_child_lbox(Color::red())
+                ..fixed_child_lbox(GREEN)
             },
         ];
         assert_slice_eq(&expected_layout, &actual_layout);

@@ -1,6 +1,6 @@
 //use bytemuck::cast_slice;
 use xs_layout::Color;
-use xs_math::{Vector2, Vector3, Vector4};
+use xs_math::Vector3;
 use crate::bindings::*;
 
 
@@ -168,7 +168,7 @@ pub fn set_uniform_f32(
 pub fn set_uniform_vec2(
     program: GLuint,
     field: &str,
-    value: Vector2,
+    value: [f32; 2],
 ) {
     unsafe {
         glUseProgram(program);
@@ -177,7 +177,6 @@ pub fn set_uniform_vec2(
             field.as_ptr() as *const _,
             field.len() as u32
         );
-        let value: [f32; 2] = value.into();
         glUniform2fv(
             location,
             value.len() as i32,
@@ -190,7 +189,7 @@ pub fn set_uniform_vec2(
 pub fn set_uniform_vec4(
     program: GLuint,
     field: &str,
-    value: Vector4,
+    value: [f32; 4],
 ) {
     unsafe {
         glUseProgram(program);
@@ -199,7 +198,6 @@ pub fn set_uniform_vec4(
             field.as_ptr() as *const _,
             field.len() as u32
         );
-        let value: [f32; 4] = value.into();
         glUniform4fv(
             location,
             value.len() as i32,

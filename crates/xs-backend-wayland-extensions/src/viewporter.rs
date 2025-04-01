@@ -1,4 +1,4 @@
-// viewporter.xml
+#![allow(non_upper_case_globals, static_mut_refs)]
 
 use crate::wayland_interface;
 

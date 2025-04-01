@@ -1,5 +1,5 @@
 use xs_platform_event::KeyCode;
-use crate::libxkbcommon::LibXkbCommon;
+use xs_backend_wayland_xkb::LibXkbCommon;
 
 
 #[allow(dead_code)]

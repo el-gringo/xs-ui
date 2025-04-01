@@ -436,10 +436,13 @@ impl Flex {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::container;
-
-    use macroquad::math::{Rect, Vector2};
-    use macroquad::color::{Color, RED, GREEN, BLUE};
+    use xs_math::Rectangle;
+    use crate::{
+        Color,
+        Container,
+        Material,
+        colors::{RED, GREEN, BLUE}
+    };
     use test_utils::assert_slice_eq;
 
     // --------------------------------------------------
@@ -459,7 +462,7 @@ mod tests {
                     child: Box::new(Container {
                         width: Some(10.0),
                         height: Some(10.0),
-                        color: GREEN,
+                        color: GREEN.into(),
                         ..Container::default()
                     }),
                 }),
@@ -468,7 +471,7 @@ mod tests {
                     child: Box::new(Container {
                         width: Some(10.0),
                         height: Some(10.0),
-                        color: BLUE,
+                        color: BLUE.into(),
                         ..Container::default()
                     }),
                 }),
@@ -479,15 +482,15 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..flex_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 10.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 10.0, 10.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 20.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 20.0),
                 children: vec![0, 1],
                 material: None,
                 ..LayoutBox::default()
@@ -515,7 +518,7 @@ mod tests {
         let expected_layout = vec![
             fixed_child_lbox(GREEN),
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -539,7 +542,7 @@ mod tests {
         let expected_layout = vec![
             fixed_child_lbox(GREEN),
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -566,19 +569,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(RED)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 10.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 10.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 20.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 20.0, 10.0, 10.0),
                 ..fixed_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 30.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 30.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -605,19 +608,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(10.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(10.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(20.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(20.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 30.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 30.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -640,11 +643,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -667,11 +670,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -699,19 +702,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, size),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size, 10.0, size),
+                bounds: Rectangle::new(0.0, size, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size * 2.0, 10.0, size),
+                bounds: Rectangle::new(0.0, size * 2.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -739,19 +742,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size, 0.0, size, 10.0),
+                bounds: Rectangle::new(size, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size * 2.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(size * 2.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -774,11 +777,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -801,11 +804,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -832,19 +835,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 10.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 10.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 20.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 20.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -871,19 +874,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(10.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(10.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(20.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(20.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -906,11 +909,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -933,11 +936,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -965,19 +968,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, size),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size, 10.0, size),
+                bounds: Rectangle::new(0.0, size, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size * 2.0, 10.0, size),
+                bounds: Rectangle::new(0.0, size * 2.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1005,19 +1008,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size, 0.0, size, 10.0),
+                bounds: Rectangle::new(size, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size * 2.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(size * 2.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1044,11 +1047,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1071,11 +1074,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1102,19 +1105,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 10.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 10.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 20.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 20.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1141,19 +1144,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(10.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(10.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(20.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(20.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1176,11 +1179,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1203,11 +1206,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1235,19 +1238,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, size),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size, 10.0, size),
+                bounds: Rectangle::new(0.0, size, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size * 2.0, 10.0, size),
+                bounds: Rectangle::new(0.0, size * 2.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1275,19 +1278,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size, 0.0, size, 10.0),
+                bounds: Rectangle::new(size, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size * 2.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(size * 2.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1310,11 +1313,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 90.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 90.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1337,11 +1340,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(90.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(90.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1368,22 +1371,22 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 70.0, 10.0, 10.0),
-                material: Some(Material::filled(RED)),
+                bounds: Rectangle::new(0.0, 70.0, 10.0, 10.0),
+                material: Some(Material::filled(RED.into())),
                 ..fixed_child_lbox(RED)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 80.0, 10.0, 10.0),
-                material: Some(Material::filled(GREEN)),
+                bounds: Rectangle::new(0.0, 80.0, 10.0, 10.0),
+                material: Some(Material::filled(GREEN.into())),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 90.0, 10.0, 10.0),
-                material: Some(Material::filled(BLUE)),
+                bounds: Rectangle::new(0.0, 90.0, 10.0, 10.0),
+                material: Some(Material::filled(BLUE.into())),
                 ..fixed_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1406,11 +1409,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1433,11 +1436,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1460,11 +1463,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 45.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 45.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1487,11 +1490,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(45.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(45.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1514,11 +1517,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1541,11 +1544,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1568,11 +1571,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 45.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 45.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1595,11 +1598,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(45.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(45.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1626,19 +1629,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 45.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 45.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 90.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 90.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1665,19 +1668,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(45.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(45.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(90.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(90.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1700,11 +1703,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1727,11 +1730,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1759,19 +1762,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, size),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size, 10.0, size),
+                bounds: Rectangle::new(0.0, size, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size * 2.0, 10.0, size),
+                bounds: Rectangle::new(0.0, size * 2.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1799,19 +1802,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size, 0.0, size, 10.0),
+                bounds: Rectangle::new(size, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size * 2.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(size * 2.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1834,11 +1837,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 45.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 45.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1861,11 +1864,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(45.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(45.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1893,19 +1896,19 @@ mod tests {
         let spacing = (100.0 - 30.0) / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, spacing * 0.5, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, spacing * 0.5, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 10.0 + spacing * 1.5, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 10.0 + spacing * 1.5, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 20.0 + spacing * 2.5, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 20.0 + spacing * 2.5, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1933,19 +1936,19 @@ mod tests {
         let spacing = (100.0 - 30.0) / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(spacing * 0.5, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(spacing * 0.5, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(10.0 + spacing * 1.5, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(10.0 + spacing * 1.5, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(20.0 + spacing * 2.5, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(20.0 + spacing * 2.5, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -1968,11 +1971,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -1995,11 +1998,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2027,19 +2030,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, size),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size, 10.0, size),
+                bounds: Rectangle::new(0.0, size, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size * 2.0, 10.0, size),
+                bounds: Rectangle::new(0.0, size * 2.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2067,19 +2070,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size, 0.0, size, 10.0),
+                bounds: Rectangle::new(size, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size * 2.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(size * 2.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2102,11 +2105,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 45.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 45.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2129,11 +2132,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(45.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(45.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2161,19 +2164,19 @@ mod tests {
         let spacing = (100.0 - 30.0) / 4.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, spacing, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, spacing, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 10.0 + spacing * 2.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 10.0 + spacing * 2.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 20.0 + spacing * 3.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 20.0 + spacing * 3.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2201,19 +2204,19 @@ mod tests {
         let spacing = (100.0 - 30.0) / 4.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(spacing, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(spacing, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(10.0 + spacing * 2.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(10.0 + spacing * 2.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(20.0 + spacing * 3.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(20.0 + spacing * 3.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2236,11 +2239,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2263,11 +2266,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2294,11 +2297,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2321,11 +2324,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2352,19 +2355,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 10.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 10.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 20.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 20.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2391,19 +2394,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(10.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(10.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(20.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(20.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2426,11 +2429,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2453,11 +2456,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2485,19 +2488,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, size),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size, 10.0, size),
+                bounds: Rectangle::new(0.0, size, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size * 2.0, 10.0, size),
+                bounds: Rectangle::new(0.0, size * 2.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2525,19 +2528,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size, 0.0, size, 10.0),
+                bounds: Rectangle::new(size, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(size * 2.0, 0.0, size, 10.0),
+                bounds: Rectangle::new(size * 2.0, 0.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2560,11 +2563,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(90.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(90.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2587,11 +2590,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 90.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 90.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2618,19 +2621,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(90.0, 0.0, 10.0, 10.0),
+                bounds: Rectangle::new(90.0, 0.0, 10.0, 10.0),
                 ..fixed_child_lbox(RED)
             },
             LayoutBox {
-                bounds: Rect::new(90.0, 10.0, 10.0, 10.0),
+                bounds: Rectangle::new(90.0, 10.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(90.0, 20.0, 10.0, 10.0),
+                bounds: Rectangle::new(90.0, 20.0, 10.0, 10.0),
                 ..fixed_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2658,19 +2661,19 @@ mod tests {
 
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 90.0, 10.0, 10.0),
+                bounds: Rectangle::new(0.0, 90.0, 10.0, 10.0),
                 ..fixed_child_lbox(RED)
             },
             LayoutBox {
-                bounds: Rect::new(10.0, 90.0, 10.0, 10.0),
+                bounds: Rectangle::new(10.0, 90.0, 10.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(20.0, 90.0, 10.0, 10.0),
+                bounds: Rectangle::new(20.0, 90.0, 10.0, 10.0),
                 ..fixed_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2694,11 +2697,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(90.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(90.0, 0.0, 10.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2721,11 +2724,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 90.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 90.0, 100.0, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2753,19 +2756,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(90.0, 0.0, 10.0, size),
+                bounds: Rectangle::new(90.0, 0.0, 10.0, size),
                 ..flex_child_lbox(RED)
             },
             LayoutBox {
-                bounds: Rect::new(90.0, size, 10.0, size),
+                bounds: Rectangle::new(90.0, size, 10.0, size),
                 ..flex_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(90.0, size * 2.0, 10.0, size),
+                bounds: Rectangle::new(90.0, size * 2.0, 10.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2793,19 +2796,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 90.0, size, 10.0),
+                bounds: Rectangle::new(0.0, 90.0, size, 10.0),
                 ..flex_child_lbox(RED)
             },
             LayoutBox {
-                bounds: Rect::new(size, 90.0, size, 10.0),
+                bounds: Rectangle::new(size, 90.0, size, 10.0),
                 ..flex_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(size * 2.0, 90.0, size, 10.0),
+                bounds: Rectangle::new(size * 2.0, 90.0, size, 10.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2828,11 +2831,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2855,11 +2858,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2886,19 +2889,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 10.0),
                 ..fixed_child_lbox(RED)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 10.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 10.0, 100.0, 10.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 20.0, 100.0, 10.0),
+                bounds: Rectangle::new(0.0, 20.0, 100.0, 10.0),
                 ..fixed_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2925,19 +2928,19 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 10.0, 100.0),
                 ..fixed_child_lbox(RED)
             },
             LayoutBox {
-                bounds: Rect::new(10.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(10.0, 0.0, 10.0, 100.0),
                 ..fixed_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(20.0, 0.0, 10.0, 100.0),
+                bounds: Rectangle::new(20.0, 0.0, 10.0, 100.0),
                 ..fixed_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -2960,11 +2963,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&column, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -2987,11 +2990,11 @@ mod tests {
         let actual_layout = layout_with_constraints(&row, &constraints);
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0],
                 material: None,
                 ..LayoutBox::default()
@@ -3019,19 +3022,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, size),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, size),
                 ..flex_child_lbox(RED)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size, 100.0, size),
+                bounds: Rectangle::new(0.0, size, 100.0, size),
                 ..flex_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, size * 2.0, 100.0, size),
+                bounds: Rectangle::new(0.0, size * 2.0, 100.0, size),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -3059,19 +3062,19 @@ mod tests {
         let size = 100.0 / 3.0;
         let expected_layout = vec![
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, size, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, size, 100.0),
                 ..flex_child_lbox(RED)
             },
             LayoutBox {
-                bounds: Rect::new(size, 0.0, size, 100.0),
+                bounds: Rectangle::new(size, 0.0, size, 100.0),
                 ..flex_child_lbox(GREEN)
             },
             LayoutBox {
-                bounds: Rect::new(size * 2.0, 0.0, size, 100.0),
+                bounds: Rectangle::new(size * 2.0, 0.0, size, 100.0),
                 ..flex_child_lbox(BLUE)
             },
             LayoutBox {
-                bounds: Rect::new(0.0, 0.0, 100.0, 100.0),
+                bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
                 children: vec![0, 1, 2],
                 material: None,
                 ..LayoutBox::default()
@@ -3099,19 +3102,16 @@ mod tests {
         Box::new(Container {
             width: Some(10.0),
             height: Some(10.0),
-            color,
+            color: color.into(),
             ..Container::default()
         })
     }
 
     fn fixed_child_lbox(color: Color) -> LayoutBox {
         LayoutBox {
-            bounds: Rect::new(
-                Vector2::new(0.0, 0.0),
-                Vector2::new(10.0, 10.0)
-            ),
+            bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
             children: vec![],
-            material: Some(Material::filled(color)),
+            material: Some(Material::filled(color.into())),
             ..LayoutBox::default()
         }
     }
@@ -3122,7 +3122,7 @@ mod tests {
             child: Box::new(Container {
                 width: Some(10.0),
                 height: Some(10.0),
-                color,
+                color: color.into(),
                 ..Container::default()
             }),
         })
@@ -3130,12 +3130,9 @@ mod tests {
 
     fn flex_child_lbox(color: Color) -> LayoutBox {
         LayoutBox {
-            bounds: Rect::new(
-                Vector2::new(0.0, 0.0),
-                Vector2::new(10.0, 10.0)
-            ),
+            bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
             children: vec![],
-            material: Some(Material::filled(color)),
+            material: Some(Material::filled(color.into())),
             ..LayoutBox::default()
         }
     }

@@ -1,4 +1,3 @@
-//use bytemuck::{Pod, Zeroable};
 use std::default::Default;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
@@ -18,7 +17,7 @@ macro_rules! vector4 {
 
 /// A 2-dimensional vector.
 #[repr(C)]
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Clone, Copy)]
 pub struct Vector4 {
     /// The x component of the vector.
     pub x: f32,
@@ -29,11 +28,6 @@ pub struct Vector4 {
     /// The w component of the vector.
     pub w: f32,
 }
-
-/*
-unsafe impl Pod for Vector4 {}
-unsafe impl Zeroable for Vector4 {}
-*/
 
 impl Vector4 {
     /// Construct a new vector using the provided components.
@@ -115,12 +109,12 @@ impl Vector4 {
     }
 
     /// Get the magnitude, or length, of the vector.
-    pub fn magnitude(self) -> f32 {
+    pub fn magnitude(&self) -> f32 {
         (self.x.powi(2) + self.y.powi(2) + self.z.powi(2) + self.w.powi(2)).sqrt()
     }
 
     /// Return a vector with a magnitude of 1.
-    pub fn normalized(self) -> Vector4 {
+    pub fn normalized(&self) -> Vector4 {
         let mag = self.magnitude();
         Vector4::new(self.x / mag, self.y / mag, self.z / mag, self.w / mag)
     }

@@ -4,7 +4,7 @@ members = [
   "tools/cli",
   "examples/app",
   "examples/test"
-, "crates/xs-platform-event", "crates/xs-egl-sys", "crates/xs-gl-sys"]
+, "crates/xs-platform-event", "crates/xs-egl-sys", "crates/xs-gl-sys", "crates/xs-backend-wayland-extensions", "crates/xs-backend-wayland-client", "crates/xs-backend-wayland-egl", "crates/xs-backend-wayland-xkb"]
 default-members = [
   "examples/app"
 ]
@@ -20,6 +20,10 @@ edition = "2021"
 xs-backend = { path = "crates/xs-backend" }
 xs-backend-browser = { path = "crates/xs-backend-browser" }
 xs-backend-wayland = { path = "crates/xs-backend-wayland" }
+xs-backend-wayland-egl = { path = "crates/xs-backend-wayland-egl" }
+xs-backend-wayland-extensions = { path = "crates/xs-backend-wayland-extensions" }
+xs-backend-wayland-client = { path = "crates/xs-backend-wayland-client" }
+xs-backend-wayland-xkb = { path = "crates/xs-backend-wayland-xkb" }
 xs-egl-sys = { path = "crates/xs-egl-sys" }
 xs-gl-sys = { path = "crates/xs-gl-sys" }
 xs-layout = { path = "crates/xs-layout" }
@@ -37,6 +41,7 @@ test_utils = { path = "tools/test_utils" }
 [profile.dev]
 lto = "off"
 panic = "abort"
+strip = "debuginfo"
 opt-level = 1 # mproves incremental builds
 
 [profile.dev-smartv]

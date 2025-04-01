@@ -718,7 +718,6 @@ macro_rules! wl_request_constructor {
         id as *mut _
     }};
 }
-pub use wl_request_constructor;
 
 #[macro_export]
 macro_rules! wl_request {
@@ -734,4 +733,3 @@ macro_rules! wl_request {
         )
     }};
 }
-pub use wl_request;

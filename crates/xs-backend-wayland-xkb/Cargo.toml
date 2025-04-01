@@ -1,0 +1,8 @@
+[package]
+name = "xs-backend-wayland-xkb"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-platform-linux = { workspace = true }

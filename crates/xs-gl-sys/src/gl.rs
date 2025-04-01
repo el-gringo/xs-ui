@@ -690,8 +690,6 @@ pub fn link_program(
 ) -> GLuint {
     unsafe {
         let program = glCreateProgram();
-        println!("glCreateProgram: {:?}", program);
-
         glAttachShader(program, vertex_shader);
         glAttachShader(program, fragment_shader);
         glLinkProgram(program);

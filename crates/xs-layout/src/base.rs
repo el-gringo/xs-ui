@@ -66,7 +66,7 @@ impl Alignment {
     }
 }
 
-#[derive(PartialEq, Copy, Clone, Default)]
+#[derive(PartialEq, Copy, Clone, Default, Debug)]
 pub struct EdgeInsets {
     pub top: f32,
     pub bottom: f32,

@@ -1,0 +1,9 @@
+[package]
+name = "xs-backend-wayland-egl"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-backend-wayland-client = { workspace = true }
+xs-platform-linux = { workspace = true }

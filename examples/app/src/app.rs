@@ -1,12 +1,12 @@
-use xs_layout::*;
+use xs_layout::{colors::GREEN, *};
 
 #[allow(dead_code)]
 pub fn sidebar() -> Box<dyn Layout> {
-    let border_color = Color::rgba(70.0, 70.0, 70.0, 255.0);
-    let color_grey1 = Color::rgba(22.0, 22.0, 22.0, 255.0);
-    let color_grey2 = Color::rgba(30.0, 30.0, 30.0, 255.0);
-    let color_grey3 = Color::rgba(35.0, 35.0, 35.0, 255.0);
-    let color_grey4 = Color::rgba(60.0, 60.0, 60.0, 255.0);
+    let border_color = Color::rgba(0.27, 0.27, 0.27, 255.0);
+    let color_grey1 = Color::rgba(0.09, 0.09, 0.09, 255.0);
+    let color_grey2 = Color::rgba(0.11, 0.11, 0.11, 255.0);
+    let color_grey3 = Color::rgba(0.13, 0.13, 0.13, 255.0);
+    let color_grey4 = Color::rgba(0.24, 0.24, 0.24, 255.0);
     let mut files: Vec<Box<dyn FlexLayout>> = vec![];
     let mut files2: Vec<Box<dyn FlexLayout>> = vec![];
     for _ in 0..10 {
@@ -26,7 +26,7 @@ pub fn sidebar() -> Box<dyn Layout> {
         }));
     }
     let widgets = Container {
-        borders: Borders::bottom(Color::rgba(20.0, 100.0, 225.0, 255.0), 10.0),
+        borders: Borders::bottom(Color::rgba(0.08, 0.39, 225.0, 0.89), 10.0),
         child: Some(Box::new(Flex {
             axis: Axis::Horizontal,
             main_axis_size: MainAxisSize::Max,
@@ -139,7 +139,7 @@ pub fn sidebar() -> Box<dyn Layout> {
                 Box::new(Container {
                     width: Some(175.0),
                     height: Some(f32::INFINITY),
-                    color: Color::rgba(35.0, 35.0, 35.0, 255.0),
+                    color: color_grey3,
                     borders: Borders::left(border_color, 1.0),
                     child: Some(Box::new(Flex {
                         axis: Axis::Vertical,
@@ -155,4 +155,23 @@ pub fn sidebar() -> Box<dyn Layout> {
         ..Container::default()
     };
     Box::new(widgets)
+}
+
+#[allow(dead_code)]
+pub fn render_nested_positioned() -> Box<dyn Layout> {
+    Box::new(Positioned {
+        position: (0.0, 0.0).into(),
+        child: Box::new(Positioned {
+            position: (100.0, 100.0).into(),
+            child: Box::new(Positioned {
+                position: (200.0, 200.0).into(),
+                child: Box::new(Container {
+                    color: GREEN,
+                    width: Some(100.0),
+                    height: Some(100.0),
+                    ..Default::default()
+                }),
+            }),
+        }),
+    })
 }

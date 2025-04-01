@@ -1,5 +1,5 @@
 use crate::webgl;
-use xs_math::{Rectangle, Vector2, Vector3, Vector4};
+use xs_math::{Rectangle, Vector2, Vector3};
 use xs_layout::{BorderSide, Borders, Material};
 
 use crate::bindings::*;
@@ -14,8 +14,7 @@ fn attribute_name(prefix: String, index: u32, suffix: &str) -> String {
 
 pub struct StandardShader {
     program: GLuint,
-    viewport: Vector2,
-    color: Vector4,
+    viewport: Vector2
 }
 
 impl StandardShader {
@@ -23,8 +22,7 @@ impl StandardShader {
         let program = webgl::create_shader_program(VERTEX_SHADER, FRAGMENT_SHADER);
         StandardShader {
             program,
-            viewport: Vector2::zero(),
-            color: Vector4::new(1.0, 1.0, 1.0, 1.0),
+            viewport: Vector2::zero()
         }
     }
 
@@ -33,12 +31,8 @@ impl StandardShader {
         self.viewport = viewport;
     }
 
-    pub fn set_color(&mut self, color: Vector4) {
-        self.color = color;
-    }
-
     fn set_uniforms(&self) {
-        webgl::set_uniform_vec2(self.program, "u_viewport", self.viewport);
+        webgl::set_uniform_vec2(self.program, "u_viewport", self.viewport.into());
     }
 
     #[allow(dead_code)]
@@ -49,15 +43,14 @@ impl StandardShader {
     }
 
     pub fn paint_rect(&mut self, rect: Rectangle, material: &Material) {
-        self.set_color(material.fill.to_linear());
         let min_x = rect.x;
         let min_y = rect.y;
         let max_x = rect.x + rect.width;
         let max_y = rect.y + rect.height;
-        webgl::set_uniform_vec2(self.program, "u_viewport", self.viewport);
-        webgl::set_uniform_vec4(self.program, "u_color", self.color);
-        webgl::set_uniform_vec2(self.program, "u_rect_min", Vector2::new(min_x, min_y));
-        webgl::set_uniform_vec2(self.program, "u_rect_max", Vector2::new(max_x, max_y));
+        webgl::set_uniform_vec2(self.program, "u_viewport", self.viewport.into());
+        webgl::set_uniform_vec4(self.program, "u_color",    material.fill.into());
+        webgl::set_uniform_vec2(self.program, "u_rect_min", [min_x, min_y]);
+        webgl::set_uniform_vec2(self.program, "u_rect_max", [max_x, max_y]);
         self.set_borders(material.borders);
         let vertices: [Vector3; 6] = [
             Vector3::new(min_x, min_y, 0.0),
@@ -84,7 +77,7 @@ impl StandardShader {
                 let BorderSide { color, width } = border;
                 webgl::set_uniform_i32(self.program, &attribute_name(prefix.clone(), i as u32, "].enabled"), 1);
                 webgl::set_uniform_f32(self.program, &attribute_name(prefix.clone(), i as u32, "].width"), width);
-                webgl::set_uniform_vec4(self.program, &attribute_name(prefix.clone(), i as u32, "].color"), color.to_linear());
+                webgl::set_uniform_vec4(self.program, &attribute_name(prefix.clone(), i as u32, "].color"), color.into());
             },
             None => {
                 webgl::set_uniform_i32(self.program, &attribute_name(prefix.clone(), i as u32, "].enabled"), 0);

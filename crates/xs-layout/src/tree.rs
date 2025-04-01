@@ -5,60 +5,6 @@ use xs_math::{ Rectangle, Vector2 };
 use crate::base::EdgeInsets;
 use crate::decoration::Material;
 
-/*
-struct VecDequeItem<T> {
-    pub value: T,
-    pub previous: Option<VecDequeItem<&T>>,
-    pub next: Option<VecDequeItem<&T>>
-}
-
-struct VecDeque<T> {
-    front: Option<VecDequeItem<&T>>,
-    back: Option<VecDequeItem<&T>>
-}
-
-impl VecDeque {
-    pub fn new() -> Self {
-        VecDeque {
-            front: None,
-            back: None
-        }
-    }
-
-    pub fn push_front(&mut self, value: T) {
-        let item = VecDequeItem {
-            value,
-            previous: None,
-            next: Some(self.front)
-        };
-        if let Some(front) = self.front {
-            front.previous = Some(item);
-        }
-        self.front = Some(item);
-    }
-
-    pub fn push_back(&mut self, value: T) {
-        let item = VecDequeItem {
-            value,
-            previous: self.back,
-            next: None
-        };
-        if let Some(back) = self.back {
-            back.next = Some(item);
-        }
-        self.back = Some(back);
-    }
-
-    pub fn pop_front(&mut self) -> Option<&T> {
-        if let Some(front) = self.front {
-            self.front = front.next;
-            Some(front.value)
-        }
-        None
-    }
-}
-*/
-
 /// This is the essential trait of the box model. It is implemented by all
 /// components that undergo the box layout process.
 ///
@@ -81,7 +27,7 @@ pub trait Layout {
 
 // The minimum and maximum dimensions that a [SizedLayoutBox] or a [LayoutBox]
 // can be.
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq)]
 pub struct BoxConstraints {
     pub min: Vector2,
     pub max: Vector2,
@@ -136,7 +82,7 @@ pub struct SizedLayoutBox {
 }
 
 /// An element that has finished layout. It has been been sized and positioned.
-#[derive(PartialEq, Clone, Default)]
+#[derive(PartialEq, Clone, Default, Debug)]
 pub struct LayoutBox {
     pub bounds: Rectangle, // Includes margins
     pub margin: EdgeInsets,
@@ -285,7 +231,7 @@ mod tests {
         };
         let c_id = tree.insert(c.clone());
         let root = LayoutBox {
-            bounds: Rectangleangle::new(3.0, 3.0, 3.0, 3.0),
+            bounds: Rectangle::new(3.0, 3.0, 3.0, 3.0),
             children: vec![c_id],
             material: None,
             ..Default::default()
@@ -382,7 +328,7 @@ mod tests {
 
     fn a_layout_box() -> LayoutBox {
         LayoutBox {
-            bounds: Rectangleangle::new(0.0, 0.0, 10.0, 10.0),
+            bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
             children: vec![],
             material: Some(Material::filled(Color::rgba(0.0, 0.0, 0.0, 0.0))),
             ..Default::default()

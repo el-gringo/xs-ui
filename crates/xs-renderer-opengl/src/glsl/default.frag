@@ -1,18 +1,16 @@
 precision mediump float;
 
-// Color of the rect
-uniform vec4 u_color;
-
 struct border_side {
     bool enabled;
     float width;
     vec4 color;
 };
 
-uniform border_side u_borders[4];
-
+// Color of the rect
+uniform vec4 u_color;
 uniform vec2 u_rect_min;
 uniform vec2 u_rect_max;
+uniform border_side u_borders[4];
 
 // Current position
 varying vec2 v_position;

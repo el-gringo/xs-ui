@@ -1,0 +1,8 @@
+[package]
+name = "xs-backend-wayland-extensions"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-backend-wayland-client = { workspace = true }

@@ -1,12 +1,28 @@
 use std::collections::HashMap;
 
-use xs_gl_sys::{glClear, glClearColor, glViewport, GL_COLOR_BUFFER_BIT};
-use xs_layout::{BoxConstraints, Color, Layout, LayoutBox, LayoutTree};
-use xs_math::{Vector2, Vector3};
+use xs_gl_sys::{
+    glClear,
+    glClearColor,
+    glViewport,
+    load_gl_funcs,
+    GL_COLOR_BUFFER_BIT
+};
+use xs_layout::{
+    colors::BLACK,
+    BoxConstraints,
+    Color,
+    Layout,
+    LayoutBox,
+    LayoutTree,
+};
+use xs_math::Vector2;
 use xs_renderer_core::Renderer;
 
 use crate::mesh::Mesh;
-use crate::shader::{ShaderGlsl, ShaderGlslFormat};
+use crate::shader::{
+    ShaderGlsl,
+    ShaderGlslFormat::{Float1, Float2, Float4, Int1, Int2},
+};
 
 const VERTEX_SHADER: &str = include_str!("glsl/default.vert");
 const FRAGMENT_SHADER: &str = include_str!("glsl/default.frag");
@@ -14,46 +30,52 @@ const FRAGMENT_SHADER: &str = include_str!("glsl/default.frag");
 pub struct RendererOpenGl {
     width: i32,
     height: i32,
-    shaders: HashMap<String, ShaderGlsl>
+    shaders: HashMap<String, ShaderGlsl>,
 }
 
 impl RendererOpenGl {
     pub fn new(width: i32, height: i32) -> Self {
         let shaders = HashMap::new();
-        Self { width, height, shaders }
+        Self {
+            width,
+            height,
+            shaders,
+        }
     }
 }
 
 impl Renderer for RendererOpenGl {
-    fn init(&mut self, _egl_get_proc_address: unsafe extern "C" fn(*const i8) -> Option<unsafe extern "C" fn()>) {
-        /*
+    fn init(
+        &mut self,
+        egl_get_proc_address: unsafe extern "C" fn(*const i8) -> Option<unsafe extern "C" fn()>,
+    ) {
+        const BACKGROUND: Color = BLACK;
         unsafe {
-            gl::load_gl_funcs(|proc| {
-                match std::ffi::CString::new(proc) {
-                    Ok(name) => egl_get_proc_address(name.as_ptr() as _),
-                    _ => None
-                }
+            load_gl_funcs(|proc| match std::ffi::CString::new(proc) {
+                Ok(name) => egl_get_proc_address(name.as_ptr() as _),
+                _ => None,
             });
-        }
-        */
-        let color = Color::black();
-        unsafe {
+            let mut uniforms = vec![
+                ("u_viewport".to_string(), (Int2, 1)),
+                ("u_color".to_string(), (Float4, 1)),
+                ("u_rect_min".to_string(), (Float2, 1)),
+                ("u_rect_max".to_string(), (Float2, 1)),
+            ];
+            for index in 0..4 {
+                let prefix = format!("u_borders[{}]", index);
+                uniforms.push((format!("{}.enabled", prefix), (Int1, 1 as i32)));
+                uniforms.push((format!("{}.width", prefix), (Float1, 1 as i32)));
+                uniforms.push((format!("{}.color", prefix), (Float4, 1 as i32)));
+            }
             let default_shader = ShaderGlsl::new(
                 VERTEX_SHADER,
                 FRAGMENT_SHADER,
-                vec![
-                    ("u_viewport", (ShaderGlslFormat::Float2, 1)),
-                    ("u_color", (ShaderGlslFormat::Float4, 1)),
-                    ("u_rect_min", (ShaderGlslFormat::Float2, 1)),
-                    ("u_rect_max", (ShaderGlslFormat::Float2, 1))
-                ],
-                vec![
-                    ("a_position", (ShaderGlslFormat::Float2, 1))
-                ]
+                uniforms,
+                vec![("a_position".to_string(), (Float2, 1))],
             );
             self.shaders.insert("default".into(), default_shader);
             glViewport(0, 0, self.width, self.height);
-            glClearColor(color.r, color.g, color.b, 1.0);
+            glClearColor(BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, BACKGROUND.a);
         }
     }
 
@@ -72,28 +94,52 @@ impl Renderer for RendererOpenGl {
             let root_id = tree.insert(root_lbox);
             tree.set_root(Some(root_id));
             for (_, child, offset) in tree.iter() {
-                let min = offset + Vector2::new(child.bounds.x, child.bounds.y) + child.margin.min();
-                let max = min + Vector2::new(child.bounds.width, child.bounds.height) - child.margin.max();
+                let min =
+                    offset + Vector2::new(child.bounds.x, child.bounds.y) + child.margin.min();
+                let max = min + Vector2::new(child.bounds.width, child.bounds.height)
+                    - child.margin.max();
                 if let Some(material) = &child.material {
-                    let vertices = [
-                        Vector3::new(min.x, min.y, 0.0),
-                        Vector3::new(min.x, max.y, 0.0),
-                        Vector3::new(max.x, min.y, 0.0),
-                        Vector3::new(min.x, max.y, 0.0),
-                        Vector3::new(max.x, min.y, 0.0),
-                        Vector3::new(max.x, max.y, 0.0),
+                    let vertices = &[
+                        min.x, min.y, 0.0, min.x, max.y, 0.0, max.x, min.y, 0.0, min.x, max.y, 0.0,
+                        max.x, min.y, 0.0, max.x, max.y, 0.0,
                     ];
-                    let mut mesh = Mesh::new(&vertices);
+                    let mut mesh = Mesh::new(vertices);
+                    mesh.begin();
                     let color = material.fill;
-                    mesh.draw(
-                        shader,
-                        vec![
-                            ("u_viewport", [self.width, self.height].as_ptr() as _),
-                            ("u_color", color.to_array().as_ptr() as _),
-                            ("u_rect_min", [min.x, min.y].as_ptr() as _),
-                            ("u_rect_max", [max.x, max.y].as_ptr() as _)
-                        ]
-                    );
+                    shader.use_program();
+                    shader.set_uniform_2f("u_viewport", self.width as f32, self.height as f32);
+                    shader.set_uniform_4f("u_color", color.r, color.g, color.b, color.a);
+                    shader.set_uniform_2f("u_rect_min", min.x, min.y);
+                    shader.set_uniform_2f("u_rect_max", max.x, max.y);
+                    for index in 0..4 {
+                        let prefix = format!("u_borders[{}]", index);
+                        let border = match index {
+                            0 => material.borders.top,
+                            1 => material.borders.bottom,
+                            2 => material.borders.left,
+                            3 => material.borders.right,
+                            _ => None,
+                        };
+                        if let Some(border) = border {
+                            let name = format!("{}.enabled", prefix);
+                            shader.set_uniform_1i(&name, 1);
+                            let name = format!("{}.width", prefix);
+                            shader.set_uniform_1f(&name, border.width);
+                            let name = format!("{}.color", prefix);
+                            shader.set_uniform_4f(
+                                &name,
+                                border.color.r,
+                                border.color.g,
+                                border.color.b,
+                                border.color.a,
+                            );
+                        } else {
+                            let name = format!("{}.enabled", prefix);
+                            shader.set_uniform_1i(&name, 0);
+                        }
+                    }
+                    shader.apply_attributes();
+                    mesh.end();
                 }
             }
         }

@@ -1,8 +1,7 @@
 #![allow(non_camel_case_types, dead_code)]
 
 use xs_platform_linux::module::Module;
-
-use super::libwayland_client::wl_surface;
+use xs_backend_wayland_client::wl_surface;
 
 #[repr(C)]
 #[derive(Copy, Clone)]

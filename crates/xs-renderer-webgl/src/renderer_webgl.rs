@@ -1,4 +1,5 @@
-use xs_layout::{BoxConstraints, Color, Layout, LayoutTree};
+use xs_layout::colors::BLACK;
+use xs_layout::{BoxConstraints, Layout, LayoutTree};
 use xs_math::{Rectangle, Vector2};
 use xs_renderer_core::Renderer;
 
@@ -25,7 +26,7 @@ impl Renderer for RendererWebGl {
     }
 
     fn draw_frame(&mut self, widget_tree: Box<dyn Layout>) {
-        webgl::clear(Color::black());
+        webgl::clear(BLACK);
 
         let mut tree = LayoutTree::new();
         let (width, height) = webgl::screen_size();

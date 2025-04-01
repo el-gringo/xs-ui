@@ -1,5 +1,4 @@
 use crate::Vector3;
-//use bytemuck::{Pod, Zeroable};
 use std::default::Default;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
@@ -13,19 +12,13 @@ macro_rules! vector2 {
 }
 
 /// A 2-dimensional vector.
-#[repr(C)]
-#[derive(PartialOrd, Copy, Clone)]
+#[derive(PartialOrd, Copy, Clone, Debug)]
 pub struct Vector2 {
     /// The x component of the vector.
     pub x: f32,
     /// The y component of the vector.
     pub y: f32,
 }
-
-/*
-unsafe impl Pod for Vector2 {}
-unsafe impl Zeroable for Vector2 {}
-*/
 
 impl Vector2 {
     /// Construct a new vector using the provided components.

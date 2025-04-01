@@ -1,7 +1,9 @@
 use std::{collections::HashMap, ffi::CString};
 
 use xs_gl_sys::{
-    create_shader_program, glEnableVertexAttribArray, glGetAttribLocation, glGetUniformLocation, glUniform1fv, glUniform1iv, glUniform2fv, glUniform2iv, glUniform3fv, glUniform3iv, glUniform4fv, glUniform4iv, glUseProgram, glVertexAttribPointer, GLint, GLsizei, GLuint, GL_FALSE, GL_FLOAT
+    create_shader_program, glEnableVertexAttribArray, glGetAttribLocation, glGetUniformLocation,
+    glUniform1f, glUniform1i, glUniform2f, glUniform4f, glUseProgram, glVertexAttribPointer, GLint,
+    GLsizei, GLuint, GL_FALSE, GL_FLOAT,
 };
 
 #[allow(dead_code)]
@@ -27,6 +29,7 @@ pub enum ShaderGlslFormat {
     Mat4,
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct ShaderGlslUniform {
     pub location: GLint,
@@ -48,33 +51,32 @@ impl ShaderGlsl {
     pub fn new(
         vertex_source: &str,
         fragment_source: &str,
-        uniform_descriptions: Vec<(&str, (ShaderGlslFormat, i32))>,
-        attribute_descriptions: Vec<(&str, (ShaderGlslFormat, i32))>,
+        uniform_descriptions: Vec<(String, (ShaderGlslFormat, i32))>,
+        attribute_descriptions: Vec<(String, (ShaderGlslFormat, i32))>,
     ) -> ShaderGlsl {
         let program = create_shader_program(vertex_source, fragment_source);
         let uniforms = unsafe {
             glUseProgram(program);
             let mut uniforms = HashMap::new();
             for (name, (format, count)) in uniform_descriptions {
-                let cname = CString::new(name).unwrap_or_else(|e| panic!("{}", e));
+                let cname = CString::new(name.clone()).unwrap_or_else(|e| panic!("{}", e));
                 let location = glGetUniformLocation(program, cname.as_ptr() as *const _);
                 let uniform = ShaderGlslUniform {
                     location,
                     format,
                     count,
                 };
-                uniforms.insert(name.to_string(), uniform);
+                uniforms.insert(name, uniform);
             }
             uniforms
         };
         let attributes = unsafe {
-            glUseProgram(program);
             let mut attributes = HashMap::new();
             for (name, (_format, _count)) in attribute_descriptions {
-                let cname = CString::new(name).unwrap_or_else(|e| panic!("{}", e));
+                let cname = CString::new(name.clone()).unwrap_or_else(|e| panic!("{}", e));
                 let location = glGetAttribLocation(program, cname.as_ptr() as *const _);
-                let uniform = ShaderGlslAttribute { location };
-                attributes.insert(name.to_string(), uniform);
+                let attribute = ShaderGlslAttribute { location };
+                attributes.insert(name.to_string(), attribute);
             }
             attributes
         };
@@ -85,45 +87,97 @@ impl ShaderGlsl {
         }
     }
 
-    pub fn set_uniform_value(&mut self, name: &str, value: *const u8) {
-        if let Some(uniform) = self.uniforms.get(name) {
+    /*
+    pub fn paint(&mut self, uniform_values: Vec<(String, *const u8)>) {
+        self.use_program();
+        self.apply_attributes();
+        self.apply_uniforms(uniform_values);
+    }
+
+    pub fn set_uniform_value(&mut self, name: String, value: *const u8) {
+        if let Some(uniform) = self.uniforms.get(&name) {
             unsafe {
                 match uniform.format {
-                    ShaderGlslFormat::Float1 => {
-                        glUniform1fv(uniform.location, uniform.count, value as _);
-                    }
-                    ShaderGlslFormat::Float2 => {
-                        glUniform2fv(uniform.location, uniform.count, value as _);
-                    }
-                    ShaderGlslFormat::Float3 => {
-                        glUniform3fv(uniform.location, uniform.count, value as _);
-                    }
-                    ShaderGlslFormat::Float4 => {
-                        glUniform4fv(uniform.location, uniform.count, value as _);
-                    }
-                    ShaderGlslFormat::Int1 => {
-                        glUniform1iv(uniform.location, uniform.count, value as _);
-                    }
-                    ShaderGlslFormat::Int2 => {
-                        glUniform2iv(uniform.location, uniform.count, value as _);
-                    }
-                    ShaderGlslFormat::Int3 => {
-                        glUniform3iv(uniform.location, uniform.count, value as _);
-                    }
-                    ShaderGlslFormat::Int4 => {
-                        glUniform4iv(uniform.location, uniform.count, value as _);
-                    }
-                    ShaderGlslFormat::Mat4 => {}
+                    Float1  => glUniform1fv(uniform.location, uniform.count, value as *const f32),
+                    Float2  => glUniform2fv(uniform.location, uniform.count, value as *const f32),
+                    Float3  => glUniform3fv(uniform.location, uniform.count, value as *const f32),
+                    Float4  => glUniform4fv(uniform.location, uniform.count, value as *const f32),
+                    Int1    => glUniform1iv(uniform.location, uniform.count, value as *const i32),
+                    Int2    => glUniform2iv(uniform.location, uniform.count, value as *const i32),
+                    Int3    => glUniform3iv(uniform.location, uniform.count, value as *const i32),
+                    Int4    => glUniform4iv(uniform.location, uniform.count, value as *const i32),
+                    Mat4    => {}
                 }
             }
         }
     }
 
-    pub fn apply_uniforms(&mut self, uniform_values: Vec<(&str, *const u8)>) {
+    pub fn apply_uniforms(&mut self, uniform_values: Vec<(String, *const u8)>) {
         for (name, value) in uniform_values {
             self.set_uniform_value(name, value);
         }
     }
+    */
+
+    pub fn set_uniform_1f(&mut self, name: &str, v0: f32) {
+        if let Some(uniform) = self.uniforms.get(name) {
+            unsafe {
+                glUniform1f(uniform.location, v0);
+            }
+        }
+    }
+
+    pub fn set_uniform_2f(&mut self, name: &str, v0: f32, v1: f32) {
+        if let Some(uniform) = self.uniforms.get(name) {
+            unsafe {
+                glUniform2f(uniform.location, v0, v1);
+            }
+        }
+    }
+
+    /*
+    pub fn set_uniform_3f(&mut self, name: &str, v0: f32, v1: f32, v2: f32) {
+        if let Some(uniform) = self.uniforms.get(name) {
+            unsafe { glUniform3f(uniform.location, v0, v1, v2); }
+        }
+    }
+    */
+
+    pub fn set_uniform_4f(&mut self, name: &str, v0: f32, v1: f32, v2: f32, v3: f32) {
+        if let Some(uniform) = self.uniforms.get(name) {
+            unsafe {
+                glUniform4f(uniform.location, v0, v1, v2, v3);
+            }
+        }
+    }
+
+    pub fn set_uniform_1i(&mut self, name: &str, v0: i32) {
+        if let Some(uniform) = self.uniforms.get(name) {
+            unsafe {
+                glUniform1i(uniform.location, v0);
+            }
+        }
+    }
+
+    /*
+    pub fn set_uniform_2i(&mut self, name: &str, v0: i32, v1: i32) {
+        if let Some(uniform) = self.uniforms.get(name) {
+            unsafe { glUniform2i(uniform.location, v0, v1); }
+        }
+    }
+
+    pub fn set_uniform_3i(&mut self, name: &str, v0: i32, v1: i32, v2: i32) {
+        if let Some(uniform) = self.uniforms.get(name) {
+            unsafe { glUniform3i(uniform.location, v0, v1, v2); }
+        }
+    }
+
+    pub fn set_uniform_4i(&mut self, name: &str, v0: i32, v1: i32, v2: i32, v3: i32) {
+        if let Some(uniform) = self.uniforms.get(name) {
+            unsafe { glUniform4i(uniform.location, v0, v1, v2, v3); }
+        }
+    }
+    */
 
     pub fn apply_attributes(&mut self) {
         for (_name, attribute) in self.attributes.iter() {

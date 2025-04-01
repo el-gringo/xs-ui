@@ -1,27 +1,17 @@
 use xs_platform_event::EventHandler;
 
-use crate::{
-    extensions::{
-        xdg_shell,
-        viewporter
-    },
-    libwayland_client::{
-        wl_compositor,
-        wl_keyboard,
-        wl_pointer,
-        wl_seat,
-        wl_subcompositor,
-        wl_surface,
-        LibWaylandClient
-    },
-    libwayland_egl::{wl_egl_window, LibWaylandEgl},
-    libxkbcommon::{
-        //xkb_context,
-        xkb_keymap,
-        //xkb_state,
-        //LibXkbCommon
-    },
+use xs_backend_wayland_client::{
+    wl_compositor,
+    wl_keyboard,
+    wl_pointer,
+    wl_seat,
+    wl_subcompositor,
+    wl_surface,
+    LibWaylandClient
 };
+use xs_backend_wayland_extensions::{xdg_shell, viewporter};
+use xs_backend_wayland_egl::{wl_egl_window, LibWaylandEgl};
+use xs_backend_wayland_xkb::xkb_keymap;
 
 /// A thing to pass around within *void pointer of wayland's event handler
 #[allow(dead_code)]

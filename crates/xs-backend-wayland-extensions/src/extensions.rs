@@ -1,8 +1,5 @@
 #![allow(unused_variables, dead_code, non_upper_case_globals, static_mut_refs)]
 
-pub mod viewporter;
-pub mod xdg_shell;
-
 #[macro_export]
 macro_rules! count {
     () => (0usize);
@@ -35,7 +32,7 @@ macro_rules! wayland_interface {
         mod $name {
             #[allow(unused)]
             use super::*;
-            use crate::libwayland_client::{wl_interface, wl_message};
+            use xs_backend_wayland_client::{wl_interface, wl_message};
 
             $(
                 mod $method_name {

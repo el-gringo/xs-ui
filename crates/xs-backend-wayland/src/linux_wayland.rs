@@ -5,11 +5,9 @@ use std::ffi::c_void;
 use xs_layout::Layout;
 use xs_platform_event::MouseButton;
 use xs_renderer_core::Renderer;
-
 use xs_egl_sys::{LibEgl, create_egl_context};
-
-use crate::extensions;
-use crate::libwayland_client::{
+use xs_backend_wayland_extensions::{xdg_shell, viewporter};
+use xs_backend_wayland_client::{
     WL_COMPOSITOR_CREATE_SURFACE,
     WL_SEAT_GET_KEYBOARD,
     WL_SEAT_GET_POINTER,
@@ -34,8 +32,9 @@ use crate::libwayland_client::{
     wl_request_constructor,
     LibWaylandClient
 };
-use crate::libwayland_egl::wl_egl_window;
-use crate::libwayland_egl::LibWaylandEgl;
+
+use xs_backend_wayland_egl::{wl_egl_window, LibWaylandEgl};
+
 use crate::payload::WaylandPayload;
 use crate::config::ConfigWayland;
 
@@ -251,7 +250,7 @@ unsafe extern "C" fn registry_add_object(
             display.xdg_wm_base = display.client.wl_registry_bind(
                 registry,
                 name,
-                &extensions::xdg_shell::xdg_wm_base_interface,
+                &xdg_shell::xdg_wm_base_interface,
                 1,
             ) as _;
         }
@@ -259,7 +258,7 @@ unsafe extern "C" fn registry_add_object(
             display.viewporter = display.client.wl_registry_bind(
                 registry,
                 name,
-                &extensions::viewporter::wp_viewporter_interface,
+                &viewporter::wp_viewporter_interface,
                 1,
             ) as _;
         }
@@ -291,7 +290,7 @@ unsafe extern "C" fn registry_remove_object(
 
 unsafe extern "C" fn xdg_surface_handle_configure(
     data: *mut std::ffi::c_void,
-    xdg_surface: *mut extensions::xdg_shell::xdg_surface,
+    xdg_surface: *mut xdg_shell::xdg_surface,
     serial: u32,
 ) {
     assert!(!data.is_null());
@@ -300,7 +299,7 @@ unsafe extern "C" fn xdg_surface_handle_configure(
     wl_request!(
         payload.client,
         xdg_surface,
-        extensions::xdg_shell::xdg_surface::ack_configure,
+        xdg_shell::xdg_surface::ack_configure,
         serial
     );
     wl_request!(payload.client, payload.surface, WL_SURFACE_COMMIT)
@@ -308,7 +307,7 @@ unsafe extern "C" fn xdg_surface_handle_configure(
 
 unsafe extern "C" fn xdg_toplevel_handle_close(
     data: *mut std::ffi::c_void,
-    _xdg_toplevel: *mut extensions::xdg_shell::xdg_toplevel,
+    _xdg_toplevel: *mut xdg_shell::xdg_toplevel,
 ) {
     assert!(!data.is_null());
     let payload: &mut WaylandPayload = &mut *(data as *mut _);
@@ -317,7 +316,7 @@ unsafe extern "C" fn xdg_toplevel_handle_close(
 
 unsafe extern "C" fn xdg_toplevel_handle_configure(
     data: *mut std::ffi::c_void,
-    _toplevel: *mut extensions::xdg_shell::xdg_toplevel,
+    _toplevel: *mut xdg_shell::xdg_toplevel,
     width: i32,
     height: i32,
     _states: *mut wl_array,
@@ -334,7 +333,7 @@ unsafe extern "C" fn xdg_toplevel_handle_configure(
 
 unsafe extern "C" fn xdg_wm_base_handle_ping(
     data: *mut std::ffi::c_void,
-    toplevel: *mut extensions::xdg_shell::xdg_wm_base,
+    toplevel: *mut xdg_shell::xdg_wm_base,
     serial: u32,
 ) -> () {
     assert!(!data.is_null());
@@ -343,7 +342,7 @@ unsafe extern "C" fn xdg_wm_base_handle_ping(
     wl_request!(
         payload.client,
         toplevel,
-        extensions::xdg_shell::xdg_wm_base::pong,
+        xdg_shell::xdg_wm_base::pong,
         serial
     );
 }
@@ -390,7 +389,7 @@ where
             //assert!(display.keymap.is_null() == false);
             //assert!(display.xkb_state.is_null() == false);
 
-            let xdg_wm_base_listener = extensions::xdg_shell::xdg_wm_base_listener {
+            let xdg_wm_base_listener = xdg_shell::xdg_wm_base_listener {
                 ping: Some(xdg_wm_base_handle_ping),
             };
 
@@ -408,16 +407,16 @@ where
             );
             assert!(display.surface.is_null() == false);
 
-            let xdg_surface: *mut extensions::xdg_shell::xdg_surface = wl_request_constructor!(
+            let xdg_surface: *mut xdg_shell::xdg_surface = wl_request_constructor!(
                 display.client,
                 display.xdg_wm_base,
-                extensions::xdg_shell::xdg_wm_base::get_xdg_surface,
-                &extensions::xdg_shell::xdg_surface_interface,
+                xdg_shell::xdg_wm_base::get_xdg_surface,
+                &xdg_shell::xdg_surface_interface,
                 display.surface
             );
             assert!(xdg_surface.is_null() == false);
 
-            let xdg_surface_listener = extensions::xdg_shell::xdg_surface_listener {
+            let xdg_surface_listener = xdg_shell::xdg_surface_listener {
                 configure: Some(xdg_surface_handle_configure),
             };
 
@@ -430,12 +429,12 @@ where
             display.xdg_toplevel = wl_request_constructor!(
                 display.client,
                 xdg_surface,
-                extensions::xdg_shell::xdg_surface::get_toplevel,
-                &extensions::xdg_shell::xdg_toplevel_interface
+                xdg_shell::xdg_surface::get_toplevel,
+                &xdg_shell::xdg_toplevel_interface
             );
             assert!(display.xdg_toplevel.is_null() == false);
 
-            let xdg_toplevel_listener = extensions::xdg_shell::xdg_toplevel_listener {
+            let xdg_toplevel_listener = xdg_shell::xdg_toplevel_listener {
                 configure: Some(xdg_toplevel_handle_configure),
                 close: Some(xdg_toplevel_handle_close),
             };
@@ -450,7 +449,7 @@ where
                 wl_request!(
                     display.client,
                     display.xdg_toplevel,
-                    extensions::xdg_shell::xdg_toplevel::set_title,
+                    xdg_shell::xdg_toplevel::set_title,
                     title.as_ptr()
                 );
             }
@@ -470,29 +469,21 @@ where
                 wl_request!(
                     display.client,
                     display.xdg_toplevel,
-                    extensions::xdg_shell::xdg_toplevel::set_fullscreen,
+                    xdg_shell::xdg_toplevel::set_fullscreen,
                     std::ptr::null_mut::<*mut wl_output>()
                 )
             }
 
             if let Some((egl_display, egl_surface)) = init_egl(&mut lib_egl, wl_display, egl_window) {
-                xs_gl_sys::load_gl_funcs(|proc| {
-                    match std::ffi::CString::new(proc) {
-                        Ok(name) => (lib_egl.eglGetProcAddress)(name.as_ptr() as _),
-                        _ => {
-                            println!("Failed to load {:?}", proc);
-                            None
-                        }
-                    }
-                });
-
                 renderer.init(lib_egl.eglGetProcAddress);
+                //for _ in 0..2 {
                 loop {
                     let widget_tree = generate_scene();
                     (display.client.wl_display_dispatch_pending)(wl_display);
                     renderer.draw_frame(widget_tree);
                     (lib_egl.eglSwapBuffers)(egl_display, egl_surface);
                 }
+                    //}
             }
         }
     }

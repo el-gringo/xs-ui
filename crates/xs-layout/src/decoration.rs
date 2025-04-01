@@ -2,7 +2,7 @@ use xs_math::Vector2;
 use crate::Color;
 
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Material {
     pub borders: Borders,
     pub fill: Color,
@@ -18,7 +18,7 @@ impl Material {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct BorderSide {
     pub color: Color,
     pub width: f32,
@@ -31,7 +31,7 @@ impl BorderSide {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq)]
+#[derive(Default, Clone, Copy, PartialEq, Debug)]
 pub struct Borders {
     pub top: Option<BorderSide>,
     pub bottom: Option<BorderSide>,

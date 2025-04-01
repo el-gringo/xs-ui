@@ -1,9 +1,7 @@
 use crate::Vector2;
 
-
 /// A 2-dimensional rectangle.
-#[repr(C)]
-#[derive(PartialEq, Copy, Clone, Default)]
+#[derive(PartialEq, Copy, Clone, Default, Debug)]
 pub struct Rectangle {
     pub x: f32,
     pub y: f32,
