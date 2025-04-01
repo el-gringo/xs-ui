@@ -131,5 +131,7 @@ pub fn translate(keysym: u32) -> KeyCode {
 
 #[allow(dead_code)]
 pub unsafe extern "C" fn keysym_to_unicode(libxkbcommon: &mut LibXkbCommon, keysym: u32) -> i32 {
-    return (libxkbcommon.xkb_keysym_to_utf32)(keysym as u32) as i32;
+    unsafe {
+        return (libxkbcommon.xkb_keysym_to_utf32)(keysym as u32) as i32;
+    }
 }

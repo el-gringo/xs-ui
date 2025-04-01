@@ -105,6 +105,8 @@ impl From<String> for Url {
 
 #[cfg(test)]
 mod tests {
+    use super::Url;
+
     #[test]
     fn it_works() {
         let url = Url::parse("https://example.org/").unwrap();

@@ -1,20 +1,22 @@
 [workspace]
 resolver = "2"
 members = [
-  "tools/cli",
-  "examples/app",
-  "examples/test"
-, "crates/xs-platform-event", "crates/xs-egl-sys", "crates/xs-gl-sys", "crates/xs-backend-wayland-extensions", "crates/xs-backend-wayland-client", "crates/xs-backend-wayland-egl", "crates/xs-backend-wayland-xkb"]
-default-members = [
-  "examples/app"
+    "tools/cli",
+    "examples/app",
+    "crates/xs-platform-event",
+    "crates/xs-egl-sys",
+    "crates/xs-gl-sys",
+    "crates/xs-backend-wayland-extensions",
+    "crates/xs-backend-wayland-client",
+    "crates/xs-backend-wayland-egl",
+    "crates/xs-backend-wayland-xkb"
 ]
+default-members = ["examples/app"]
 
 [workspace.package]
 version = "0.1.0"
-authors = [
-    "christophe.bosse@gmail.com"
-]
-edition = "2021"
+authors = ["christophe.bosse@gmail.com"]
+edition = "2024"
 
 [workspace.dependencies]
 xs-backend = { path = "crates/xs-backend" }
@@ -29,11 +31,12 @@ xs-gl-sys = { path = "crates/xs-gl-sys" }
 xs-layout = { path = "crates/xs-layout" }
 xs-http = { path = "crates/xs-http" }
 xs-math = { path = "crates/xs-math" }
-xs-platform-event = { path = "crates/xs-platform-event"}
+xs-platform-event = { path = "crates/xs-platform-event" }
 xs-platform-linux = { path = "crates/xs-platform-linux" }
 xs-renderer-core = { path = "crates/xs-renderer-core" }
 xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
 xs-renderer-webgl = { path = "crates/xs-renderer-webgl" }
+xs-tls = { path = "crates/xs-tls" }
 xs-url = { path = "crates/xs-url" }
 xs-websocket = { path = "crates/xs-websocket" }
 test_utils = { path = "tools/test_utils" }
@@ -42,7 +45,7 @@ test_utils = { path = "tools/test_utils" }
 lto = "off"
 panic = "abort"
 strip = "debuginfo"
-opt-level = 1 # mproves incremental builds
+opt-level = 1       # mproves incremental builds
 
 [profile.dev-smartv]
 inherits = "dev"

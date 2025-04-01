@@ -53,32 +53,33 @@ unsafe extern "C" fn seat_handle_capabilities(
     seat: *mut wl_seat,
     caps: wl_seat_capability,
 ) {
-    let display: &mut WaylandPayload = &mut *(data as *mut _);
+    unsafe {
+        let display: &mut WaylandPayload = &mut *(data as *mut _);
+        if caps & wl_seat_capability_WL_SEAT_CAPABILITY_POINTER != 0 {
+            // struct wl_pointer *pointer = wl_seat_get_pointer (seat);
+            let id: *mut wl_proxy = wl_request_constructor!(
+                display.client,
+                seat,
+                WL_SEAT_GET_POINTER,
+                display.client.wl_pointer_interface
+            );
+            assert!(!id.is_null());
+            // wl_pointer_add_listener (pointer, &pointer_listener, NULL);
+            (display.client.wl_proxy_add_listener)(id, &POINTER_LISTENER as *const _ as _, data);
+        }
 
-    if caps & wl_seat_capability_WL_SEAT_CAPABILITY_POINTER != 0 {
-        // struct wl_pointer *pointer = wl_seat_get_pointer (seat);
-        let id: *mut wl_proxy = wl_request_constructor!(
-            display.client,
-            seat,
-            WL_SEAT_GET_POINTER,
-            display.client.wl_pointer_interface
-        );
-        assert!(!id.is_null());
-        // wl_pointer_add_listener (pointer, &pointer_listener, NULL);
-        (display.client.wl_proxy_add_listener)(id, &POINTER_LISTENER as *const _ as _, data);
-    }
-
-    if caps & wl_seat_capability_WL_SEAT_CAPABILITY_KEYBOARD != 0 {
-        // struct wl_keyboard *keyboard = wl_seat_get_keyboard(seat);
-        let id: *mut wl_proxy = wl_request_constructor!(
-            display.client,
-            seat,
-            WL_SEAT_GET_KEYBOARD,
-            display.client.wl_keyboard_interface
-        );
-        assert!(!id.is_null());
-        // wl_keyboard_add_listener(keyboard, &keyboard_listener, NULL);
-        //(display.client.wl_proxy_add_listener)(id, &KEYBOARD_LISTENER as *const _ as _, data);
+        if caps & wl_seat_capability_WL_SEAT_CAPABILITY_KEYBOARD != 0 {
+            // struct wl_keyboard *keyboard = wl_seat_get_keyboard(seat);
+            let id: *mut wl_proxy = wl_request_constructor!(
+                display.client,
+                seat,
+                WL_SEAT_GET_KEYBOARD,
+                display.client.wl_keyboard_interface
+            );
+            assert!(!id.is_null());
+            // wl_keyboard_add_listener(keyboard, &keyboard_listener, NULL);
+            //(display.client.wl_proxy_add_listener)(id, &KEYBOARD_LISTENER as *const _ as _, data);
+        }
     }
 }
 
@@ -131,7 +132,9 @@ unsafe extern "C" fn pointer_handle_motion(
 ) {
     // From wl_fixed_to_double(), it simply divides by 256
     let (x, y) = (wl_fixed_to_double(surface_x), wl_fixed_to_double(surface_y));
-    EVENTS.push(WaylandEvent::PointerMotion(x, y));
+    unsafe {
+        EVENTS.push(WaylandEvent::PointerMotion(x, y));
+    }
 }
 unsafe extern "C" fn pointer_handle_button(
     _data: *mut ::std::os::raw::c_void,
@@ -148,7 +151,9 @@ unsafe extern "C" fn pointer_handle_button(
         274 => MouseButton::Middle,
         _ => MouseButton::Unknown,
     };
-    EVENTS.push(WaylandEvent::PointerButton(button, state == 1));
+    unsafe {
+        EVENTS.push(WaylandEvent::PointerButton(button, state == 1));
+    }
 }
 unsafe extern "C" fn pointer_handle_axis(
     _data: *mut ::std::os::raw::c_void,
@@ -162,14 +167,16 @@ unsafe extern "C" fn pointer_handle_axis(
     value /= value.abs();
 
     // https://wayland-book.com/seat/pointer.html
-    if axis == 0 {
-        // Vertical scroll
-        // Wayland defines the direction differently to miniquad so lets flip it
-        value = -value;
-        EVENTS.push(WaylandEvent::PointerAxis(0.0, value));
-    } else if axis == 1 {
-        // Horizontal scroll
-        EVENTS.push(WaylandEvent::PointerAxis(value, 0.0));
+    unsafe {
+        if axis == 0 {
+            // Vertical scroll
+            // Wayland defines the direction differently to miniquad so lets flip it
+            value = -value;
+            EVENTS.push(WaylandEvent::PointerAxis(0.0, value));
+        } else if axis == 1 {
+            // Horizontal scroll
+            EVENTS.push(WaylandEvent::PointerAxis(value, 0.0));
+        }
     }
 }
 unsafe extern "C" fn pointer_handle_frame(
@@ -226,58 +233,59 @@ unsafe extern "C" fn registry_add_object(
     interface: *const ::std::os::raw::c_char,
     version: u32,
 ) {
-    let display: &mut WaylandPayload = &mut *(data as *mut _);
+    unsafe {
+        let display: &mut WaylandPayload = &mut *(data as *mut _);
+        let interface = std::ffi::CStr::from_ptr(interface).to_str().unwrap();
+        match interface {
+            "wl_compositor" => {
+                display.compositor = display.client.wl_registry_bind(
+                    registry,
+                    name,
+                    display.client.wl_compositor_interface,
+                    1,
+                ) as _;
+            }
+            "wl_subcompositor" => {
+                display.subcompositor = display.client.wl_registry_bind(
+                    registry,
+                    name,
+                    display.client.wl_subcompositor_interface,
+                    1,
+                ) as _;
+            }
+            "xdg_wm_base" => {
+                display.xdg_wm_base = display.client.wl_registry_bind(
+                    registry,
+                    name,
+                    &xdg_shell::xdg_wm_base_interface,
+                    1,
+                ) as _;
+            }
+            "wp_viewporter" => {
+                display.viewporter = display.client.wl_registry_bind(
+                    registry,
+                    name,
+                    &viewporter::wp_viewporter_interface,
+                    1,
+                ) as _;
+            }
+            "wl_seat" => {
+                let seat_version = 4.min(version);
+                display.seat = display.client.wl_registry_bind(
+                    registry,
+                    name,
+                    display.client.wl_seat_interface,
+                    seat_version,
+                ) as _;
+                (display.client.wl_proxy_add_listener)(
+                    display.seat as _,
+                    &SEAT_LISTENER as *const _ as _,
+                    data,
+                );
+            }
 
-    let interface = std::ffi::CStr::from_ptr(interface).to_str().unwrap();
-    match interface {
-        "wl_compositor" => {
-            display.compositor = display.client.wl_registry_bind(
-                registry,
-                name,
-                display.client.wl_compositor_interface,
-                1,
-            ) as _;
+            _ => {}
         }
-        "wl_subcompositor" => {
-            display.subcompositor = display.client.wl_registry_bind(
-                registry,
-                name,
-                display.client.wl_subcompositor_interface,
-                1,
-            ) as _;
-        }
-        "xdg_wm_base" => {
-            display.xdg_wm_base = display.client.wl_registry_bind(
-                registry,
-                name,
-                &xdg_shell::xdg_wm_base_interface,
-                1,
-            ) as _;
-        }
-        "wp_viewporter" => {
-            display.viewporter = display.client.wl_registry_bind(
-                registry,
-                name,
-                &viewporter::wp_viewporter_interface,
-                1,
-            ) as _;
-        }
-        "wl_seat" => {
-            let seat_version = 4.min(version);
-            display.seat = display.client.wl_registry_bind(
-                registry,
-                name,
-                display.client.wl_seat_interface,
-                seat_version,
-            ) as _;
-            (display.client.wl_proxy_add_listener)(
-                display.seat as _,
-                &SEAT_LISTENER as *const _ as _,
-                data,
-            );
-        }
-
-        _ => {}
     }
 }
 
@@ -293,25 +301,28 @@ unsafe extern "C" fn xdg_surface_handle_configure(
     xdg_surface: *mut xdg_shell::xdg_surface,
     serial: u32,
 ) {
-    assert!(!data.is_null());
-    let payload: &mut WaylandPayload = &mut *(data as *mut _);
-
-    wl_request!(
-        payload.client,
-        xdg_surface,
-        xdg_shell::xdg_surface::ack_configure,
-        serial
-    );
-    wl_request!(payload.client, payload.surface, WL_SURFACE_COMMIT)
+    unsafe {
+        assert!(!data.is_null());
+        let payload: &mut WaylandPayload = &mut *(data as *mut _);
+        wl_request!(
+            payload.client,
+            xdg_surface,
+            xdg_shell::xdg_surface::ack_configure,
+            serial
+        );
+        wl_request!(payload.client, payload.surface, WL_SURFACE_COMMIT)
+    }
 }
 
 unsafe extern "C" fn xdg_toplevel_handle_close(
     data: *mut std::ffi::c_void,
     _xdg_toplevel: *mut xdg_shell::xdg_toplevel,
 ) {
-    assert!(!data.is_null());
-    let payload: &mut WaylandPayload = &mut *(data as *mut _);
-    payload.closed = true;
+    unsafe {
+        assert!(!data.is_null());
+        let payload: &mut WaylandPayload = &mut *(data as *mut _);
+        payload.closed = true;
+    }
 }
 
 unsafe extern "C" fn xdg_toplevel_handle_configure(
@@ -321,12 +332,14 @@ unsafe extern "C" fn xdg_toplevel_handle_configure(
     height: i32,
     _states: *mut wl_array,
 ) -> () {
-    assert!(!data.is_null());
-    let payload: &mut WaylandPayload = &mut *(data as *mut _);
-    if width != 0 && height != 0 {
-        (payload.egl.wl_egl_window_resize)(payload.egl_window, width, height, 0, 0);
-        if let Some(ref mut event_handler) = payload.event_handler {
-            event_handler.resize_event(width as _, height as _);
+    unsafe {
+        assert!(!data.is_null());
+        let payload: &mut WaylandPayload = &mut *(data as *mut _);
+        if width != 0 && height != 0 {
+            (payload.egl.wl_egl_window_resize)(payload.egl_window, width, height, 0, 0);
+            if let Some(ref mut event_handler) = payload.event_handler {
+                event_handler.resize_event(width as _, height as _);
+            }
         }
     }
 }
@@ -336,15 +349,17 @@ unsafe extern "C" fn xdg_wm_base_handle_ping(
     toplevel: *mut xdg_shell::xdg_wm_base,
     serial: u32,
 ) -> () {
-    assert!(!data.is_null());
-    let payload: &mut WaylandPayload = &mut *(data as *mut _);
+    unsafe {
+        assert!(!data.is_null());
+        let payload: &mut WaylandPayload = &mut *(data as *mut _);
 
-    wl_request!(
-        payload.client,
-        toplevel,
-        xdg_shell::xdg_wm_base::pong,
-        serial
-    );
+        wl_request!(
+            payload.client,
+            toplevel,
+            xdg_shell::xdg_wm_base::pong,
+            serial
+        );
+    }
 }
 
 fn try_load_libs() -> Option<(LibEgl, LibWaylandEgl, LibWaylandClient)> {
