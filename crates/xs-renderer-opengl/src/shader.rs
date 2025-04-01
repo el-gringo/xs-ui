@@ -1,9 +1,12 @@
 use std::{collections::HashMap, ffi::CString};
 
 use xs_gl_sys::{
-    create_shader_program, glEnableVertexAttribArray, glGetAttribLocation, glGetUniformLocation,
-    glUniform1f, glUniform1i, glUniform2f, glUniform4f, glUseProgram, glVertexAttribPointer, GLint,
-    GLsizei, GLuint, GL_FALSE, GL_FLOAT,
+    glAttachShader, glCompileShader, glCreateProgram, glCreateShader, glEnableVertexAttribArray,
+    glGetAttribLocation, glGetProgramInfoLog, glGetProgramiv, glGetShaderInfoLog, glGetShaderiv,
+    glGetUniformLocation, glLinkProgram, glShaderSource, glUniform1f, glUniform1i, glUniform2f,
+    glUniform4f, glUseProgram, glVertexAttribPointer, GLenum, GLint, GLsizei, GLuint,
+    GL_COMPILE_STATUS, GL_FALSE, GL_FLOAT, GL_FRAGMENT_SHADER, GL_INFO_LOG_LENGTH, GL_LINK_STATUS,
+    GL_VERTEX_SHADER,
 };
 
 #[allow(dead_code)]
@@ -41,6 +44,61 @@ pub struct ShaderGlslAttribute {
     pub location: GLint,
 }
 
+pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
+    unsafe {
+        let program = glCreateProgram();
+        glAttachShader(program, vertex_shader);
+        glAttachShader(program, fragment_shader);
+        glLinkProgram(program);
+
+        let mut link_status = 0;
+        glGetProgramiv(program, GL_LINK_STATUS, &mut link_status as *mut _);
+        if link_status == 0 {
+            let mut max_length: i32 = 0;
+            glGetProgramiv(program, GL_INFO_LOG_LENGTH, &mut max_length as *mut _);
+            let mut error_message = vec![0u8; max_length as usize + 1];
+            glGetProgramInfoLog(
+                program,
+                max_length,
+                &mut max_length as *mut _,
+                error_message.as_mut_ptr() as *mut _,
+            );
+            assert!(max_length >= 1);
+            let error_message =
+                std::string::String::from_utf8_lossy(&error_message[0..max_length as usize - 1]);
+            println!("failed to link program: {:?}", error_message);
+        }
+        program
+    }
+}
+
+pub fn compile_shader(shader_type: GLenum, source: &str) -> GLuint {
+    unsafe {
+        let shader = glCreateShader(shader_type);
+        if let Ok(csource) = CString::new(source) {
+            glShaderSource(shader, 1, [csource].as_ptr() as *const _, std::ptr::null());
+            glCompileShader(shader);
+            let mut compile_status = 0;
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &mut compile_status as *mut _);
+            if compile_status == 0 {
+                let mut max_length: i32 = 0;
+                glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &mut max_length as *mut _);
+                let mut error_message = vec![0u8; max_length as usize + 1];
+                glGetShaderInfoLog(
+                    shader,
+                    max_length,
+                    &mut max_length as *mut _,
+                    error_message.as_mut_ptr() as *mut _,
+                );
+                println!("failed to compile shader: {:?}", error_message);
+            }
+            return shader;
+        }
+        println!("compile_shader failed");
+        0
+    }
+}
+
 pub struct ShaderGlsl {
     pub program: GLuint,
     pub uniforms: HashMap<String, ShaderGlslUniform>,
@@ -54,7 +112,9 @@ impl ShaderGlsl {
         uniform_descriptions: Vec<(String, (ShaderGlslFormat, i32))>,
         attribute_descriptions: Vec<(String, (ShaderGlslFormat, i32))>,
     ) -> ShaderGlsl {
-        let program = create_shader_program(vertex_source, fragment_source);
+        let vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_source);
+        let fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_source);
+        let program = link_program(vertex_shader, fragment_shader);
         let uniforms = unsafe {
             glUseProgram(program);
             let mut uniforms = HashMap::new();
