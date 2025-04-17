@@ -13,7 +13,6 @@ fn cast_slice(p: &[Vector3]) -> &[f32] {
     }
 }
 
-
 unsafe extern "C" {
     pub fn canvas_width() -> i32;
     pub fn canvas_height() -> i32;
