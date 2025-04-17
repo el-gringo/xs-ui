@@ -1,8 +1,31 @@
 use xs_layout::Layout;
+use xs_platform_event::EventHandler;
+use xs_renderer_core::Renderer;
 use xs_renderer_opengl::RendererOpenGl;
 
 use crate::{config::ConfigWayland, linux_wayland::window};
 
+struct Stage {
+    renderer: Box<dyn Renderer>
+}
+
+impl Stage {
+    pub fn new(renderer: Box<dyn Renderer>) -> Self {
+        Self {
+            renderer
+        }
+    }
+}
+
+impl EventHandler for Stage {
+    fn update(&mut self) {
+
+    }
+
+    fn draw(&mut self) {
+        //self.renderer.draw_frame(widget_tree);
+    }
+}
 
 
 pub struct BackendWayland {

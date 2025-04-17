@@ -14,10 +14,9 @@ fn cast_slice(p: &[Vector3]) -> &[f32] {
 }
 
 
-extern "C" {
+unsafe extern "C" {
     pub fn canvas_width() -> i32;
     pub fn canvas_height() -> i32;
-    //pub fn dpi_scale() -> f32;
 }
 
 pub fn screen_size() -> (i32, i32) {
