@@ -2,6 +2,8 @@ on: [push]
 jobs:
   build:
     runs-on: docker
+    container:
+          image: node:lts-alpine
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
