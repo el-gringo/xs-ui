@@ -8,9 +8,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Restore cache
-        id: restore-cache
-        uses: https://code.forgejo.org/actions/cache/restore@v4
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+
+      - name: Cache
+        id: cache
+        uses: https://code.forgejo.org/actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -23,41 +27,18 @@ jobs:
 
       - name: Install Rust
         id: rust-toolchain
-        if: steps.restore-cache.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: https://code.forgejo.org/msrd0/rust-toolchain@stable
         with:
           toolchain: nightly
           targets: wasm32-unknown-unknown
           components: clippy, rustfmt
 
-      - name: Save cache
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: https://code.forgejo.org/actions/cache/save@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            ./target/
-            ./dist/
-          key: "${{ steps.restore-cache.outputs.cache-primary-key }}"
-
       - name: Build
         run:
           cargo build --package app --target wasm32-unknown-unknown --release || exit 1
           cp -v target/wasm32-unknown-unknown/release/app.wasm dist/
           cp -v tools/cli/src/assets/* dist/
-
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
-
-      - uses: actions/cache@v4
-        id: npm-cache
-        with:
-          path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-npm
 
       - name: Install vercel
         run: npm -g install vercel
