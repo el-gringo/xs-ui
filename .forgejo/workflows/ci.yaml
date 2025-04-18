@@ -1,0 +1,67 @@
+on: [push]
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Restore cache
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            ./target/
+            ./dist/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust
+        id: rust-toolchain
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: https://code.forgejo.org/msrd0/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+
+      - name: Save cache
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            ./target/
+            ./dist/
+          key: "${{ steps.restore-cache.outputs.cache-primary-key }}"
+
+      - name: Build
+        run:
+          cargo build --package app --target wasm32-unknown-unknown --release || exit 1
+          cp -v target/wasm32-unknown-unknown/release/app.wasm dist/
+          cp -v tools/cli/src/assets/* dist/
+
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+
+      - uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-npm
+
+      - name: Install vercel
+        run: npm -g install vercel
+
+      - if: github.ref != 'refs/heads/main'
+        run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}
+
+      - if: github.ref == 'refs/heads/main'
+        run: vercel -y --prod --token ${{ secrets.VERCEL_TOKEN }}
