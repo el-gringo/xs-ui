@@ -17,13 +17,16 @@ jobs:
         uses: https://code.forgejo.org/actions/cache@v4
         with:
           path: |
+            ${{ steps.npm-cache-dir.outputs.dir }}
             ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             ./target/
             ./dist/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-
 
       - name: Install Rust
         id: rust-toolchain
@@ -37,7 +40,10 @@ jobs:
       - name: Build
         run:
           cargo build --package app --target wasm32-unknown-unknown --release || exit 1
-          cp -v target/wasm32-unknown-unknown/release/app.wasm dist/
+
+      - name: Create dist
+        run:
+          cp -v target/wasm32-unknown-unknown/release/app.wasm dist/ &&
           cp -v tools/cli/src/assets/* dist/
 
       - name: Install vercel
