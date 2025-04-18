@@ -12,6 +12,10 @@ jobs:
         id: npm-cache-dir
         run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
 
+      - name: Get node global dir
+        id: node-global-dir
+        run: echo "dir=$(dirname $(dirname $(which npm)))" >> ${GITHUB_OUTPUT}
+
       - name: Restore cache rust toolchain
         id: cache-rust-toolchain
         uses: https://code.forgejo.org/actions/cache/restore@v4
@@ -46,8 +50,6 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
           key: ${{ runner.os }}-rust-toolchain
-          restore-keys: |
-            ${{ runner.os }}-rust-toolchain
 
       - name: Build
         run:
@@ -65,6 +67,7 @@ jobs:
         with:
           path: |
             ${{ steps.npm-cache-dir.outputs.dir }}
+            ${{ steps.npm-global-dir.outputs.dir }}
           key: ${{ runner.os }}-npm
 
       - name: Install vercel
@@ -77,6 +80,7 @@ jobs:
         with:
           path: |
             ${{ steps.npm-cache-dir.outputs.dir }}
+            ${{ steps.npm-global-dir.outputs.dir }}
           key: ${{ runner.os }}-npm
 
       - if: github.ref != 'refs/heads/main'
