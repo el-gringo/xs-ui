@@ -8,14 +8,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
-
-      - name: Get node global dir
-        id: node-global-dir
-        run: echo "dir=$(dirname $(dirname $(which npm)))" >> ${GITHUB_OUTPUT}
-
       - name: Restore cache rust toolchain
         id: cache-rust-toolchain
         uses: https://code.forgejo.org/actions/cache/restore@v4
@@ -49,7 +41,7 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: ${{ runner.os }}-rust-toolchain
+          key: ${{ steps.cache-rust-toolchain.outputs.cache-primary-key }}
 
       - name: Build
         run:
@@ -61,27 +53,35 @@ jobs:
           cp -v target/wasm32-unknown-unknown/release/app.wasm dist/ &&
           cp -v tools/cli/src/assets/* dist/
 
-      - name: Restore cache npm
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+
+      - name: Get node global dir
+        id: node-global-dir
+        run: echo "dir=$(dirname $(dirname $(which npm)))" >> ${GITHUB_OUTPUT}
+
+      - name: Restore cache node
         id: cache-npm
         uses: https://code.forgejo.org/actions/cache/restore@v4
         with:
           path: |
             ${{ steps.npm-cache-dir.outputs.dir }}
-            ${{ steps.npm-global-dir.outputs.dir }}
-          key: ${{ runner.os }}-npm
+            ${{ steps.node-global-dir.outputs.dir }}
+          key: ${{ runner.os }}-node
 
       - name: Install vercel
         if: steps.cache-npm.outputs.cache-hit != 'true'
         run: npm -g install vercel
 
-      - name: Save cache npm
+      - name: Save cache node
         if: steps.cache-npm.outputs.cache-hit != 'true'
         uses: https://code.forgejo.org/actions/cache/save@v4
         with:
           path: |
             ${{ steps.npm-cache-dir.outputs.dir }}
-            ${{ steps.npm-global-dir.outputs.dir }}
-          key: ${{ runner.os }}-npm
+            ${{ steps.node-global-dir.outputs.dir }}
+          key: ${{ steps.cache-npm.outputs.cache-primary-key }}
 
       - if: github.ref != 'refs/heads/main'
         run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}
