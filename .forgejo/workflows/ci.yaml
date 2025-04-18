@@ -12,9 +12,9 @@ jobs:
         id: npm-cache-dir
         run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
 
-      - name: Cache
-        id: cache
-        uses: https://code.forgejo.org/actions/cache@v4
+      - name: Restore cache rust toolchain
+        id: cache-rust-toolchain
+        uses: https://code.forgejo.org/actions/cache/restore@v4
         with:
           path: |
             ${{ steps.npm-cache-dir.outputs.dir }}
@@ -24,18 +24,30 @@ jobs:
             ~/.cargo/git/db/
             ./target/
             ./dist/
-          key: ${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-
+          key: ${{ runner.os }}-rust-toolchain
 
       - name: Install Rust
         id: rust-toolchain
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache-rust-toolchain.outputs.cache-hit != 'true'
         uses: https://code.forgejo.org/msrd0/rust-toolchain@stable
         with:
           toolchain: nightly
           targets: wasm32-unknown-unknown
           components: clippy, rustfmt
+
+      - name: Save cache rust toolchain
+        if: steps.cache-rust-toolchain.outputs.cache-hit != 'true'
+        uses: https://code.forgejo.org/actions/cache/save@v4
+        with:
+          path: |
+            ${{ steps.npm-cache-dir.outputs.dir }}
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-rust-toolchain
+          restore-keys: |
+            ${{ runner.os }}-rust-toolchain
 
       - name: Build
         run:
@@ -47,8 +59,25 @@ jobs:
           cp -v target/wasm32-unknown-unknown/release/app.wasm dist/ &&
           cp -v tools/cli/src/assets/* dist/
 
+      - name: Restore cache npm
+        id: cache-npm
+        uses: https://code.forgejo.org/actions/cache/restore@v4
+        with:
+          path: |
+            ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-npm
+
       - name: Install vercel
+        if: steps.cache-npm.outputs.cache-hit != 'true'
         run: npm -g install vercel
+
+      - name: Save cache npm
+        if: steps.cache-npm.outputs.cache-hit != 'true'
+        uses: https://code.forgejo.org/actions/cache/save@v4
+        with:
+          path: |
+            ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-npm
 
       - if: github.ref != 'refs/heads/main'
         run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}
