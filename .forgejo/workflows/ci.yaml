@@ -8,6 +8,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Install zstd
+        run: apt update && apt install -y zstd
+
       - name: Restore cache rust toolchain
         id: cache-rust-toolchain
         uses: https://code.forgejo.org/actions/cache/restore@v4
@@ -20,9 +23,6 @@ jobs:
             ~/.cargo/git/db/
             /usr/bin/zstd
           key: ${{ runner.os }}-rust-toolchain
-
-      - name: Install zstd
-        run: apt update && apt install -y zstd
 
       - name: Install Rust
         id: rust-toolchain
