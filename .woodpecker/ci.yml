@@ -4,11 +4,11 @@ steps:
     commands:
       - ls -la ~/.cargo/ || true
       - rustup target list | grep installed | grep wasm32-unknown-unknown
-        || rustup target add wasm32-unknown-unknown
+          || rustup target add wasm32-unknown-unknown
       - cargo build
-        --package app
-        --target wasm32-unknown-unknown
-        --release
+          --package app
+          --target wasm32-unknown-unknown
+          --release
       - mkdir dist &&
       - cp -v target/wasm32-unknown-unknown/release/app.wasm dist/
       - cp -v tools/cli/src/assets/* dist/
@@ -25,3 +25,15 @@ steps:
         from_secret: VERCEL_TOKEN
     when:
       event: [tag, push]
+
+  deploy-prod:
+    image: node:20-alpine
+    commands:
+      - which vercel || npm install -g vercel
+      - vercel deploy --yes --prod --token $VERCEL_TOKEN
+    environment:
+      VERCEL_TOKEN:
+        from_secret: VERCEL_TOKEN
+    when:
+      event: [tag, push]
+      branch: main
