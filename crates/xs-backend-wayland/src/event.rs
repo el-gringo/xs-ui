@@ -2,6 +2,7 @@
 use xs_backend_wayland_client::{wl_pointer, wl_pointer_listener, wl_surface};
 use xs_platform_event::MouseButton;
 
+#[allow(dead_code)]
 pub enum WaylandEvent {
     KeyboardKey(u32, bool),
     PointerMotion(f32, f32),

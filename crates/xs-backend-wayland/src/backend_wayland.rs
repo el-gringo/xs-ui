@@ -5,10 +5,12 @@ use xs_renderer_opengl::RendererOpenGl;
 
 use crate::{config::ConfigWayland, linux_wayland::window};
 
+#[allow(dead_code)]
 struct Stage {
     renderer: Box<dyn Renderer>
 }
 
+#[allow(dead_code)]
 impl Stage {
     pub fn new(renderer: Box<dyn Renderer>) -> Self {
         Self {
