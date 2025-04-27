@@ -1,4 +1,15 @@
 steps:
+  restore-cache:
+    image: meltwater/drone-cache
+    volumes:
+      - woodpecker-cache:/woodpecker/src/cache
+    settings:
+      mount:
+        - /root/.cargo
+        - /root/.npm
+        - /usr/local/bin
+        - /usr/local/lib/node_modules
+
   build:
     image: rust:1.86.0-alpine
     commands:
@@ -13,8 +24,14 @@ steps:
       - cp -v tools/cli/src/assets/* dist/
     when:
       event: [tag, push]
-    volumes:
-      - /cache/.cargo:~/.cargo
+
+  upload-rust-toolchain:
+      image: woodpeckerci/plugin-s3
+      settings:
+        bucket: woodpecker-cache
+        source: ~/.cargo
+        target: /.cargo
+        endpoint: http://minio:9000
 
   deploy:
     image: node:20-alpine
@@ -26,6 +43,22 @@ steps:
     when:
       event: [tag, push]
     volumes:
-      - /cache/node_modules:/usr/local/lib/node_modules
-      - /cache/.npm:/root/.npm
-      - /cache/bin:/usr/local/bin
+      - /cache/node_modules:/cache/node_modules
+      - /cache/.npm:/cache/.npm
+      - /cache/bin:/cache/bin
+
+  upload-node_modules:
+    image: woodpeckerci/plugin-s3
+    settings:
+      bucket: woodpecker-cache
+      source: /usr/local/lib/node_modules
+      target: /node_modules
+      endpoint: http://minio:9000
+
+  upload-node_binaries:
+    image: woodpeckerci/plugin-s3
+    settings:
+      bucket: woodpecker-cache
+      source: /usr/local/bin
+      target: /bin
+      endpoint: http://minio:9000
