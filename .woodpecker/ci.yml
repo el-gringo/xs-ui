@@ -1,14 +1,43 @@
 steps:
-  prepare:
+  restore-cache:
+    image: meltwater/drone-cache
+    settings:
+      restore: true
+      cache_key: '{{ .Repo.Name }}_{{ arch }}_{{ os }}'
+      bucket: woodpecker-cache
+      mount:
+        - /root/.cargo
+        - /root/.npm
+        - /usr/local/bin/vercel
+        - /usr/local/lib/node_modules
+    when:
+      event: [tag, push]
+
+  prepare-rust:
     image: rust:1.86.0-alpine
     commands:
       - ls -la ~/.cargo/ || true
       - rustup target list | grep installed | grep wasm32-unknown-unknown
           || rustup target add wasm32-unknown-unknown
-    volumes:
-      - /cache/.cargo:/root/.cargo
     when:
       event: [tag, push]
+
+  prepare-node:
+    image: node:20-alpine
+    commands:
+      - which vercel || npm install -g vercel
+    when:
+      event: [tag, push]
+
+  rebuild-cache:
+      image: meltwater/drone-cache
+      settings:
+        bucket: woodpecker-cache
+        mount:
+          - /root/.cargo
+          - /root/.npm
+          - /usr/local/bin/vercel
+          - /usr/local/lib/node_modules
 
   check:
     image: rust:1.86.0-alpine
