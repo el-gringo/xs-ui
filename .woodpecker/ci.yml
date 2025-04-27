@@ -1,19 +1,27 @@
 steps:
   build:
-    image: rust
+    image: rust:1.86.0-alpine
     commands:
       - rustup target add wasm32-unknown-unknown
-      - ./build.sh release
+      - cargo build --package app --release --target wasm32-unknown-unknown
+      - mkdir dist &&
+      - cp -v target/wasm32-unknown-unknown/release/app.wasm dist/
+      - cp -v tools/cli/src/assets/* dist/
     when:
       event: [tag, push]
+    volumes:
+      - /cache/.cargo:~/.cargo
 
   deploy:
     image: node:20-alpine
     commands:
-      - npm install -g vercel
       - vercel deploy --yes --token $VERCEL_TOKEN
     environment:
       VERCEL_TOKEN:
         from_secret: VERCEL_TOKEN
     when:
       event: [tag, push]
+    volumes:
+      - /cache/node_modules:/usr/local/lib/node_modules
+      - /cache/.npm:/root/.npm
+      - /cache/bin:/usr/local/bin
