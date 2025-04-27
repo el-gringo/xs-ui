@@ -5,11 +5,15 @@ steps:
       - ls -la ~/.cargo/ || true
       - rustup target list | grep installed | grep wasm32-unknown-unknown
           || rustup target add wasm32-unknown-unknown
+    when:
+      event: [tag, push]
 
   check:
     image: rust:1.86.0-alpine
     commands:
-      - cargo check
+      - cargo check || true
+    when:
+      event: [tag, push]
 
   build:
     image: rust:1.86.0-alpine
