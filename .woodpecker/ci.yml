@@ -18,7 +18,8 @@ steps:
   deploy:
     image: node:20-alpine
     commands:
-      - which vercel || vercel deploy --yes --token $VERCEL_TOKEN
+      - which vercel || npm install -g vercel
+      - vercel deploy --yes --token $VERCEL_TOKEN
     environment:
       VERCEL_TOKEN:
         from_secret: VERCEL_TOKEN
