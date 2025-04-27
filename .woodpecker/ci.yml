@@ -24,7 +24,7 @@ steps:
       VERCEL_TOKEN:
         from_secret: VERCEL_TOKEN
     when:
-      event: [tag, push]
+      event: push
 
   deploy-prod:
     image: node:20-alpine
@@ -35,5 +35,4 @@ steps:
       VERCEL_TOKEN:
         from_secret: VERCEL_TOKEN
     when:
-      event: [tag, push]
-      branch: main
+      event: tag
