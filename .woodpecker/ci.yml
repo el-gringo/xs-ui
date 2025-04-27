@@ -5,6 +5,8 @@ steps:
       - ls -la ~/.cargo/ || true
       - rustup target list | grep installed | grep wasm32-unknown-unknown
           || rustup target add wasm32-unknown-unknown
+    volumes:
+      - /cache/.cargo:/root/.cargo
     when:
       event: [tag, push]
 
