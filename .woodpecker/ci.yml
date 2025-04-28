@@ -1,13 +1,12 @@
 steps:
   restore-cache:
-    image: meltwater/drone-cache
+    image: plugins/s3-cache
     settings:
       restore: true
       cache_key: '{{ .Repo.Name }}_{{ arch }}_{{ os }}'
-      bucket: woodpecker-cache
       endpoint: http://minio:9000/
-      secret: false
-      region: false
+      key: woodpecker
+      secret: 0f66097282b3027f775778b052f371be155e9504
       mount:
         - /root/.cargo
         - /root/.npm
@@ -33,12 +32,12 @@ steps:
       event: [tag, push, manual]
 
   rebuild-cache:
-    image: meltwater/drone-cache
+    image: plugins/s3-cache
     settings:
-      bucket: woodpecker-cache
+      rebuild: true
       endpoint: http://minio:9000/
-      secret: false
-      region: false
+      key: woodpecker
+      secret: 0f66097282b3027f775778b052f371be155e9504
       mount:
         - /root/.cargo
         - /root/.npm
