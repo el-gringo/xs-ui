@@ -5,13 +5,14 @@ steps:
       restore: true
       cache_key: '{{ .Repo.Name }}_{{ arch }}_{{ os }}'
       bucket: woodpecker-cache
+      endpoint: http://minio:9000/
       mount:
         - /root/.cargo
         - /root/.npm
         - /usr/local/bin/vercel
         - /usr/local/lib/node_modules
     when:
-      event: [tag, push]
+      event: [tag, push, manual]
 
   prepare-rust:
     image: rust:1.86.0-alpine
@@ -20,31 +21,34 @@ steps:
       - rustup target list | grep installed | grep wasm32-unknown-unknown
           || rustup target add wasm32-unknown-unknown
     when:
-      event: [tag, push]
+      event: [tag, push, manual]
 
   prepare-node:
     image: node:20-alpine
     commands:
       - which vercel || npm install -g vercel
     when:
-      event: [tag, push]
+      event: [tag, push, manual]
 
   rebuild-cache:
-      image: meltwater/drone-cache
-      settings:
-        bucket: woodpecker-cache
-        mount:
-          - /root/.cargo
-          - /root/.npm
-          - /usr/local/bin/vercel
-          - /usr/local/lib/node_modules
+    image: meltwater/drone-cache
+    settings:
+      bucket: woodpecker-cache
+      endpoint: http://minio:9000/
+      mount:
+        - /root/.cargo
+        - /root/.npm
+        - /usr/local/bin/vercel
+        - /usr/local/lib/node_modules
+    when:
+      event: [tag, push, manual]
 
   check:
     image: rust:1.86.0-alpine
     commands:
       - cargo check || true
     when:
-      event: [tag, push]
+      event: [tag, push, manual]
 
   build:
     image: rust:1.86.0-alpine
@@ -57,7 +61,7 @@ steps:
       - cp -v target/wasm32-unknown-unknown/release/app.wasm dist/
       - cp -v tools/cli/src/assets/* dist/
     when:
-      event: [tag, push]
+      event: [tag, push, manual]
 
   deploy:
     image: node:20-alpine
