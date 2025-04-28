@@ -7,6 +7,7 @@ steps:
       bucket: woodpecker-cache
       endpoint: http://minio:9000/
       credentials: woodpecker:0f66097282b3027f775778b052f371be155e9504
+      region: false
       mount:
         - /root/.cargo
         - /root/.npm
@@ -37,6 +38,7 @@ steps:
       bucket: woodpecker-cache
       endpoint: http://minio:9000/
       credentials: woodpecker:0f66097282b3027f775778b052f371be155e9504
+      region: false
       mount:
         - /root/.cargo
         - /root/.npm
