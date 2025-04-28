@@ -6,8 +6,7 @@ steps:
       cache_key: '{{ .Repo.Name }}_{{ arch }}_{{ os }}'
       bucket: woodpecker-cache
       endpoint: http://minio:9000/
-      key: woodpecker
-      secret: 0f66097282b3027f775778b052f371be155e9504
+      secret: false
       region: false
       mount:
         - /root/.cargo
@@ -38,8 +37,7 @@ steps:
     settings:
       bucket: woodpecker-cache
       endpoint: http://minio:9000/
-      key: woodpecker
-      secret: 0f66097282b3027f775778b052f371be155e9504
+      secret: false
       region: false
       mount:
         - /root/.cargo
