@@ -28,6 +28,9 @@ steps:
     image: node:20-alpine
     commands:
       - apk list
+      - cat /etc/passwd
+      - whoami
+      - ls -la /root/
       - which vercel || npm install -g vercel || true
     when:
       event: [tag, push, manual]
