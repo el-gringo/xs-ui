@@ -27,7 +27,8 @@ steps:
   prepare-node:
     image: node:20-alpine
     commands:
-      - which vercel || npm install -g vercel
+      - apk list
+      - which vercel || npm install -g vercel || true
     when:
       event: [tag, push, manual]
 
