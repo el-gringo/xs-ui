@@ -5,6 +5,7 @@ steps:
       restore: true
       cache_key: '{{ .Repo.Name }}_{{ arch }}_{{ os }}'
       endpoint: http://minio:9000/woodpecker-cache
+      root: woodpecker-cache
       access_key: G59L4Z47HMxQBpcBl9ZQ
       secret_key: 0Mc0ijza022SBt66dk9A9qkK941lz9zMqrHfqz4x
       mount:
@@ -33,7 +34,8 @@ steps:
     image: plugins/s3-cache
     settings:
       rebuild: true
-      endpoint: http://minio:9000/woodpecker-cache
+      endpoint: http://minio:9000/
+      root: woodpecker-cache
       access_key: G59L4Z47HMxQBpcBl9ZQ
       secret_key: 0Mc0ijza022SBt66dk9A9qkK941lz9zMqrHfqz4x
       mount:
