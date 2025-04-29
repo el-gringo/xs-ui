@@ -26,6 +26,8 @@ steps:
   prepare-node:
     image: node:20-alpine
     commands:
+      - ls -la /usr/local/bin
+      - ls -la /usr/local/lib/node_modules
       - test -e node_modules/.bin/vercel || npm install vercel
     when:
       event: [tag, push, manual]
