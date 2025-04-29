@@ -31,6 +31,7 @@ steps:
       - cat /etc/passwd
       - whoami
       - ls -la /root/
+      - la -la /usr/local/bin
       - which vercel || npm install -g vercel || true
     when:
       event: [tag, push, manual]
