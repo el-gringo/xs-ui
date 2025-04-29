@@ -1,4 +1,13 @@
 steps:
+  start:
+    image: node:20-alpine
+    commands:
+      - pwd
+      - ls -la /usr/local/bin
+      - ls -la /usr/local/lib/node_modules
+    when:
+      event: [tag, push, manual]
+
   restore-cache:
     image: plugins/s3-cache
     settings:
