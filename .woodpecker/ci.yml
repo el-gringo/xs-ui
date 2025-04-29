@@ -9,17 +9,7 @@ steps:
       access_key: G59L4Z47HMxQBpcBl9ZQ
       secret_key: 0Mc0ijza022SBt66dk9A9qkK941lz9zMqrHfqz4x
       mount:
-        - /root/.cargo
-        - /root/.npm
         - ./node_modules
-    when:
-      event: [tag, push, manual]
-
-  prepare-rust:
-    image: rust:1.86.0-alpine
-    commands:
-      - rustup target list | grep installed | grep wasm32-unknown-unknown
-          || rustup target add wasm32-unknown-unknown
     when:
       event: [tag, push, manual]
 
@@ -39,8 +29,6 @@ steps:
       access_key: G59L4Z47HMxQBpcBl9ZQ
       secret_key: 0Mc0ijza022SBt66dk9A9qkK941lz9zMqrHfqz4x
       mount:
-        - /root/.cargo
-        - /root/.npm
         - ./node_modules
     when:
       event: [tag, push, manual]
