@@ -10,8 +10,7 @@ steps:
       mount:
         - /root/.cargo
         - /root/.npm
-        - /usr/local/bin/vercel
-        - /usr/local/lib/node_modules
+        - ./node_modules
     when:
       event: [tag, push, manual]
 
@@ -27,12 +26,7 @@ steps:
   prepare-node:
     image: node:20-alpine
     commands:
-      - apk list
-      - cat /etc/passwd
-      - whoami
-      - ls -la /root/
-      - ls -la /usr/local/bin
-      - which vercel || npm install -g vercel || true
+      - test -e node_modules/.bin/vercel || npm install vercel
     when:
       event: [tag, push, manual]
 
@@ -46,8 +40,7 @@ steps:
       mount:
         - /root/.cargo
         - /root/.npm
-        - /usr/local/bin/vercel
-        - /usr/local/lib/node_modules
+        - ./node_modules
     when:
       event: [tag, push, manual]
 
@@ -74,8 +67,7 @@ steps:
   deploy:
     image: node:20-alpine
     commands:
-      - which vercel || npm install -g vercel
-      - vercel deploy --yes --token $VERCEL_TOKEN
+      - node_modules/.bin/vercel deploy --yes --token $VERCEL_TOKEN
     environment:
       VERCEL_TOKEN:
         from_secret: VERCEL_TOKEN
@@ -85,8 +77,7 @@ steps:
   deploy-prod:
     image: node:20-alpine
     commands:
-      - which vercel || npm install -g vercel
-      - vercel deploy --yes --prod --token $VERCEL_TOKEN
+      - node_modules/.bin/vercel deploy --yes --prod --token $VERCEL_TOKEN
     environment:
       VERCEL_TOKEN:
         from_secret: VERCEL_TOKEN
