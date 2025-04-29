@@ -17,8 +17,8 @@ steps:
     image: node:22-alpine
     commands:
       - test -e node_modules/.bin/vercel  && {
-            touch ".cached"
-            exit 0
+            touch ".cached";
+            exit 0;
           }
       - npm install vercel
     when:
