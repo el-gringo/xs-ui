@@ -16,7 +16,11 @@ steps:
   prepare-node:
     image: node:22-alpine
     commands:
-      - test -e node_modules/.bin/vercel || npm install vercel
+      - test -e node_modules/.bin/vercel  && {
+            touch ".cached"
+            exit 0
+          }
+      - npm install vercel
     when:
       event: [tag, push, manual]
 
@@ -31,7 +35,9 @@ steps:
       mount:
         - ./node_modules
     when:
-      event: [tag, push, manual]
+      - event: [tag, push, manual]
+      - path:
+          exclude: [ '.cached' ]
 
   check:
     image: rust:1.86.0-alpine
