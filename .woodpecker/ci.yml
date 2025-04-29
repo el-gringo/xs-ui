@@ -1,55 +1,14 @@
 steps:
-  restore-cache:
-    image: plugins/s3-cache
-    settings:
-      restore: true
-      cache_key: '{{ .Repo.Name }}_{{ arch }}_{{ os }}'
-      endpoint: http://minio:9000/
-      root: woodpecker-cache
-      access_key: G59L4Z47HMxQBpcBl9ZQ
-      secret_key: 0Mc0ijza022SBt66dk9A9qkK941lz9zMqrHfqz4x
-      mount:
-        - ./node_modules
-    when:
-      event: [tag, push, manual]
-
-  prepare-node:
-    image: node:22-alpine
-    commands:
-      - test -e node_modules/.bin/vercel  && {
-            touch ".cached";
-            exit 0;
-          }
-      - npm install vercel
-    when:
-      event: [tag, push, manual]
-
-  rebuild-cache:
-    image: plugins/s3-cache
-    settings:
-      rebuild: true
-      endpoint: http://minio:9000/
-      root: woodpecker-cache
-      access_key: G59L4Z47HMxQBpcBl9ZQ
-      secret_key: 0Mc0ijza022SBt66dk9A9qkK941lz9zMqrHfqz4x
-      mount:
-        - ./node_modules
-    when:
-      - event: [tag, push, manual]
-      - path:
-          exclude: [ '.cached' ]
-
   check:
-    image: rust:1.86.0-alpine
+    image: alpine-rust-wasm32-vercel
     commands:
       - cargo check || true
     when:
       event: [tag, push, manual]
 
   build:
-    image: rust:1.86.0-alpine
+    image: alpine-rust-wasm32-vercel
     commands:
-      - rustup target list | grep installed | grep wasm32-unknown-unknown
       - cargo build
           --package app
           --target wasm32-unknown-unknown
@@ -61,9 +20,9 @@ steps:
       event: [tag, push, manual]
 
   deploy:
-    image: node:22-alpine
+    image: alpine-rust-wasm32-vercel
     commands:
-      - node_modules/.bin/vercel deploy --yes --token $VERCEL_TOKEN
+      - vercel deploy --yes --token $VERCEL_TOKEN
     environment:
       VERCEL_TOKEN:
         from_secret: VERCEL_TOKEN
@@ -73,7 +32,7 @@ steps:
   deploy-prod:
     image: node:22-alpine
     commands:
-      - node_modules/.bin/vercel deploy --yes --prod --token $VERCEL_TOKEN
+      - vercel deploy --yes --prod --token $VERCEL_TOKEN
     environment:
       VERCEL_TOKEN:
         from_secret: VERCEL_TOKEN
