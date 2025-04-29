@@ -5,6 +5,7 @@ steps:
       restore: true
       cache_key: '{{ .Repo.Name }}_{{ arch }}_{{ os }}'
       endpoint: http://minio:9000/
+      bucket: woodpecker-cache
       access_key: G59L4Z47HMxQBpcBl9ZQ
       secret_key: 0Mc0ijza022SBt66dk9A9qkK941lz9zMqrHfqz4x
       mount:
@@ -17,7 +18,6 @@ steps:
   prepare-rust:
     image: rust:1.86.0-alpine
     commands:
-      - ls -la ~/.cargo/ || true
       - rustup target list | grep installed | grep wasm32-unknown-unknown
           || rustup target add wasm32-unknown-unknown
     when:
@@ -26,9 +26,6 @@ steps:
   prepare-node:
     image: node:22-alpine
     commands:
-      - pwd
-      - ls -la /usr/local/bin
-      - ls -la /usr/local/lib/node_modules
       - test -e node_modules/.bin/vercel || npm install vercel
     when:
       event: [tag, push, manual]
@@ -38,6 +35,7 @@ steps:
     settings:
       rebuild: true
       endpoint: http://minio:9000/
+      bucket: woodpecker-cache
       access_key: G59L4Z47HMxQBpcBl9ZQ
       secret_key: 0Mc0ijza022SBt66dk9A9qkK941lz9zMqrHfqz4x
       mount:
