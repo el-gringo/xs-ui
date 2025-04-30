@@ -14,7 +14,7 @@ jobs:
 
       - name: Build
         run:
-          cargo build --package app --target wasm32-unknown-unknown --release || exit 1
+          cargo build --package app --target wasm32-unknown-unknown --release
 
       - name: Create dist
         run:
