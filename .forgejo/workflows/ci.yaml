@@ -18,10 +18,10 @@ jobs:
 
       - name: Create dist
         run:
-          mkdir dist &&
-          cp -v target/wasm32-unknown-unknown/release/app.wasm dist/ &&
-          mkdir -v dist/assets
-          cp -v tools/cli/src/assets/* dist/assets/
+          mkdir dist;
+          cp -v target/wasm32-unknown-unknown/release/app.wasm dist/;
+          mkdir -v dist/assets;
+          cp -v tools/cli/src/assets/* dist/assets/;
 
       - if: github.ref != 'refs/heads/main'
         run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}
