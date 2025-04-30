@@ -22,8 +22,9 @@ jobs:
           cp -v target/wasm32-unknown-unknown/release/app.wasm dist/ &&
           cp -v tools/cli/src/assets/* dist/
 
+
       - if: github.ref != 'refs/heads/main'
-        run: npx vercel -y --token ${{ secrets.VERCEL_TOKEN }}
+        run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}
 
       - if: github.ref == 'refs/heads/main'
-        run: npx vercel -y --prod --token ${{ secrets.VERCEL_TOKEN }}
+        run: vercel -y --prod --token ${{ secrets.VERCEL_TOKEN }}
