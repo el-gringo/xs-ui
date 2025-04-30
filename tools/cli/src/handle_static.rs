@@ -39,9 +39,9 @@ pub fn handle_static(request: HttpRequest, config: &CargoMetadata, package: Opti
     };
     println!("pathname: {:?}", pathname);
     let path = if pathname == "" {
-        &std::path::Path::new("tools/cli/src/assets").join("index.html")
+        &std::path::Path::new("tools/cli/src/html").join("index.html")
     } else if pathname.starts_with("assets/") {
-        &std::path::Path::new("tools/cli/src").join(pathname)
+        &std::path::Path::new("tools/cli/src/html").join(pathname)
     } else if pathname == "app.wasm" {
         let binary_name = package.unwrap_or(
             &config.packages[0].name

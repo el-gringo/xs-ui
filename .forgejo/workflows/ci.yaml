@@ -20,8 +20,7 @@ jobs:
         run:
           mkdir dist;
           cp -v target/wasm32-unknown-unknown/release/app.wasm dist/;
-          mkdir -v dist/assets;
-          cp -v tools/cli/src/assets/* dist/assets/;
+          cp -rv tools/cli/src/html/* dist/;
 
       - if: github.ref != 'refs/heads/main'
         run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}
