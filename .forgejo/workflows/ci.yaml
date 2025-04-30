@@ -3,48 +3,14 @@ jobs:
   build:
     runs-on: docker
     container:
-      image: node:lts-bullseye
+      image: registry:5000/alpine-rust-wasm32-vercel
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install zstd
-        run: apt update && apt install -y zstd
-
-      - name: Restore cache rust toolchain
-        id: cache-rust-toolchain
-        uses: https://code.forgejo.org/actions/cache/restore@v4
-        with:
-          path: |
-            ${{ steps.npm-cache-dir.outputs.dir }}
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            /usr/bin/zstd
-          key: ${{ runner.os }}-rust-toolchain
-
-      - name: Install Rust
-        id: rust-toolchain
-        if: steps.cache-rust-toolchain.outputs.cache-hit != 'true'
-        uses: https://code.forgejo.org/msrd0/rust-toolchain@stable
-        with:
-          toolchain: nightly
-          targets: wasm32-unknown-unknown
-          components: clippy, rustfmt
-
-      - name: Save cache rust toolchain
-        if: steps.cache-rust-toolchain.outputs.cache-hit != 'true'
-        uses: https://code.forgejo.org/actions/cache/save@v4
-        with:
-          path: |
-            ${{ steps.npm-cache-dir.outputs.dir }}
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            /usr/bin/zstd
-          key: ${{ steps.cache-rust-toolchain.outputs.cache-primary-key }}
+      - name: Check
+        run:
+          cargo check
 
       - name: Build
         run:
@@ -55,26 +21,6 @@ jobs:
           mkdir dist &&
           cp -v target/wasm32-unknown-unknown/release/app.wasm dist/ &&
           cp -v tools/cli/src/assets/* dist/
-
-      - name: Restore cache vercel
-        id: cache-vercel
-        uses: https://code.forgejo.org/actions/cache/restore@v4
-        with:
-          path: |
-            ./node_modules/
-          key: ${{ runner.os }}-vercel
-
-      - name: Install vercel
-        if: steps.cache-vercel.outputs.cache-hit != 'true'
-        run: npm -g install vercel
-
-      - name: Save cache vercel
-        if: steps.cache-vercel.outputs.cache-hit != 'true'
-        uses: https://code.forgejo.org/actions/cache/save@v4
-        with:
-          path: |
-            ./node_modules/
-          key: ${{ steps.cache-vercel.outputs.cache-primary-key }}
 
       - if: github.ref != 'refs/heads/main'
         run: npx vercel -y --token ${{ secrets.VERCEL_TOKEN }}
