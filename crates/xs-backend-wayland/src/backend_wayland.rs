@@ -29,25 +29,28 @@ impl EventHandler for Stage {
 
 
 pub struct BackendWayland {
-    width: i32,
-    height: i32,
+    config: ConfigWayland,
+    renderer: RendererOpenGl
 }
 
 impl BackendWayland {
     pub fn new(width: i32, height: i32) -> Self {
-        Self { width, height }
+        let config = ConfigWayland {
+            window_title: String::from("Test"),
+            window_width: width,
+            window_height: height,
+            fullscreen: false
+        };
+        let renderer = RendererOpenGl::new(width, height);
+        Self {
+            config,
+            renderer
+        }
     }
 
     pub fn run<F>(&mut self, generate_scene: F)
     where F: Fn() -> Box<dyn Layout> {
-        let config = ConfigWayland {
-            window_title: String::from("Test"),
-            window_width: self.width,
-            window_height: self.height,
-            fullscreen: false
-        };
-        let mut renderer = RendererOpenGl::new(self.width, self.height);
-        window(&config, &mut renderer as _, generate_scene);
+        window(&self.config, &mut self.renderer as _, generate_scene);
     }
 
     pub fn log(&self, _message: &str) {

@@ -39,8 +39,7 @@ where F: Fn() -> Box<dyn Layout>{
 
 #[allow(dead_code)]
 pub struct BackendBrowser {
-    width: i32,
-    height: i32
+    renderer: RendererWebGl
 }
 
 impl BackendBrowser {
@@ -48,13 +47,15 @@ impl BackendBrowser {
         unsafe {
             bindings::init_canvas();
         }
-        Self { width, height }
+        let renderer = RendererWebGl::new(width, height);
+        Self {
+            renderer
+        }
     }
 
     pub fn run<F>(&mut self, generate_scene: F)
     where F: Fn() -> Box<dyn Layout> {
-        let mut renderer = RendererWebGl::new();
-        render(&mut renderer, generate_scene);
+        render(&mut self.renderer, generate_scene);
     }
 
     pub fn get_time(self) -> f64 {

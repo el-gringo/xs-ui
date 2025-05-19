@@ -13,17 +13,6 @@ fn cast_slice(p: &[Vector3]) -> &[f32] {
     }
 }
 
-unsafe extern "C" {
-    pub fn canvas_width() -> i32;
-    pub fn canvas_height() -> i32;
-}
-
-pub fn screen_size() -> (i32, i32) {
-    unsafe {
-        (canvas_width(), canvas_height())
-    }
-}
-
 pub fn clear(color: Color) {
     unsafe {
         glClearColor(color.r as GLfloat, color.g as GLfloat, color.b as GLfloat, color.a as GLfloat);

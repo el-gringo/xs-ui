@@ -8,13 +8,17 @@ use crate::webgl;
 
 
 pub struct RendererWebGl {
+    width: i32,
+    height: i32,
     shaders: StandardShader
 }
 
 impl RendererWebGl {
-    pub fn new() -> Self {
+    pub fn new(width: i32, height: i32) -> Self {
         let shaders = StandardShader::new();
         Self {
+            width,
+            height,
             shaders
         }
     }
@@ -29,13 +33,11 @@ impl Renderer for RendererWebGl {
         webgl::clear(BLACK);
 
         let mut tree = LayoutTree::new();
-        let (width, height) = webgl::screen_size();
-        let viewport = Vector2::new(width as f32, height as f32);
+        let viewport = Vector2::new(self.width as f32, self.height as f32);
         self.shaders.set_viewport(viewport);
-
         let constraints = BoxConstraints {
             min: Vector2::new(0.0, 0.0),
-            max: Vector2::new(width as f32, height as f32),
+            max: viewport,
         };
         let root_sbox = widget_tree.layout(&mut tree, &constraints);
         let root_lbox = xs_layout::LayoutBox::from_child(root_sbox, (0.0, 0.0));
