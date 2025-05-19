@@ -112,7 +112,7 @@ impl Renderer for RendererOpenGl {
                     shader.set_uniform_2f("u_rect_min", min.x, min.y);
                     shader.set_uniform_2f("u_rect_max", max.x, max.y);
                     for index in 0..4 {
-                        let prefix = format!("u_borders[{}]", index);
+                        let prefix = "u_borders[".to_owned() + index.to_string().as_str() + "]";
                         let border = match index {
                             0 => material.borders.top,
                             1 => material.borders.bottom,
@@ -121,11 +121,11 @@ impl Renderer for RendererOpenGl {
                             _ => None,
                         };
                         if let Some(border) = border {
-                            let name = format!("{}.enabled", prefix);
+                            let name = prefix.clone() + ".enabled";
                             shader.set_uniform_1i(&name, 1);
-                            let name = format!("{}.width", prefix);
+                            let name = prefix.clone() + ".width";
                             shader.set_uniform_1f(&name, border.width);
-                            let name = format!("{}.color", prefix);
+                            let name = prefix.clone() + ".color";
                             shader.set_uniform_4f(
                                 &name,
                                 border.color.r,
@@ -134,7 +134,7 @@ impl Renderer for RendererOpenGl {
                                 border.color.a,
                             );
                         } else {
-                            let name = format!("{}.enabled", prefix);
+                            let name = prefix.clone() + ".enabled";
                             shader.set_uniform_1i(&name, 0);
                         }
                     }
