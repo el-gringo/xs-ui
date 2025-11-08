@@ -1,7 +1,7 @@
 on: [push]
 jobs:
   build:
-    runs-on: docker-cli
+    runs-on: linux
     container:
       image: registry:5000/alpine-rust-wasm-vercel
     steps:
