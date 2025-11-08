@@ -1,47 +1,26 @@
 on: [push]
 jobs:
   build:
-    runs-on: docker
+    runs-on: linux
     container:
-          image: node:lts-bullseye
+      image: registry:5000/alpine-rust-wasm-vercel
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
-
-      - name: Cache
-        id: cache
-        uses: https://code.forgejo.org/actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            ./target/
-            ./dist/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Install Rust
-        id: rust-toolchain
-        if: steps.cache.outputs.cache-hit != 'true'
-        uses: https://code.forgejo.org/msrd0/rust-toolchain@stable
-        with:
-          toolchain: nightly
-          targets: wasm32-unknown-unknown
-          components: clippy, rustfmt
+      # - name: Check
+      #   run:
+      #     cargo check
 
       - name: Build
         run:
-          cargo build --package app --target wasm32-unknown-unknown --release || exit 1
-          cp -v target/wasm32-unknown-unknown/release/app.wasm dist/
-          cp -v tools/cli/src/assets/* dist/
+          cargo build --package app --target wasm32-unknown-unknown --release
 
-      - name: Install vercel
-        run: npm -g install vercel
+      - name: Create dist
+        run:
+          mkdir dist;
+          cp -v target/wasm32-unknown-unknown/release/app.wasm dist/;
+          cp -rv tools/cli/src/html/* dist/;
 
       - if: github.ref != 'refs/heads/main'
         run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}

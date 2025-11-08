@@ -1,5 +1,5 @@
 #[allow(static_mut_refs)]
-use xs_backend_wayland_client::{wl_array, wl_proxy, wl_request, wl_request_constructor, wl_surface, LibWaylandClient};
+use xs_backend_wayland_client::{wl_proxy, wl_request, wl_request_constructor, wl_surface, LibWaylandClient};
 use xs_backend_wayland_extensions::xdg_shell::{self, xdg_toplevel};
 
 use crate::registry::XDG_WM_BASE;
