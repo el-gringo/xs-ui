@@ -3,7 +3,7 @@ jobs:
   build:
     runs-on: docker
     container:
-      image: registry:5000/alpine-rust-wasm32-vercel
+      image: .forgejo/runner.dockerfile
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
