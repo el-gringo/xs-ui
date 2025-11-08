@@ -3,7 +3,7 @@ jobs:
   build:
     runs-on: docker-cli
     container:
-      image: .forgejo/runner.dockerfile
+      image: alpine-rust-wasm-vercel
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
