@@ -1,7 +1,7 @@
 on: [push]
 jobs:
   build:
-    runs-on: runner
+    runs-on: docker-cli
     container:
       image: .forgejo/runner.dockerfile
     steps:
