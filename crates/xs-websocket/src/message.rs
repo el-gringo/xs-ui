@@ -69,17 +69,12 @@ impl From<Vec<u8>> for WebSocketMessage {
             },
             false => None
         };
-        println!("payload_offset: {:?}", payload_offset);
-        println!("payload_size: {:?}", payload_size);
-        println!("bytes: {:?}", to_hex(&bytes));
-        println!("masking_key: {:?}", masking_key);
         let payload = &bytes[payload_offset..payload_offset+payload_size];
         let payload = if let Some(masking_key) = masking_key {
             mask(&masking_key, payload)
         } else {
             payload.to_vec()
         };
-        println!("payload: {:?}", to_hex(&payload));
         Self {
             op_code,
             masking_key,

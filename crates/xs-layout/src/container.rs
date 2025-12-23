@@ -19,6 +19,9 @@ fn clamp_f32(value: f32, min: f32, max: f32) -> f32 {
 pub struct Spacer {}
 
 impl Layout for Spacer {
+    fn flex_factor(&self) -> Option<f32> {
+        None
+    }
     fn layout(&self, _: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         SizedLayoutBox {
             size: constraints.max,
@@ -42,6 +45,9 @@ pub struct Container {
 }
 
 impl Layout for Container {
+    fn flex_factor(&self) -> Option<f32> {
+        None
+    }
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         match &self.child {
             Some(child) => self.layout_with_child(tree, constraints, child.as_ref()),

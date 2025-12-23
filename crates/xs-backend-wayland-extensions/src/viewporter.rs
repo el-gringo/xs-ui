@@ -3,17 +3,6 @@
 use crate::wayland_interface;
 
 wayland_interface!(
-    wp_viewporter_interface,
-    wp_viewporter,
-    3,
-    [
-        (destroy, "", ()),
-        (get_viewport, "no", (wp_viewport_interface))
-    ],
-    []
-);
-
-wayland_interface!(
     wp_viewport_interface,
     wp_viewport,
     3,
@@ -21,6 +10,17 @@ wayland_interface!(
         (destroy, "", ()),
         (set_source, "ffff", ()),
         (set_destination, "ii", ())
+    ],
+    []
+);
+
+wayland_interface!(
+    wp_viewporter_interface,
+    wp_viewporter,
+    3,
+    [
+        (destroy, "", ()),
+        (get_viewport, "no", (crate::viewporter::wp_viewport_interface))
     ],
     []
 );

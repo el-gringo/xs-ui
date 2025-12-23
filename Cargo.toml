@@ -24,6 +24,7 @@ xs-backend-wayland-egl = { path = "crates/xs-backend-wayland-egl" }
 xs-backend-wayland-extensions = { path = "crates/xs-backend-wayland-extensions" }
 xs-backend-wayland-client = { path = "crates/xs-backend-wayland-client" }
 xs-backend-wayland-xkb = { path = "crates/xs-backend-wayland-xkb" }
+xs-core = { path = "crates/xs-core" }
 xs-egl-sys = { path = "crates/xs-egl-sys" }
 xs-gl-sys = { path = "crates/xs-gl-sys" }
 xs-layout = { path = "crates/xs-layout" }
@@ -38,6 +39,7 @@ xs-tls = { path = "crates/xs-tls" }
 xs-url = { path = "crates/xs-url" }
 xs-websocket = { path = "crates/xs-websocket" }
 test_utils = { path = "tools/test_utils" }
+pretty_assertions = { version = "1.4" }
 
 [profile.dev]
 lto = "off"

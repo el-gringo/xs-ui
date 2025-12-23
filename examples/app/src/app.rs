@@ -1,4 +1,4 @@
-use xs_layout::{colors::GREEN, *};
+use xs_layout::{colors::{BLUE, GREEN, RED}, *};
 
 #[allow(dead_code)]
 pub fn sidebar() -> Box<dyn Layout> {
@@ -7,8 +7,8 @@ pub fn sidebar() -> Box<dyn Layout> {
     let color_grey2 = Color::rgba(0.11, 0.11, 0.11, 255.0);
     let color_grey3 = Color::rgba(0.13, 0.13, 0.13, 255.0);
     let color_grey4 = Color::rgba(0.24, 0.24, 0.24, 255.0);
-    let mut files: Vec<Box<dyn FlexLayout>> = vec![];
-    let mut files2: Vec<Box<dyn FlexLayout>> = vec![];
+    let mut files: Vec<Box<dyn Layout>> = vec![];
+    let mut files2: Vec<Box<dyn Layout>> = vec![];
     for _ in 0..10 {
         files.push(Box::new(Container {
             height: Some(20.0),
@@ -28,7 +28,7 @@ pub fn sidebar() -> Box<dyn Layout> {
     let widgets = Container {
         borders: Borders::bottom(Color::rgba(0.08, 0.39, 225.0, 0.89), 10.0),
         child: Some(Box::new(Flex {
-            axis: Axis::Horizontal,
+            axis: Axis::Row,
             main_axis_size: MainAxisSize::Max,
             main_axis_alignment: MainAxisAlignment::Start,
             cross_axis_alignment: CrossAxisAlignment::Stretch,
@@ -44,7 +44,7 @@ pub fn sidebar() -> Box<dyn Layout> {
                         left: 6.0,
                     },
                     child: Some(Box::new(Flex {
-                        axis: Axis::Vertical,
+                        axis: Axis::Column,
                         main_axis_size: MainAxisSize::Max,
                         main_axis_alignment: MainAxisAlignment::Start,
                         cross_axis_alignment: CrossAxisAlignment::Center,
@@ -91,7 +91,7 @@ pub fn sidebar() -> Box<dyn Layout> {
                     width: Some(200.0),
                     color: color_grey3,
                     child: Some(Box::new(Flex {
-                        axis: Axis::Vertical,
+                        axis: Axis::Column,
                         main_axis_size: MainAxisSize::Max,
                         main_axis_alignment: MainAxisAlignment::Start,
                         cross_axis_alignment: CrossAxisAlignment::Stretch,
@@ -105,7 +105,7 @@ pub fn sidebar() -> Box<dyn Layout> {
                         color: color_grey1,
                         alignment: Alignment::center(),
                         child: Some(Box::new(Flex {
-                            axis: Axis::Vertical,
+                            axis: Axis::Column,
                             main_axis_size: MainAxisSize::Min,
                             main_axis_alignment: MainAxisAlignment::Start,
                             cross_axis_alignment: CrossAxisAlignment::Center,
@@ -142,7 +142,7 @@ pub fn sidebar() -> Box<dyn Layout> {
                     color: color_grey3,
                     borders: Borders::left(border_color, 1.0),
                     child: Some(Box::new(Flex {
-                        axis: Axis::Vertical,
+                        axis: Axis::Column,
                         main_axis_size: MainAxisSize::Max,
                         main_axis_alignment: MainAxisAlignment::Start,
                         cross_axis_alignment: CrossAxisAlignment::Stretch,
@@ -161,17 +161,68 @@ pub fn sidebar() -> Box<dyn Layout> {
 pub fn render_nested_positioned() -> Box<dyn Layout> {
     Box::new(Positioned {
         position: (0.0, 0.0).into(),
-        child: Box::new(Positioned {
-            position: (100.0, 100.0).into(),
-            child: Box::new(Positioned {
-                position: (200.0, 200.0).into(),
-                child: Box::new(Container {
-                    color: GREEN,
-                    width: Some(100.0),
-                    height: Some(100.0),
-                    ..Default::default()
+        child: Box::new(Container {
+            color: BLUE,
+            width: Some(100.0),
+            height: Some(100.0),
+            child: Some(
+                Box::new(Positioned {
+                    position: (100.0, 100.0).into(),
+                    child: Box::new(Positioned {
+                        position: (200.0, 200.0).into(),
+                        child: Box::new(Container {
+                            color: GREEN,
+                            width: Some(100.0),
+                            height: Some(100.0),
+                            ..Default::default()
+                        }),
+                    }),
                 }),
-            }),
+            ),
+            ..Default::default()
         }),
+    })
+}
+
+#[allow(dead_code)]
+pub fn flex() -> Box<dyn Layout> {
+
+    Box::new(Positioned {
+        position: (0.0, 0.0).into(),
+        child: Box::new(Container {
+            width: Some(320.),
+            color: RED,
+            child: Some(Box::new(Flex {
+                axis: Axis::Column,
+                main_axis_alignment: MainAxisAlignment::Start,
+                cross_axis_alignment: CrossAxisAlignment::Center,
+                main_axis_size: MainAxisSize::Min,
+                children: vec![
+                    Box::new(Container {
+                        width: Some(200.),
+                        height: Some(40.),
+                        color: BLUE,
+                        margin: EdgeInsets { top: 8., bottom: 8., left: 16., right: 16. },
+                        ..Container::default()
+                    }),
+
+                    // Box::new(Container {
+                    //     width: Some(200.),
+                    //     height: Some(40.),
+                    //     color: GREEN,
+                    //     margin: EdgeInsets { top: 16., bottom: 0., left: 16., right: 16. },
+                    //     ..Container::default()
+                    // }),
+                    // Box::new(Container {
+                    //     width: Some(200.),
+                    //     height: Some(40.),
+                    //     color: YELLOW,
+                    //     margin: EdgeInsets { top: 16., bottom: 0., left: 16., right: 16. },
+                    //     ..Container::default()
+                    // })
+                ]
+            })),
+            ..Container::default()
+        })
     })
 }

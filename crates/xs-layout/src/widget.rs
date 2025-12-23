@@ -1,7 +1,7 @@
 use xs_math::Vector2;
 
 use super::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
-use crate::{decoration::Material, Color};
+use crate::{colors::TRANSPARENT, decoration::Material};
 
 
 // --------------------------------------------------
@@ -14,6 +14,9 @@ pub struct Center {
 }
 
 impl Layout for Center {
+    fn flex_factor(&self) -> Option<f32> {
+        None
+    }
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         let sbox = self.child.layout(tree, constraints);
         let pos = (constraints.max / 2.0) - (sbox.size / 2.0);
@@ -38,6 +41,9 @@ pub struct Stack {
 }
 
 impl Layout for Stack {
+    fn flex_factor(&self) -> Option<f32> {
+        None
+    }
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         let children = self.children
             .iter()
@@ -68,6 +74,9 @@ pub struct Positioned {
 }
 
 impl Layout for Positioned {
+    fn flex_factor(&self) -> Option<f32> {
+        None
+    }
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         let child_constraints = BoxConstraints {
             min: Vector2::new(0.0, 0.0),
@@ -79,7 +88,7 @@ impl Layout for Positioned {
         SizedLayoutBox {
             size: constraints.max,
             children: vec![child_id],
-            material: Some(Material::filled(Color::rgba(0.0, 0.0, 0.0, 0.1))),
+            material: Some(Material::filled(TRANSPARENT)),
             ..Default::default()
         }
     }

@@ -208,7 +208,6 @@ impl Into<WebSocketMessage> for Vec<u8> {
         let opcode = bytes[0] & 0x0F;
         //let masked = bytes[0] & 0x80;
         let len1 = bytes[1] & 0x7F;
-        println!("len1: {:?}", len1);
         let (payload_size, payload_offset) = match len1 {
             126 => {
                 let len2 = u16::from_be_bytes(bytes[2..2+2].try_into().unwrap());
@@ -224,12 +223,7 @@ impl Into<WebSocketMessage> for Vec<u8> {
                 (len1 as usize, 2)
             }
         };
-        //let masking_key = &bytes[payload_offset..payload_offset+4];
-        println!("bytes: {:?}", bytes.iter().map(|b| format!("{:02x} ", b)).collect::<String>());
-        println!("payload_offset: {}", payload_offset);
-        println!("payload_size: {}", payload_size);
         let payload  = bytes[payload_offset..payload_size].to_vec();
-        println!("payload: {:?}", payload);
         let payload = payload.to_owned().clone();
         match opcode {
             1 => WebSocketMessage::Text(
@@ -495,11 +489,8 @@ impl ServerWebSocket {
     }
 
     pub fn send_message(&mut self, message: ServerWebSocketMessage) {
-        println!("send_message: {:?}", message);
         let frame = message_to_frame(message);
-        println!("frame: {:?}", frame);
         self.stream.write(&frame).unwrap();
-        println!("sent");
     }
 
     pub fn incoming_messages<F>(&mut self, mut on_message: F)
@@ -517,7 +508,6 @@ impl ServerWebSocket {
 
         let masking_key = self.mask;
         thread::scope(move |scope| {
-            println!("scope");
             scope.spawn(move || {
                 loop {
                     //let stream = Arc::clone(&stream);
@@ -552,8 +542,6 @@ impl ServerWebSocket {
                     let mut buffer_payload = vec![0; payload_size + 5];
                     reader.read_exact(&mut buffer_payload).unwrap();
                     buffer.append(&mut buffer_payload);
-                    println!("buffer: {:?}", buffer);
-
                     match buffer.into() {
                         WebSocketMessage::Ping(ping) => {
                             let mut pong_frame: Vec<u8> = Vec::new();
@@ -571,7 +559,6 @@ impl ServerWebSocket {
 
                 }
             });
-            println!("scoped");
         });
     }
 }

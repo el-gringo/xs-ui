@@ -10,6 +10,7 @@ xs-backend-wayland-extensions = { workspace = true }
 xs-backend-wayland-client = { workspace = true }
 xs-backend-wayland-xkb = { workspace = true }
 xs-egl-sys = { workspace = true }
+xs-gl-sys = { workspace = true }
 xs-layout = { workspace = true }
 xs-renderer-opengl = { workspace = true }
 xs-platform-event = { workspace = true }

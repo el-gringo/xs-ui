@@ -145,21 +145,25 @@ pub enum EglError {
 
 pub struct Egl {}
 
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct wl_display {
+    _unused: [u8; 0],
+}
+
 pub unsafe fn create_egl_context(
     egl: &mut LibEgl,
-    display: *mut std::ffi::c_void,
+    display: *mut wl_display,
     alpha: bool
-) -> Result<(EGLContext, EGLConfig, EGLDisplay), EglError> {
-    let display = unsafe { (egl.eglGetDisplay)(display as _) };
+) -> Result<(EGLContext, EGLConfig, EGLDisplay), &'static str> {
+    let display = (egl.eglGetDisplay)(display as _);
     if display.is_null() {
         // == EGL_NO_DISPLAY
-        return Err(EglError::NoDisplay);
+        return Err("EGL_NO_DISPLAY");
     }
 
-    unsafe {
-        if (egl.eglInitialize)(display, null_mut(), null_mut()) == 0 {
-            return Err(EglError::InitializeFailed);
-        }
+    if (egl.eglInitialize)(display, null_mut(), null_mut()) == 0 {
+        return Err("EGL_NOT_INITIALIZED");
     }
 
     let alpha_size = if alpha { 8 } else { 0 };
@@ -224,7 +228,7 @@ pub unsafe fn create_egl_context(
         ctx_attributes.as_ptr() as _,
     ) };
     if context.is_null() {
-        return Err(EglError::CreateContextFailed);
+        return Err("EGL_NO_CONTEXT");
     }
     Ok((context, config, display))
 }

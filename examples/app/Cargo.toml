@@ -7,3 +7,4 @@ edition.workspace = true
 [dependencies]
 xs-layout = { workspace = true }
 xs-backend = { workspace = true }
+xs-renderer-core = { workspace = true }

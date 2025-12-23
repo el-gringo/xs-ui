@@ -65,8 +65,9 @@ unsafe extern "C"{
         errorfds: *mut fd_set,
         timeout: *mut timeval,
     ) -> c_int;
-    /*
     pub fn read(fd: c_int, buf: *mut c_void, count: size_t) -> c_int;
+    /*
+
     pub fn unlink(c: *const c_char) -> c_int;
     pub fn mmap(addr: *mut c_void, len: size_t, prot: c_int, flags: c_int, fd: c_int, offset: off_t) -> *mut c_void;
     pub fn munmap(addr: *mut c_void, len: size_t) -> c_int;

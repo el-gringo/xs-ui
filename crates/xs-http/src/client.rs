@@ -65,17 +65,14 @@ fn parse_response_status(status_line: String) -> Result<(u16, String), HttpRespo
         .splitn(3," ")
         .map(|s| s.trim())
         .collect();
-    println!("parse_response_status: {} {}", status_line, split.len());
     if split.len() == 2 {
         split.push("");
     }
-    println!("parse_response_status: {} {}", status_line, split.len());
     if split.len() != 3 {
         return Err(
             HttpResponseError::new(HttpResponseErrorKind::InvalidStatusLine)
         );
     }
-    println!("split[1]: {:?}", split[1]);
     match split[1].parse() {
         Ok(code) => Ok((code, split[2].to_string())),
         Err(_) => Err(

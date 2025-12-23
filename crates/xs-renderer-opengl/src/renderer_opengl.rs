@@ -1,20 +1,7 @@
 use std::collections::HashMap;
 
-use xs_gl_sys::{
-    glClear,
-    glClearColor,
-    glViewport,
-    load_gl_funcs,
-    GL_COLOR_BUFFER_BIT
-};
-use xs_layout::{
-    colors::BLACK,
-    BoxConstraints,
-    Color,
-    Layout,
-    LayoutBox,
-    LayoutTree,
-};
+use xs_gl_sys::{glClear, glFlush, GL_COLOR_BUFFER_BIT};
+use xs_layout::{BoxConstraints, Layout, LayoutBox, LayoutTree};
 use xs_math::Vector2;
 use xs_renderer_core::Renderer;
 
@@ -45,38 +32,26 @@ impl RendererOpenGl {
 }
 
 impl Renderer for RendererOpenGl {
-    fn init(
-        &mut self,
-        egl_get_proc_address: unsafe extern "C" fn(*const i8) -> Option<unsafe extern "C" fn()>,
-    ) {
-        const BACKGROUND: Color = BLACK;
-        unsafe {
-            load_gl_funcs(|proc| match std::ffi::CString::new(proc) {
-                Ok(name) => egl_get_proc_address(name.as_ptr() as _),
-                _ => None,
-            });
-            let mut uniforms = vec![
-                ("u_viewport".to_string(), (Int2, 1)),
-                ("u_color".to_string(), (Float4, 1)),
-                ("u_rect_min".to_string(), (Float2, 1)),
-                ("u_rect_max".to_string(), (Float2, 1)),
-            ];
-            for index in 0..4 {
-                let prefix = format!("u_borders[{}]", index);
-                uniforms.push((format!("{}.enabled", prefix), (Int1, 1 as i32)));
-                uniforms.push((format!("{}.width", prefix), (Float1, 1 as i32)));
-                uniforms.push((format!("{}.color", prefix), (Float4, 1 as i32)));
-            }
-            let default_shader = ShaderGlsl::new(
-                VERTEX_SHADER,
-                FRAGMENT_SHADER,
-                uniforms,
-                vec![("a_position".to_string(), (Float2, 1))],
-            );
-            self.shaders.insert("default".into(), default_shader);
-            glViewport(0, 0, self.width, self.height);
-            glClearColor(BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, BACKGROUND.a);
+    fn init(&mut self) {
+        let mut uniforms = vec![
+            ("u_viewport".to_string(), (Int2, 1)),
+            ("u_color".to_string(), (Float4, 1)),
+            ("u_rect_min".to_string(), (Float2, 1)),
+            ("u_rect_max".to_string(), (Float2, 1)),
+        ];
+        for index in 0..4 {
+            let prefix = format!("u_borders[{}]", index);
+            uniforms.push((format!("{}.enabled", prefix), (Int1, 1 as i32)));
+            uniforms.push((format!("{}.width", prefix), (Float1, 1 as i32)));
+            uniforms.push((format!("{}.color", prefix), (Float4, 1 as i32)));
         }
+        let shader = ShaderGlsl::new(
+            VERTEX_SHADER,
+            FRAGMENT_SHADER,
+            uniforms,
+            vec![("a_position".to_string(), (Float2, 1))],
+        );
+        self.shaders.insert("default".into(), shader);
     }
 
     fn draw_frame(&mut self, widget_tree: Box<dyn Layout>) {
@@ -94,10 +69,10 @@ impl Renderer for RendererOpenGl {
             let root_id = tree.insert(root_lbox);
             tree.set_root(Some(root_id));
             for (_, child, offset) in tree.iter() {
-                let min =
-                    offset + Vector2::new(child.bounds.x, child.bounds.y) + child.margin.min();
-                let max = min + Vector2::new(child.bounds.width, child.bounds.height)
-                    - child.margin.max();
+                let origin = Vector2::new(child.bounds.x, child.bounds.y);
+                let size = Vector2::new(child.bounds.width, child.bounds.height);
+                let min = offset + origin + child.margin.min();
+                let max = offset + origin + size - child.margin.max();
                 if let Some(material) = &child.material {
                     let vertices = &[
                         min.x, min.y, 0.0, min.x, max.y, 0.0, max.x, min.y, 0.0, min.x, max.y, 0.0,
@@ -141,6 +116,9 @@ impl Renderer for RendererOpenGl {
                     shader.apply_attributes();
                     mesh.end();
                 }
+            }
+            unsafe {
+                glFlush();
             }
         }
     }

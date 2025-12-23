@@ -22,6 +22,7 @@ use crate::decoration::Material;
 /// pipeline](https://www.youtube.com/watch?v=UUfXWzp0-DU) and the CSS box
 /// model.
 pub trait Layout {
+    fn flex_factor(&self) -> Option<f32>;
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox;
 }
 
@@ -119,7 +120,7 @@ impl LayoutBox {
 /// The tree is implemented as a memory arena to be indexed into using a
 /// `LayoutBoxId`. This makes it much easier to use with the borrow checker.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct LayoutTree {
     pub root: Option<LayoutBoxId>,
     pub boxes: Vec<LayoutBox>,
@@ -156,7 +157,7 @@ impl LayoutTree {
 
     /// Get an iterator over a breadth-first search
     #[must_use]
-    pub fn iter(&self) -> LayoutTreeIterator {
+    pub fn iter(&self) -> LayoutTreeIterator<'_> {
         LayoutTreeIterator {
             tree: self,
             parents: match self.root {
@@ -204,7 +205,7 @@ impl<'a> Iterator for LayoutTreeIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{decoration::Material, Color};
+    use crate::{Color, colors::{GREEN, RED}, decoration::Material};
 
     #[test]
     fn layout_tree_iter_nested() {
@@ -316,11 +317,11 @@ mod tests {
     #[test]
     fn lbox_partial_eq_with_different_materials_returns_false() {
         let lbox_a = LayoutBox {
-            material: Some(Material::filled(Color::red())),
+            material: Some(Material::filled(RED)),
             ..a_layout_box()
         };
         let lbox_b = LayoutBox {
-            material: Some(Material::filled(Color::green())),
+            material: Some(Material::filled(GREEN)),
             ..a_layout_box()
         };
         assert_ne!(lbox_a, lbox_b);

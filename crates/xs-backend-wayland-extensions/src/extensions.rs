@@ -1,9 +1,11 @@
 #![allow(unused_variables, dead_code, non_upper_case_globals, static_mut_refs)]
 
+
+
 #[macro_export]
 macro_rules! count {
     () => (0usize);
-    ( $x:tt $($xs:tt)* ) => (1usize + crate::count!($($xs)*));
+    ( $x:tt $($xs:tt)* ) => (1usize + $crate::count!($($xs)*));
 }
 
 #[macro_export]
@@ -12,7 +14,7 @@ macro_rules! method_consts {
     };
     ($x:expr, ($next:ident, $($rest:ident,)*)) => {
         pub const $next: u32 = $x;
-        crate::method_consts!(($x + 1), ($($rest,)*));
+        $crate::method_consts!(($x + 1), ($($rest,)*));
     };
 }
 
@@ -30,27 +32,25 @@ macro_rules! wayland_interface {
          ),*
      ]) => {
         mod $name {
-            #[allow(unused)]
-            use super::*;
             use xs_backend_wayland_client::{wl_interface, wl_message};
 
             $(
                 mod $method_name {
-                    #[allow(unused)]
                     use super::*;
 
-                    pub static mut METHOD_ARGUMENTS_TYPES: [*const wl_interface; crate::count!($($method_argument_name)*)] = [$(unsafe { &$method_argument_name as *const _},)*];
-
+                    pub static mut METHOD_ARGUMENTS_TYPES:
+                        [*const wl_interface; $crate::count!($($method_argument_name)*)] =
+                        [$(unsafe { &$method_argument_name as *const _},)*];
                 }
             )*
 
-            static mut requests: [wl_message; crate::count!($($method_name)*)] = [$(wl_message {
+            static mut requests: [wl_message; $crate::count!($($method_name)*)] = [$(wl_message {
                 name: concat!(stringify!($method_name), '\0').as_ptr() as _,
                 signature: concat!($method_sign, '\0').as_ptr() as _,
                 types: unsafe { $method_name::METHOD_ARGUMENTS_TYPES.as_ptr() as _ }
             }), *];
 
-            static mut events: [wl_message; crate::count!($($event_name)*)] = [$(wl_message {
+            static mut events: [wl_message; $crate::count!($($event_name)*)] = [$(wl_message {
                 name: concat!($event_name, '\0').as_ptr() as _,
                 signature: concat!($event_sign, '\0').as_ptr() as _,
                 types: std::ptr::null_mut()
@@ -59,21 +59,25 @@ macro_rules! wayland_interface {
             pub static mut $name: wl_interface = wl_interface {
                 name: concat!(stringify!($struct_name), '\0').as_ptr() as *const _,
                 version: $version,
-                method_count: crate::count!($($method_name)*) as i32,
+                method_count: $crate::count!($($method_name)*) as i32,
                 methods: unsafe { requests.as_ptr() },
-                event_count: crate::count!($($event_name)*) as i32,
+                event_count: $crate::count!($($event_name)*) as i32,
                 events: unsafe { events.as_ptr() },
             };
         }
 
         #[repr(C)]
-        #[derive(Copy, Clone)]
+        #[derive(Debug, Copy, Clone)]
         pub struct $struct_name {
             _unused: [u8; 0],
         }
 
         impl $struct_name {
-            crate::method_consts!(0, ($($method_name,)*));
+            $crate::method_consts!(0, ($($method_name,)*));
+
+            pub fn dummy() -> $struct_name {
+                $struct_name { _unused: [] }
+            }
         }
         pub use $name::$name;
     };
@@ -82,6 +86,7 @@ macro_rules! wayland_interface {
 /// Redifinition some interfaces from wayland-protocol.c, to have them available
 /// in compile time, to allow other interfaces use them as their arguments.
 pub mod wayland_protocol {
+
     wayland_interface!(
         wl_output_interface,
         wl_output,

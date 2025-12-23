@@ -1,7 +1,6 @@
 use xs_platform_event::KeyCode;
 use xs_backend_wayland_xkb::LibXkbCommon;
 
-
 #[allow(dead_code)]
 pub fn translate(keysym: u32) -> KeyCode {
     // See xkbcommon/xkbcommon-keysyms.h

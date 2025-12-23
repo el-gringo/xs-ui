@@ -26,7 +26,7 @@ fn create_handshake_response(key: &str) -> HttpResponse {
     headers.insert("Upgrade".to_string(), "websocket".to_string());
     headers.insert("Connection".to_string(), "Upgrade".to_string());
     headers.insert("Sec-WebSocket-Accept".to_string(), convert_key(key));
-    //headers.insert("Sec-WebSocket-Protocol".to_string(), "ping".to_string());
+    headers.insert("Sec-WebSocket-Protocol".to_string(), "ping".to_string());
     HttpResponse::new(101, headers, Vec::new())
 }
 
@@ -39,7 +39,6 @@ pub fn handshake(request: HttpRequest) -> Option<WebSocketServer> {
         let wss = WebSocketServer::with_stream(stream);
         let message = WebSocketMessage::new(crate::opcode::OpCode::Text, None, "Welcome".as_bytes().to_vec());
         let mut writer = BufWriter::new(wss.stream.try_clone().unwrap());
-        println!("handshake write: {:?}", message);
         let mut buffer: Vec<u8> = message.into();
         writer.write_all(&mut buffer).unwrap();
         return Some(wss);
