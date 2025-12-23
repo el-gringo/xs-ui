@@ -25,7 +25,7 @@ impl RendererWebGl {
 }
 
 impl Renderer for RendererWebGl {
-    fn init(&mut self, _egl_get_proc_address: unsafe extern "C" fn(*const i8) -> Option<unsafe extern "C" fn()>) {
+    fn init(&mut self) {
 
     }
 
