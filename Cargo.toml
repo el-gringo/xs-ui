@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/*",
+    "crates/xs-macro/tests",
     "examples/app",
     "tools/cli"
 ]
@@ -29,9 +30,12 @@ xs-egl-sys = { path = "crates/xs-egl-sys" }
 xs-gl-sys = { path = "crates/xs-gl-sys" }
 xs-layout = { path = "crates/xs-layout" }
 xs-http = { path = "crates/xs-http" }
+xs-macro = { path = "crates/xs-macro" }
+xs-macro-tests = { path = "crates/xs-macro/tests" }
 xs-math = { path = "crates/xs-math" }
 xs-platform-event = { path = "crates/xs-platform-event" }
 xs-platform-linux = { path = "crates/xs-platform-linux" }
+xs-primitives = { path = "crates/xs-primitives" }
 xs-renderer-core = { path = "crates/xs-renderer-core" }
 xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
 xs-renderer-webgl = { path = "crates/xs-renderer-webgl" }

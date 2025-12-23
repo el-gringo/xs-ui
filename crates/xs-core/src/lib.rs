@@ -1,1 +1,2 @@
-pub struct Undefined();
+mod core;
+pub use core::*;

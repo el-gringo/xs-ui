@@ -6,30 +6,15 @@ use crate::style::{Style, StyleDisplay, StylePosition};
 #[allow(non_camel_case_types)]
 pub struct Props<style = Undefined, children = Undefined> {
     #[allow(unused)]
-    style: style,
+    pub style: style,
     #[allow(unused)]
-    children: children,
+    pub children: children,
 }
 
-pub struct Element {
-    style: Style,
-    children: Vec<Element>,
-}
+pub fn render(props: Props<Style, Vec<Box<dyn Layout>>>) -> Box<dyn Layout> {
+    let mut style = props.style;
+    let children = props.children;
 
-impl Element {
-    pub fn render(&mut self) -> Box<dyn Layout> {
-        render(
-            &mut self.style,
-            self.children.iter_mut().map(|elem| elem.render()).collect(),
-        )
-    }
-}
-
-pub fn mount(style: Style, children: Vec<Element>) -> Element {
-    Element { style, children }
-}
-
-pub fn render(style: &mut Style, children: Vec<Box<dyn Layout>>) -> Box<dyn Layout> {
     style.prepare();
     let child: Option<Box<dyn Layout>> = if children.len() > 0 {
         Some(match style.display {
@@ -73,17 +58,24 @@ pub fn render(style: &mut Style, children: Vec<Box<dyn Layout>>) -> Box<dyn Layo
 
 #[cfg(test)]
 mod test {
-    use xs_layout::{BoxConstraints, Container, Layout, LayoutTree, Positioned, colors::{BLUE, RED, YELLOW}};
+    use xs_layout::{
+        BoxConstraints, Container, Layout, LayoutTree, Positioned,
+        colors::{BLUE, RED, YELLOW},
+    };
 
-    use crate::{div::render, style::{Style, StylePosition}};
+    use crate::{
+        Props,
+        div::render,
+        style::{Style, StylePosition},
+    };
 
     const WIDTH: f32 = 1920.;
     const HEIGH: f32 = 1080.;
 
     #[test]
     fn test_div_absolute() {
-        let node1 = render(
-            &mut Style {
+        let node1 = render(Props {
+            style: Style {
                 position: StylePosition::Absolute,
                 left: Some(0.),
                 top: Some(0.),
@@ -92,8 +84,8 @@ mod test {
                 background_color: RED,
                 ..Style::default()
             },
-            vec![render(
-                &mut Style {
+            children: vec![render(Props {
+                style: Style {
                     position: StylePosition::Absolute,
                     left: Some(100.),
                     top: Some(100.),
@@ -102,9 +94,9 @@ mod test {
                     background_color: BLUE,
                     ..Style::default()
                 },
-                vec![],
-            )],
-        );
+                children: vec![],
+            })],
+        });
         let constraints = BoxConstraints {
             min: (0.0, 0.0).into(),
             max: (WIDTH, HEIGH).into(),
@@ -124,18 +116,6 @@ mod test {
                         width: Some(100.),
                         height: Some(100.),
                         color: BLUE,
-                        child: Some(
-                            Box::new(Positioned {
-                                position: (80., 80.).into(),
-                                child: Box::new(Container {
-                                    width: Some(20.),
-                                    height: Some(20.),
-                                    color: YELLOW,
-                                    child: None,
-                                    ..Container::default()
-                                })
-                            })
-                        ),
                         ..Container::default()
                     }),
                 })),

@@ -1,7 +1,9 @@
 extern crate proc_macro;
-use crate::generator::Tokenizer;
-use proc_macro::{Ident, Punct, Spacing, TokenStream, TokenTree, token_stream::IntoIter};
+use proc_macro::{Delimiter, Ident, Punct, Spacing, TokenStream, TokenTree, token_stream::IntoIter};
 use std::str::FromStr;
+
+use crate::generator::Tokenizer;
+
 
 #[derive(Debug)]
 struct Prop {
@@ -11,7 +13,7 @@ struct Prop {
 }
 
 impl Tokenizer for Vec<Prop> {
-    fn tokenize(&mut self) -> TokenStream {
+    fn tokenize(self) -> TokenStream {
         self.iter()
             .map(|Prop { name, ty }| {
                 let mut stream = TokenStream::new();
@@ -31,31 +33,25 @@ struct Component {
     name: String,
     props: Vec<Prop>,
     body: TokenStream,
+    return_type: TokenStream
 }
 
 impl Component {
-    pub fn new(name: String, props: Vec<Prop>, body: TokenStream) -> Self {
-        Self { name, props, body }
+    pub fn new(name: String, props: Vec<Prop>, body: TokenStream, return_type: TokenStream) -> Self {
+        Self { name, props, body, return_type }
     }
 }
 
 fn visit_function_argument(iter: &mut IntoIter) -> Result<Prop, ()> {
     let mut name: Option<Ident> = None;
-    let mut is_argument_value = false;
     let mut ty = TokenStream::new();
     while let Some(token) = iter.next() {
         match token {
             TokenTree::Ident(ident) => {
-                if !is_argument_value {
-                    name = Some(ident);
-                }
+                name = Some(ident);
             }
             TokenTree::Punct(punct) => {
-                if is_argument_value && punct.as_char() == ',' {
-                    break;
-                }
                 if punct.as_char() == ':' {
-                    is_argument_value = true;
                     let mut stream: Vec<TokenTree> = Vec::new();
                     while let Some(token) = iter.next() {
                         if let TokenTree::Punct(punct) = &token
@@ -90,19 +86,40 @@ fn visit_function_arguments(iter: &mut IntoIter) -> Vec<Prop> {
             return props;
         }
     }
-    if let Some(token) = iter.next() {
+    if let Some(_token) = iter.next() {
         // return value
     }
     return props;
 }
 
-fn visit_function_body(iter: &mut IntoIter) -> TokenStream {
+fn visit_function_return_type(iter: &mut IntoIter) -> (TokenStream, TokenStream) {
+    let mut is_return = false;
+    let mut stream = TokenStream::new();
     while let Some(token) = iter.next() {
-        if let TokenTree::Group(group) = token {
-            return group.stream();
+        match token {
+            TokenTree::Punct(punct) => {
+                if is_return && punct.as_char() == '>' {
+                    while let Some(token) = iter.next() {
+                        match token {
+                            TokenTree::Group(group) => {
+                                if group.delimiter() == Delimiter::Brace {
+                                    return (group.stream(), stream);
+                                }
+                            },
+                            _ => {
+                                stream.extend(vec![token]);
+                            }
+                        }
+                    }
+                }
+                if punct.as_char() == '-' {
+                    is_return = true;
+                }
+            },
+            _ => {}
         }
     }
-    TokenStream::new()
+    (TokenStream::new(), TokenStream::new())
 }
 
 fn visit_function(iter: &mut IntoIter) -> Result<Component, ()> {
@@ -110,10 +127,13 @@ fn visit_function(iter: &mut IntoIter) -> Result<Component, ()> {
     while let Some(token) = iter.next() {
         if let TokenTree::Ident(ident) = token {
             if is_function_name {
+                let arguments = visit_function_arguments(iter);
+                let (body, return_type) = visit_function_return_type(iter);
                 return Ok(Component::new(
                     ident.to_string(),
-                    visit_function_arguments(iter),
-                    visit_function_body(iter),
+                    arguments,
+                    body,
+                    return_type,
                 ));
             } else {
                 if ident.to_string() == "fn" {
@@ -130,6 +150,7 @@ pub fn parse_component(input: TokenStream) -> TokenStream {
     if let Ok(component) = visit_function(&mut iter) {
         let name = component.name.to_string();
         let body = component.body;
+        let return_type = component.return_type;
 
         let props: Vec<(String, TokenStream)> = component
             .props
@@ -145,7 +166,7 @@ pub fn parse_component(input: TokenStream) -> TokenStream {
         let struct_fields = props
             .clone()
             .into_iter()
-            .map(|(name, _)| format!("pub  {name}: {name}"))
+            .map(|(name, _)| format!("pub {name}: {name}"))
             .collect::<Vec<String>>()
             .join(", ");
         let destructured_props = props
@@ -170,7 +191,7 @@ pub fn parse_component(input: TokenStream) -> TokenStream {
                     {struct_fields}
                 }}
 
-                pub fn render(Props {{ {destructured_props} }}: Props<{prop_values}>) -> Element {{
+                pub fn render(Props {{ {destructured_props} }}: Props<{prop_values}>) -> {return_type} {{
                     {body}
                 }}
             }}

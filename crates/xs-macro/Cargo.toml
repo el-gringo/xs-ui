@@ -1,5 +1,5 @@
 [package]
-name = "xs-macros"
+name = "xs-macro"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

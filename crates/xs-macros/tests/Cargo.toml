@@ -1,8 +1,0 @@
-[package]
-name = "xs-macros-tests"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-xs-core = { workspace = true }
-xs-macros = { path = "../" }

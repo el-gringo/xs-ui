@@ -2,6 +2,7 @@ use xs_layout::{
     Axis, BorderSide, Borders, Color, CrossAxisAlignment, EdgeInsets, MainAxisAlignment,
 };
 
+#[derive(Clone, Copy)]
 pub enum StyleDisplay {
     Flex,
     Static,
@@ -14,6 +15,7 @@ impl Default for StyleDisplay {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum StylePosition {
     Static,
     Absolute,
@@ -25,6 +27,7 @@ impl Default for StylePosition {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Style {
     pub background_color: Color,
 

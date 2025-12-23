@@ -1,11 +1,12 @@
 extern crate proc_macro;
-use proc_macro::{Punct, Spacing, Span, TokenStream, TokenTree, token_stream::IntoIter};
+use proc_macro::{TokenStream, TokenTree, token_stream::IntoIter};
 use std::{collections::HashMap, str::FromStr};
 
+type Attributes = HashMap<String, TokenStream>;
 #[derive(Debug)]
 struct Node {
     name: String,
-    attributes: HashMap<String, String>,
+    attributes: Attributes,
     children: Vec<Node>,
 }
 
@@ -13,32 +14,26 @@ impl Node {
     pub fn tokenize(&mut self) -> TokenStream {
         let mut output = TokenStream::new();
         let name = &self.name;
-        let children: Vec<TokenStream> = self
+        let children = self
             .children
             .iter_mut()
-            .map(|node| node.tokenize())
-            .collect();
-        let children = children
-            .iter()
-            .map(|stream| stream.to_string())
+            .map(|node| node.tokenize().to_string())
             .collect::<Vec<String>>()
             .join(", ");
+        self.attributes
+            .insert(
+                "children".to_string(),
+                TokenStream::from_str(
+                    format!("vec![{children}]").as_str()
+                ).unwrap()
+            );
         let props = self
             .attributes
             .iter()
             .map(|(name, value)| format!("{name}: {value}"))
             .collect::<Vec<String>>()
             .join(", ");
-        let code = format!(
-            "
-            {name}::render({name}::Props {{
-                {props},
-                children: vec![
-                    {children}
-                ]
-            }})
-        "
-        );
+        let code = format!("{name}::render({name}::Props {{ {props} }})");
         if let Ok(stream) = TokenStream::from_str(&code) {
             output.extend(stream);
         }
@@ -48,17 +43,10 @@ impl Node {
 
 pub fn parse_rsx(input: TokenStream) -> TokenStream {
     let mut iter = input.into_iter();
-    if let Ok(mut node) = visit_tag(&mut iter) {
-        let mut output = node.tokenize();
-        output.extend(vec![
-            Punct::new(';', Spacing::Alone)
-        ]);
-        return output;
-    }
-    TokenStream::new()
+    visit_tag(&mut iter).unwrap().tokenize()
 }
 
-fn visit_tag(iter: &mut IntoIter) -> Result<Node, ()> {
+fn visit_tag(iter: &mut IntoIter) -> Result<Node, &'static str> {
     let mut is_opening_tag = false;
     let mut is_closing_tag = false;
     while let Some(token) = iter.next() {
@@ -71,7 +59,7 @@ fn visit_tag(iter: &mut IntoIter) -> Result<Node, ()> {
                     is_opening_tag = false;
                     is_closing_tag = true;
                 }
-            },
+            }
             TokenTree::Ident(ident) => {
                 if is_opening_tag {
                     let name = ident.to_string();
@@ -93,10 +81,10 @@ fn visit_tag(iter: &mut IntoIter) -> Result<Node, ()> {
             _ => {}
         }
     }
-    Err(())
+    Err("failed parsing tag")
 }
 
-fn visit_attibute(iter: &mut IntoIter) -> Option<(String, String)> {
+fn visit_attibute(iter: &mut IntoIter) -> Option<(String, TokenStream)> {
     let mut name: Option<String> = None;
     while let Some(token) = iter.next() {
         match token {
@@ -104,7 +92,14 @@ fn visit_attibute(iter: &mut IntoIter) -> Option<(String, String)> {
                 name = Some(ident.to_string());
             }
             TokenTree::Literal(literal) => {
-                let value = literal.to_string();
+                let mut value = TokenStream::new();
+                value.extend(vec![ literal ]);
+                if let Some(name) = name {
+                    return Some((name, value));
+                }
+            }
+            TokenTree::Group(group) => {
+                let value = group.stream();
                 if let Some(name) = name {
                     return Some((name, value));
                 }
@@ -117,14 +112,13 @@ fn visit_attibute(iter: &mut IntoIter) -> Option<(String, String)> {
                     break;
                 }
             }
-            _ => {}
         }
     }
     None
 }
 
-fn visit_attibutes(iter: &mut IntoIter) -> HashMap<String, String> {
-    let mut attributes: HashMap<String, String> = HashMap::new();
+fn visit_attibutes(iter: &mut IntoIter) -> Attributes {
+    let mut attributes: Attributes = HashMap::new();
     while let Some((name, value)) = visit_attibute(iter) {
         attributes.insert(name, value);
     }

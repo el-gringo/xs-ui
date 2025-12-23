@@ -7,7 +7,10 @@ name = "app"
 version = "0.1.0"
 dependencies = [
  "xs-backend",
+ "xs-core",
  "xs-layout",
+ "xs-macro",
+ "xs-primitives",
  "xs-renderer-core",
 ]
 
@@ -300,8 +303,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "xs-macros"
+name = "xs-macro"
 version = "0.1.0"
+
+[[package]]
+name = "xs-macros-tests"
+version = "0.1.0"
+dependencies = [
+ "xs-core",
+ "xs-macro",
+]
 
 [[package]]
 name = "xs-math"
@@ -314,6 +325,16 @@ version = "0.1.0"
 [[package]]
 name = "xs-platform-linux"
 version = "0.1.0"
+
+[[package]]
+name = "xs-primitives"
+version = "0.1.0"
+dependencies = [
+ "pretty_assertions",
+ "xs-core",
+ "xs-layout",
+ "xs-macro",
+]
 
 [[package]]
 name = "xs-renderer"

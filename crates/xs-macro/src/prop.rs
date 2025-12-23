@@ -1,8 +1,8 @@
 use proc_macro::{TokenStream, TokenTree};
 
-pub fn parse_prop(attr: TokenStream, input: TokenStream) -> TokenStream {
-    let mut is_attribute_value = false;
-    let mut output = TokenStream::new();
+pub fn parse_prop(attr: TokenStream, _input: TokenStream) -> TokenStream {
+    //let mut is_attribute_value = false;
+    let output = TokenStream::new();
     let mut iter = attr.into_iter();
     while let Some(token) = iter.next() {
         match token {
@@ -13,7 +13,7 @@ pub fn parse_prop(attr: TokenStream, input: TokenStream) -> TokenStream {
             },
             TokenTree::Punct(punct) => {
                 if punct.as_char() == '=' {
-                    is_attribute_value = true;
+                    //is_attribute_value = true;
                 }
             },
             _ => {

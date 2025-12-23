@@ -1,6 +1,3 @@
-// pub mod div;
-// pub mod style;
-
 mod renderer;
 mod resource_manager;
 
