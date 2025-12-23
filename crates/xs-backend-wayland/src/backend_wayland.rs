@@ -41,8 +41,7 @@ pub fn create_surface(ctx: &mut WaylandContext) -> *mut wl_surface {
 }
 
 pub struct BackendWayland {
-    config: WaylandConfig,
-    renderer: RendererOpenGl,
+    config: WaylandConfig
 }
 
 impl BackendWayland {
@@ -53,8 +52,7 @@ impl BackendWayland {
             window_height: height,
             fullscreen: false,
         };
-        let renderer = RendererOpenGl::new(width, height);
-        Self { config, renderer }
+        Self { config }
     }
 
     pub fn run<F>(&mut self, generate_scene: F)
@@ -62,7 +60,6 @@ impl BackendWayland {
         F: Fn() -> Box<dyn Layout>,
     {
         let mut renderer = RendererOpenGl::new(self.config.window_width, self.config.window_height);
-
         let mut ctx = WaylandContext::new();
         connect(&mut ctx);
         create_registry(&mut ctx);

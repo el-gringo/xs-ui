@@ -2,7 +2,8 @@
 
 use xs_backend::Backend;
 use xs_layout::{
-    Axis, BorderSide, Borders, Color, Container, CrossAxisAlignment, EdgeInsets, Layout, MainAxisAlignment, Positioned, colors::{BLUE, GREEN, RED, YELLOW}
+    Container, Layout, Positioned,
+    colors::{BLUE, RED, YELLOW},
 };
 // use xs_renderer_core::{
 //     div,
@@ -139,24 +140,22 @@ fn raw_absolute() -> Box<dyn Layout> {
         height: Some(HEIGH),
         color: RED,
         child: Some(Box::new(Positioned {
-                position: (100., 100.).into(),
-                child: Box::new(Container {
-                    width: Some(100.),
-                    height: Some(100.),
-                    color: BLUE,
-                    child: Some(
-                        Box::new(Positioned {
-                            position: (80., 80.).into(),
-                            child: Box::new(Container {
-                                width: Some(20.),
-                                height: Some(20.),
-                                color: YELLOW,
-                                child: None,
-                                ..Container::default()
-                            })
-                        })
-                    ),
-                    ..Container::default()
+            position: (100., 100.).into(),
+            child: Box::new(Container {
+                width: Some(100.),
+                height: Some(100.),
+                color: BLUE,
+                child: Some(Box::new(Positioned {
+                    position: (80., 80.).into(),
+                    child: Box::new(Container {
+                        width: Some(20.),
+                        height: Some(20.),
+                        color: YELLOW,
+                        child: None,
+                        ..Container::default()
+                    }),
+                })),
+                ..Container::default()
             }),
         })),
         ..Container::default() // child: Some(Box::new(Flex {
@@ -169,11 +168,8 @@ fn raw_absolute() -> Box<dyn Layout> {
     })
 }
 
-
 pub fn main() {
     let mut backend = Backend::new(1280, 720);
     backend.log("test");
-    backend.run(|| {
-        app::render_nested_positioned()
-    });
+    backend.run(|| app::render_nested_positioned());
 }
