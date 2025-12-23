@@ -109,7 +109,6 @@ impl Container {
         let position = pos + self.margin.min() + self.padding.min() + self.borders.min();
         let lbox = LayoutBox::from_child(sbox, position);
         let id = tree.insert(lbox);
-
         SizedLayoutBox {
             size,
             children: vec![id],

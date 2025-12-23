@@ -1,13 +1,10 @@
 use xs_math::Vector2;
 
 use super::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
-use crate::{colors::TRANSPARENT, decoration::Material};
-
 
 // --------------------------------------------------
 // Center
 // --------------------------------------------------
-
 
 pub struct Center {
     pub child: Box<dyn Layout>,
@@ -35,7 +32,6 @@ impl Layout for Center {
 // Stack
 // --------------------------------------------------
 
-
 pub struct Stack {
     pub children: Vec<Positioned>,
 }
@@ -45,7 +41,8 @@ impl Layout for Stack {
         None
     }
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
-        let children = self.children
+        let children = self
+            .children
             .iter()
             .map(|child| {
                 let child = child.layout(tree, constraints);
@@ -67,7 +64,6 @@ impl Layout for Stack {
 // Positioned
 // --------------------------------------------------
 
-
 pub struct Positioned {
     pub position: Vector2,
     pub child: Box<dyn Layout>,
@@ -88,7 +84,7 @@ impl Layout for Positioned {
         SizedLayoutBox {
             size: constraints.max,
             children: vec![child_id],
-            material: Some(Material::filled(TRANSPARENT)),
+            material: None,
             ..Default::default()
         }
     }

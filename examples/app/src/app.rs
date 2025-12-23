@@ -160,22 +160,19 @@ pub fn sidebar() -> Box<dyn Layout> {
 #[allow(dead_code)]
 pub fn render_nested_positioned() -> Box<dyn Layout> {
     Box::new(Positioned {
-        position: (0.0, 0.0).into(),
+        position: (100.0, 100.0).into(),
         child: Box::new(Container {
             color: BLUE,
-            width: Some(100.0),
-            height: Some(100.0),
+            width: Some(400.0),
+            height: Some(400.0),
             child: Some(
                 Box::new(Positioned {
-                    position: (100.0, 100.0).into(),
-                    child: Box::new(Positioned {
-                        position: (200.0, 200.0).into(),
-                        child: Box::new(Container {
+                    position: (100.0, 0.0).into(),
+                    child: Box::new(Container {
                             color: GREEN,
                             width: Some(100.0),
                             height: Some(100.0),
                             ..Default::default()
-                        }),
                     }),
                 }),
             ),
