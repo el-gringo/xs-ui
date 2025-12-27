@@ -19,6 +19,7 @@ edition = "2024"
 
 [workspace.dependencies]
 xs-backend = { path = "crates/xs-backend" }
+xs-backend-core = { path = "crates/xs-backend-core" }
 xs-backend-browser = { path = "crates/xs-backend-browser" }
 xs-backend-wayland = { path = "crates/xs-backend-wayland" }
 xs-backend-wayland-egl = { path = "crates/xs-backend-wayland-egl" }
@@ -35,7 +36,8 @@ xs-macro-tests = { path = "crates/xs-macro/tests" }
 xs-math = { path = "crates/xs-math" }
 xs-platform-event = { path = "crates/xs-platform-event" }
 xs-platform-linux = { path = "crates/xs-platform-linux" }
-xs-primitives = { path = "crates/xs-primitives" }
+xs-primitive = { path = "crates/xs-primitive" }
+xs-primitive2 = { path = "crates/xs-primitive2" }
 xs-renderer-core = { path = "crates/xs-renderer-core" }
 xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
 xs-renderer-webgl = { path = "crates/xs-renderer-webgl" }

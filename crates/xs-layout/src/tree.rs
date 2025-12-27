@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use xs_math::{ Rectangle, Vector2 };
+use xs_math::{Rectangle, Vector2};
 
 use crate::base::EdgeInsets;
 use crate::decoration::Material;
@@ -25,6 +25,7 @@ pub trait Layout {
     fn flex_factor(&self) -> Option<f32>;
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox;
 }
+pub type View = Box<dyn Layout>;
 
 // The minimum and maximum dimensions that a [SizedLayoutBox] or a [LayoutBox]
 // can be.
@@ -205,7 +206,11 @@ impl<'a> Iterator for LayoutTreeIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Color, colors::{GREEN, RED}, decoration::Material};
+    use crate::{
+        Color,
+        colors::{GREEN, RED},
+        decoration::Material,
+    };
 
     #[test]
     fn layout_tree_iter_nested() {

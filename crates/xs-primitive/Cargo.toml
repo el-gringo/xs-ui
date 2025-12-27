@@ -1,5 +1,5 @@
 [package]
-name = "xs-primitives"
+name = "xs-primitive"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

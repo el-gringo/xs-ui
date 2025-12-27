@@ -1,13 +1,14 @@
 use xs_math::Vector2;
 
 use super::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
+use crate::View;
 
 // --------------------------------------------------
 // Center
 // --------------------------------------------------
 
 pub struct Center {
-    pub child: Box<dyn Layout>,
+    pub child: View,
 }
 
 impl Layout for Center {
@@ -66,7 +67,7 @@ impl Layout for Stack {
 
 pub struct Positioned {
     pub position: Vector2,
-    pub child: Box<dyn Layout>,
+    pub child: View,
 }
 
 impl Layout for Positioned {

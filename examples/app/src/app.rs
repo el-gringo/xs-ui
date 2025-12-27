@@ -1,14 +1,14 @@
 use xs_layout::{colors::{BLUE, GREEN, RED}, *};
 
 #[allow(dead_code)]
-pub fn sidebar() -> Box<dyn Layout> {
+pub fn sidebar() -> View {
     let border_color = Color::rgba(0.27, 0.27, 0.27, 255.0);
     let color_grey1 = Color::rgba(0.09, 0.09, 0.09, 255.0);
     let color_grey2 = Color::rgba(0.11, 0.11, 0.11, 255.0);
     let color_grey3 = Color::rgba(0.13, 0.13, 0.13, 255.0);
     let color_grey4 = Color::rgba(0.24, 0.24, 0.24, 255.0);
-    let mut files: Vec<Box<dyn Layout>> = vec![];
-    let mut files2: Vec<Box<dyn Layout>> = vec![];
+    let mut files: Vec<View> = vec![];
+    let mut files2: Vec<View> = vec![];
     for _ in 0..10 {
         files.push(Box::new(Container {
             height: Some(20.0),
@@ -158,7 +158,7 @@ pub fn sidebar() -> Box<dyn Layout> {
 }
 
 #[allow(dead_code)]
-pub fn render_nested_positioned() -> Box<dyn Layout> {
+pub fn render_nested_positioned() -> View {
     Box::new(Positioned {
         position: (100.0, 100.0).into(),
         child: Box::new(Container {
@@ -182,7 +182,7 @@ pub fn render_nested_positioned() -> Box<dyn Layout> {
 }
 
 #[allow(dead_code)]
-pub fn flex() -> Box<dyn Layout> {
+pub fn flex() -> View {
 
     Box::new(Positioned {
         position: (0.0, 0.0).into(),

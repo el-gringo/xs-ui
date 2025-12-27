@@ -3,8 +3,7 @@ use xs_math::Vector2;
 use crate::base::{Alignment, EdgeInsets};
 use crate::decoration::{Borders, Material};
 use crate::tree::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
-use crate::Color;
-
+use crate::{Color, View};
 
 fn clamp_f32(value: f32, min: f32, max: f32) -> f32 {
     if value < min {
@@ -41,7 +40,7 @@ pub struct Container {
     pub borders: Borders,
     pub margin: EdgeInsets,
     pub color: Color,
-    pub child: Option<Box<dyn Layout>>,
+    pub child: Option<View>,
 }
 
 impl Layout for Container {
@@ -103,8 +102,16 @@ impl Container {
         };
         let size = Vector2::new(size_x, size_y) + self.margin.total();
 
-        let pos_x = clamp_f32(pos_x - child_size.x * 0.5, 0.0, constraints.max.x - child_size.x);
-        let pos_y = clamp_f32(pos_y - child_size.y * 0.5, 0.0, constraints.max.y - child_size.y);
+        let pos_x = clamp_f32(
+            pos_x - child_size.x * 0.5,
+            0.0,
+            constraints.max.x - child_size.x,
+        );
+        let pos_y = clamp_f32(
+            pos_y - child_size.y * 0.5,
+            0.0,
+            constraints.max.y - child_size.y,
+        );
         let pos = Vector2::new(pos_x, pos_y);
         let position = pos + self.margin.min() + self.padding.min() + self.borders.min();
         let lbox = LayoutBox::from_child(sbox, position);
@@ -150,10 +157,10 @@ impl Container {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::colors::{GREEN, RED};
     use test_utils::assert_slice_eq;
     use xs_math::Rectangle;
-    use super::*;
-    use crate::colors::{RED, GREEN};
 
     #[test]
     pub fn container_with_no_child_fills_constraints() {

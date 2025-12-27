@@ -1,15 +1,16 @@
-use std::{ffi::c_void, ptr::null_mut};
+use std::{ffi::c_void, ptr::null_mut, time::Duration};
 
-use xs_egl_sys::LibEgl;
+use xs_backend_core::AppContext;
 use xs_backend_wayland_client::{
     LibWaylandClient, WL_SURFACE_COMMIT, wl_compositor, wl_display, wl_registry, wl_request,
     wl_seat, wl_surface,
 };
 use xs_backend_wayland_egl::{LibWaylandEgl, wl_egl_window};
 use xs_backend_wayland_extensions::xdg_shell::{xdg_surface, xdg_toplevel, xdg_wm_base};
+use xs_egl_sys::LibEgl;
 
 pub struct WaylandContext {
-    pub running: bool,
+    pub app_context: AppContext,
 
     pub client: LibWaylandClient,
     pub lib_wayland_egl: LibWaylandEgl,
@@ -37,8 +38,10 @@ impl WaylandContext {
         let client = LibWaylandClient::try_load().expect("failed to bind libwayland-client.so");
         let lib_wayland_egl = LibWaylandEgl::try_load().expect("failed to bind libwayland-egl.so");
         let lib_egl = LibEgl::try_load().expect("failed to bind libEGL.so");
+        let app_context = AppContext::new(Duration::new(0, 0));
+
         WaylandContext {
-            running: true,
+            app_context,
 
             client,
             lib_wayland_egl,
@@ -75,9 +78,7 @@ impl WaylandContext {
     }
 
     pub fn dispatch_pending(&mut self) -> i32 {
-        unsafe {
-            (self.client.wl_display_dispatch_pending)(self.wl_display)
-        }
+        unsafe { (self.client.wl_display_dispatch_pending)(self.wl_display) }
     }
 
     pub fn swap_buffers(&mut self) {

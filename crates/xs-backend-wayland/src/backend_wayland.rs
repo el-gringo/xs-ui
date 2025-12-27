@@ -1,9 +1,13 @@
-use std::ptr::null_mut;
+use std::{
+    ptr::null_mut,
+    time::Instant,
+};
 
+use xs_backend_core::AppContext;
 use xs_backend_wayland_client::{
     WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
 };
-use xs_layout::Layout;
+use xs_primitive2::Mount;
 use xs_renderer_core::Renderer;
 use xs_renderer_opengl::RendererOpenGl;
 
@@ -41,7 +45,7 @@ pub fn create_surface(ctx: &mut WaylandContext) -> *mut wl_surface {
 }
 
 pub struct BackendWayland {
-    config: WaylandConfig
+    config: WaylandConfig,
 }
 
 impl BackendWayland {
@@ -55,24 +59,31 @@ impl BackendWayland {
         Self { config }
     }
 
-    pub fn run<F>(&mut self, generate_scene: F)
+    pub fn run<F>(&mut self, mut generate_scene: F)
     where
-        F: Fn() -> Box<dyn Layout>,
+        F: FnMut(&mut AppContext) -> Box<dyn Mount>
     {
         let mut renderer = RendererOpenGl::new(self.config.window_width, self.config.window_height);
+        let start = Instant::now();
         let mut ctx = WaylandContext::new();
         connect(&mut ctx);
         create_registry(&mut ctx);
         create_seat(&mut ctx);
         create_surface(&mut ctx);
-        create_egl_window(&mut ctx, self.config.window_width, self.config.window_height);
+        create_egl_window(
+            &mut ctx,
+            self.config.window_width,
+            self.config.window_height,
+        );
         create_xdg(&mut ctx);
         set_app_id(&mut ctx, "app".into());
         set_title(&mut ctx, "Title".into());
         renderer.init();
-        while ctx.dispatch_pending() != -1 && ctx.running {
-            let scene = generate_scene();
-            renderer.draw_frame(scene);
+        let mut root = generate_scene(&mut ctx.app_context);
+        while ctx.dispatch_pending() != -1 && ctx.app_context.running {
+            //let app = ctx.app.borrow_mut();
+            ctx.app_context.now = Instant::now().duration_since(start);
+            renderer.draw_frame(root.render(&mut ctx.app_context));
             ctx.swap_buffers();
         }
     }

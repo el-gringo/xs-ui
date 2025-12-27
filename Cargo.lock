@@ -10,7 +10,8 @@ dependencies = [
  "xs-core",
  "xs-layout",
  "xs-macro",
- "xs-primitives",
+ "xs-primitive",
+ "xs-primitive2",
  "xs-renderer-core",
 ]
 
@@ -200,6 +201,7 @@ name = "xs-backend"
 version = "0.1.0"
 dependencies = [
  "xs-backend-browser",
+ "xs-backend-core",
  "xs-backend-wayland",
  "xs-layout",
 ]
@@ -214,9 +216,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "xs-backend-core"
+version = "0.1.0"
+
+[[package]]
 name = "xs-backend-wayland"
 version = "0.1.0"
 dependencies = [
+ "xs-backend-core",
  "xs-backend-wayland-client",
  "xs-backend-wayland-egl",
  "xs-backend-wayland-extensions",
@@ -226,6 +233,7 @@ dependencies = [
  "xs-layout",
  "xs-platform-event",
  "xs-platform-linux",
+ "xs-primitive2",
  "xs-renderer-core",
  "xs-renderer-opengl",
 ]
@@ -327,13 +335,21 @@ name = "xs-platform-linux"
 version = "0.1.0"
 
 [[package]]
-name = "xs-primitives"
+name = "xs-primitive"
 version = "0.1.0"
 dependencies = [
  "pretty_assertions",
  "xs-core",
  "xs-layout",
  "xs-macro",
+]
+
+[[package]]
+name = "xs-primitive2"
+version = "0.1.0"
+dependencies = [
+ "xs-backend-core",
+ "xs-layout",
 ]
 
 [[package]]

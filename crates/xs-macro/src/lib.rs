@@ -4,6 +4,7 @@ use proc_macro::TokenStream;
 mod component;
 mod generator;
 mod rsx;
+//mod rsx2;
 mod prop;
 
 use component::parse_component;

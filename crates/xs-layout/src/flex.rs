@@ -1,9 +1,7 @@
-use std::collections::VecDeque;
-
-use xs_math::Vector2;
 use super::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
-
-
+use crate::View;
+use std::collections::VecDeque;
+use xs_math::Vector2;
 
 // What diboundsion the flex container should face.
 #[derive(Eq, PartialEq, Clone, Copy)]
@@ -112,9 +110,8 @@ where
 // it to calculate the corbounds `BoxConstraints` for the flexible child.
 pub struct Flexible {
     pub flex_factor: f32,
-    pub child: Box<dyn Layout>,
+    pub child: View,
 }
-
 
 impl Layout for Flexible {
     fn flex_factor(&self) -> Option<f32> {
@@ -132,7 +129,7 @@ pub struct Flex {
     pub main_axis_size: MainAxisSize,
     pub main_axis_alignment: MainAxisAlignment,
     pub cross_axis_alignment: CrossAxisAlignment,
-    pub children: Vec<Box<dyn Layout>>,
+    pub children: Vec<View>,
 }
 
 impl Default for Flex {
@@ -160,8 +157,7 @@ impl Layout for Flex {
 
         // Keep track of the children that have already undergone layout.
         // `VecDeque` because we need `pop_front` later.
-        let mut layout_cache: VecDeque<(&Box<dyn Layout>, Option<SizedLayoutBox>)> =
-            VecDeque::new();
+        let mut layout_cache: VecDeque<(&View, Option<SizedLayoutBox>)> = VecDeque::new();
 
         // Do two passes over the children. The first pass calculates the total
         // main axis size of the fixed-size children. We must do this to
@@ -192,7 +188,6 @@ impl Layout for Flex {
             total_main_size += main_size;
             total_cross_size = f32::max(cross_size, total_cross_size);
         }
-
 
         // Now we can determine the relative sizing of the flex widgets
         let free_space = main_max - sum_inflexible_size;
@@ -442,14 +437,12 @@ impl Flex {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use xs_math::Rectangle;
     use crate::{
-        Color,
-        Container,
-        Material,
-        colors::{RED, GREEN, BLUE}
+        Color, Container, Material,
+        colors::{BLUE, GREEN, RED},
     };
     use test_utils::assert_slice_eq;
+    use xs_math::Rectangle;
 
     // --------------------------------------------------
     // Flexible
@@ -2686,7 +2679,6 @@ mod tests {
             },
         ];
         assert_slice_eq(&expected_layout, &actual_layout);
-
     }
 
     #[test]
