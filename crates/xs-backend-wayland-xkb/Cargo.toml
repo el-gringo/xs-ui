@@ -6,3 +6,4 @@ edition.workspace = true
 
 [dependencies]
 xs-platform-linux = { workspace = true }
+xs-platform-event = { workspace = true }

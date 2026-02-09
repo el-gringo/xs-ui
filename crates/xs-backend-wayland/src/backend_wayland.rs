@@ -1,13 +1,9 @@
-use std::{
-    ptr::null_mut,
-    time::Instant,
-};
+use std::{ptr::null_mut};
 
-use xs_backend_core::AppContext;
+use xs_backend_core::Render;
 use xs_backend_wayland_client::{
     WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
 };
-use xs_primitive2::Mount;
 use xs_renderer_core::Renderer;
 use xs_renderer_opengl::RendererOpenGl;
 
@@ -59,12 +55,13 @@ impl BackendWayland {
         Self { config }
     }
 
-    pub fn run<F>(&mut self, mut generate_scene: F)
+    pub fn run<F>(&mut self, mut create_root: F)
     where
-        F: FnMut(&mut AppContext) -> Box<dyn Mount>
+        F: FnMut() -> Box<dyn Render>,
     {
-        let mut renderer = RendererOpenGl::new(self.config.window_width, self.config.window_height);
-        let start = Instant::now();
+        let width = self.config.window_width;
+        let height = self.config.window_height;
+        let mut renderer = RendererOpenGl::new(width, height);
         let mut ctx = WaylandContext::new();
         connect(&mut ctx);
         create_registry(&mut ctx);
@@ -79,11 +76,11 @@ impl BackendWayland {
         set_app_id(&mut ctx, "app".into());
         set_title(&mut ctx, "Title".into());
         renderer.init();
-        let mut root = generate_scene(&mut ctx.app_context);
         while ctx.dispatch_pending() != -1 && ctx.app_context.running {
-            //let app = ctx.app.borrow_mut();
-            ctx.app_context.now = Instant::now().duration_since(start);
-            renderer.draw_frame(root.render(&mut ctx.app_context));
+            ctx.app_context.dispatch();
+            let root = create_root();
+            let frame = ctx.app_context.render(root.into(), 0, 0);
+            renderer.draw_frame(frame);
             ctx.swap_buffers();
         }
     }

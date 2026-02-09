@@ -7,6 +7,7 @@ use xs_backend_wayland_client::{
 };
 use xs_backend_wayland_egl::{LibWaylandEgl, wl_egl_window};
 use xs_backend_wayland_extensions::xdg_shell::{xdg_surface, xdg_toplevel, xdg_wm_base};
+use xs_backend_wayland_xkb::{LibXkbCommon, XkbKeymap, xkb_context, xkb_state};
 use xs_egl_sys::LibEgl;
 
 pub struct WaylandContext {
@@ -15,6 +16,7 @@ pub struct WaylandContext {
     pub client: LibWaylandClient,
     pub lib_wayland_egl: LibWaylandEgl,
     pub lib_egl: LibEgl,
+    pub lib_xkb: LibXkbCommon,
 
     pub egl_display: *mut c_void,
     pub egl_window: *mut wl_egl_window,
@@ -31,13 +33,18 @@ pub struct WaylandContext {
     pub xdg_wm_base: *mut xdg_wm_base,
     pub xdg_toplevel: *mut xdg_toplevel,
     pub xdg_surface: *mut xdg_surface,
+
+    pub xkb_context: *mut xkb_context,
+    pub xkb_state: *mut xkb_state,
+    pub xkb_keymap: XkbKeymap,
 }
 
 impl WaylandContext {
     pub fn new() -> WaylandContext {
-        let client = LibWaylandClient::try_load().expect("failed to bind libwayland-client.so");
-        let lib_wayland_egl = LibWaylandEgl::try_load().expect("failed to bind libwayland-egl.so");
-        let lib_egl = LibEgl::try_load().expect("failed to bind libEGL.so");
+        let client = LibWaylandClient::try_load().expect("failed to load libwayland-client.so");
+        let lib_wayland_egl = LibWaylandEgl::try_load().expect("failed to load libwayland-egl.so");
+        let lib_egl = LibEgl::try_load().expect("failed to load libEGL.so");
+        let lib_xkb = LibXkbCommon::try_load().expect("failed to load libxkbcommon.so");
         let app_context = AppContext::new(Duration::new(0, 0));
 
         WaylandContext {
@@ -46,6 +53,7 @@ impl WaylandContext {
             client,
             lib_wayland_egl,
             lib_egl,
+            lib_xkb,
 
             egl_display: null_mut(),
             egl_window: null_mut(),
@@ -62,6 +70,10 @@ impl WaylandContext {
             xdg_wm_base: null_mut(),
             xdg_surface: null_mut(),
             xdg_toplevel: null_mut(),
+
+            xkb_context: null_mut(),
+            xkb_state: null_mut(),
+            xkb_keymap: Default::default()
         }
     }
 

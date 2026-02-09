@@ -26,6 +26,7 @@ pub type c_int =  std::os::raw::c_int;
 pub type c_ulong = std::os::raw::c_ulong;
 pub type c_void = std::os::raw::c_void;
 pub type c_char = std::os::raw::c_char;
+pub type off_t = i64;
 pub type size_t = usize;
 
 pub const FD_SETSIZE: usize = 1024;
@@ -66,14 +67,10 @@ unsafe extern "C"{
         timeout: *mut timeval,
     ) -> c_int;
     pub fn read(fd: c_int, buf: *mut c_void, count: size_t) -> c_int;
-    /*
-
     pub fn unlink(c: *const c_char) -> c_int;
     pub fn mmap(addr: *mut c_void, len: size_t, prot: c_int, flags: c_int, fd: c_int, offset: off_t) -> *mut c_void;
     pub fn munmap(addr: *mut c_void, len: size_t) -> c_int;
-    pub fn posix_fallocate(fd: c_int, offset: off_t, len: off_t) -> c_int;
     pub fn mkostemp(template: *mut c_char, flags: c_int) -> c_int;
-    */
 }
 
 pub unsafe fn FD_SET(fd: c_int, set: *mut fd_set) -> () {

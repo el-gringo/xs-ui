@@ -14,15 +14,15 @@ impl Default for CargoBuildMessageSpan {
     }
 }
 
-#[derive(Debug, DeJson)]
-struct CargoBuildMessageChild {
-    //children: Vec<CargoBuildMessageChild>,
-    //code: None,
-    //level: String,
-    //message: String,
-    //rendered: Option<String>,
-    //spans: Vec<CargoBuildMessageSpan>
-}
+// #[derive(Debug, DeJson)]
+// struct CargoBuildMessageChild {
+//     children: Vec<CargoBuildMessageChild>,
+//     code: None,
+//     level: String,
+//     message: String,
+//     rendered: Option<String>,
+//     spans: Vec<CargoBuildMessageSpan>
+// }
 
 #[derive(Debug, DeJson)]
 struct CargoBuildMessage {

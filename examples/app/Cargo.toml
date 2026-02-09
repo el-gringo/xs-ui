@@ -8,7 +8,5 @@ edition.workspace = true
 xs-layout.workspace = true
 xs-backend.workspace = true
 xs-core.workspace = true
-xs-macro.workspace = true
 xs-primitive.workspace = true
-xs-primitive2.workspace = true
 xs-renderer-core.workspace = true

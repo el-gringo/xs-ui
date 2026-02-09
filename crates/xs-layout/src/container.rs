@@ -31,6 +31,23 @@ impl Layout for Spacer {
     }
 }
 
+pub struct DummyContainer;
+
+impl Layout for DummyContainer {
+    fn flex_factor(&self) -> Option<f32> {
+        None
+    }
+
+    fn layout(&self, _tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
+        SizedLayoutBox {
+            margin: EdgeInsets::zero(),
+            size: constraints.max,
+            children: Vec::new(),
+            material: None,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Container {
     pub width: Option<f32>,

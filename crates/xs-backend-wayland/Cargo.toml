@@ -16,5 +16,5 @@ xs-layout = { workspace = true }
 xs-renderer-opengl = { workspace = true }
 xs-platform-event = { workspace = true }
 xs-platform-linux = { workspace = true }
-xs-primitive2.workspace = true
+xs-primitive.workspace = true
 xs-renderer-core = { workspace = true }

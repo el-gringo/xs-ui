@@ -14,7 +14,7 @@ pub struct Touch {
     pub y: f32,
 }
 
-#[derive(Copy, Clone, PartialEq, Hash, Eq)]
+#[derive(Copy, Clone, PartialEq, Hash, Eq, Debug)]
 #[repr(u16)]
 /// These keycode values are based off of X11's `keysymdef.h`.
 /// Missing keycodes from that list are given the prefix 0x01.
@@ -156,6 +156,18 @@ pub enum TouchPhase {
     Moved,
     Ended,
     Cancelled,
+}
+
+#[derive(Copy, Clone)]
+pub struct KeyEvent {
+    pub code: KeyCode,
+    pub mods: KeyMods,
+}
+
+impl KeyEvent {
+    pub fn new(code: KeyCode, mods: KeyMods) -> KeyEvent {
+        KeyEvent { code, mods }
+    }
 }
 
 /// A trait defining event callbacks.

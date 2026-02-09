@@ -9,9 +9,7 @@ dependencies = [
  "xs-backend",
  "xs-core",
  "xs-layout",
- "xs-macro",
  "xs-primitive",
- "xs-primitive2",
  "xs-renderer-core",
 ]
 
@@ -197,6 +195,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
+name = "xs"
+version = "0.1.0"
+
+[[package]]
 name = "xs-backend"
 version = "0.1.0"
 dependencies = [
@@ -218,6 +220,10 @@ dependencies = [
 [[package]]
 name = "xs-backend-core"
 version = "0.1.0"
+dependencies = [
+ "xs-layout",
+ "xs-platform-event",
+]
 
 [[package]]
 name = "xs-backend-wayland"
@@ -233,7 +239,7 @@ dependencies = [
  "xs-layout",
  "xs-platform-event",
  "xs-platform-linux",
- "xs-primitive2",
+ "xs-primitive",
  "xs-renderer-core",
  "xs-renderer-opengl",
 ]
@@ -264,6 +270,7 @@ dependencies = [
 name = "xs-backend-wayland-xkb"
 version = "0.1.0"
 dependencies = [
+ "xs-platform-event",
  "xs-platform-linux",
 ]
 
@@ -315,14 +322,6 @@ name = "xs-macro"
 version = "0.1.0"
 
 [[package]]
-name = "xs-macros-tests"
-version = "0.1.0"
-dependencies = [
- "xs-core",
- "xs-macro",
-]
-
-[[package]]
 name = "xs-math"
 version = "0.1.0"
 
@@ -336,16 +335,6 @@ version = "0.1.0"
 
 [[package]]
 name = "xs-primitive"
-version = "0.1.0"
-dependencies = [
- "pretty_assertions",
- "xs-core",
- "xs-layout",
- "xs-macro",
-]
-
-[[package]]
-name = "xs-primitive2"
 version = "0.1.0"
 dependencies = [
  "xs-backend-core",

@@ -1,9 +1,0 @@
-[package]
-name = "xs-primitive2"
-version.workspace = true
-authors.workspace = true
-edition.workspace = true
-
-[dependencies]
-xs-layout.workspace = true
-xs-backend-core.workspace = true

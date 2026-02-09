@@ -1,12 +1,12 @@
 use xs_layout::{
-    Axis, BorderSide, Borders, Color, CrossAxisAlignment, EdgeInsets, MainAxisAlignment,
+    Axis, BorderSide, Borders, Color, CrossAxisAlignment, EdgeInsets, MainAxisAlignment
 };
 
 #[derive(Clone, Copy)]
 pub enum StyleDisplay {
     Flex,
     Static,
-    Inline
+    Inline,
 }
 
 impl Default for StyleDisplay {
@@ -97,49 +97,6 @@ impl Default for Style {
             flex_shrink: Default::default(),
             justify_content: Default::default(),
             align_items: Default::default(),
-        }
-    }
-}
-
-impl Style {
-    pub fn prepare(&mut self) {
-        if self.border_top.is_some() {
-            self.border.top = self.border_top;
-        }
-        if self.border_right.is_some() {
-            self.border.right = self.border_right;
-        }
-        if self.border_bottom.is_some() {
-            self.border.bottom = self.border_bottom;
-        }
-        if self.border_left.is_some() {
-            self.border.left = self.border_left;
-        }
-
-        if self.margin_top.is_some() {
-            self.margin.top = self.margin_top.unwrap();
-        }
-        if self.margin_right.is_some() {
-            self.margin.right = self.margin_right.unwrap();
-        }
-        if self.margin_bottom.is_some() {
-            self.margin.bottom = self.margin_bottom.unwrap();
-        }
-        if self.margin_left.is_some() {
-            self.margin.left = self.margin_left.unwrap();
-        }
-
-        if self.padding_top.is_some() {
-            self.padding.top = self.padding_top.unwrap();
-        }
-        if self.padding_right.is_some() {
-            self.padding.right = self.padding_right.unwrap();
-        }
-        if self.padding_bottom.is_some() {
-            self.padding.bottom = self.padding_bottom.unwrap();
-        }
-        if self.padding_left.is_some() {
-            self.padding.left = self.padding_left.unwrap();
         }
     }
 }

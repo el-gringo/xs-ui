@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use xs_http::{response::{
         HttpHeaders,
         HttpResponse

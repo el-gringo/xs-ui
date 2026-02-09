@@ -30,7 +30,7 @@ mod tests {
         }
 
         #[allow(dead_code)]
-        pub fn render(Props { name, children }: Props<&'_ str, Vec<String>>) -> String {
+        pub fn render(Props { name, .. }: Props<&'_ str, Vec<String>>) -> String {
             rsx! { <my_node name={name}>{children}</my_node> }
             //my_node::render(my_node::Props { name: name, children })
         }
@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn test_container() {
-        let result = rsx! {
+        let _result = rsx! {
             <my_container name="container">
                 <my_node name="child1"></my_node>
                 <my_node name="child2">

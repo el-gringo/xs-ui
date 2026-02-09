@@ -25,6 +25,7 @@ pub trait Layout {
     fn flex_factor(&self) -> Option<f32>;
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox;
 }
+
 pub type View = Box<dyn Layout>;
 
 // The minimum and maximum dimensions that a [SizedLayoutBox] or a [LayoutBox]

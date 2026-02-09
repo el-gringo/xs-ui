@@ -4,7 +4,7 @@ use xs_backend_wayland_client::{
     wl_seat_capability_WL_SEAT_CAPABILITY_KEYBOARD, wl_seat_listener,
 };
 
-use crate::{context::WaylandContext, keyboard::{KEYBOARD_LISTENER, keyboard_handle_enter, keyboard_handle_key}};
+use crate::{context::WaylandContext, keyboard::{KEYBOARD_LISTENER, keyboard_handle_enter, keyboard_handle_key, keyboard_handle_keymap}};
 
 pub unsafe extern "C" fn seat_handle_capabilities(
     data: *mut std::ffi::c_void,
@@ -22,8 +22,10 @@ pub unsafe extern "C" fn seat_handle_capabilities(
                 ctx.client.wl_keyboard_interface
             );
             assert!(!keyboard.is_null());
+            ctx.xkb_context = (ctx.lib_xkb.xkb_context_new)(0);
             KEYBOARD_LISTENER.enter = keyboard_handle_enter;
             KEYBOARD_LISTENER.key = keyboard_handle_key;
+            KEYBOARD_LISTENER.keymap = keyboard_handle_keymap;
             (ctx.client.wl_proxy_add_listener)(
                 keyboard as _,
                 &raw const KEYBOARD_LISTENER as *const _ as _,
