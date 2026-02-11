@@ -491,7 +491,7 @@ const env = {
   canvas_height: function () {
       return Math.floor(canvas.height);
   },
-  init: function () {
+  run: function () {
     canvas.onkeydown = function onKeyDown(event) {
       const { keyCode, ctrlKey, shiftKey, altKey, repeat } = event;
       let modifiers = 0;
