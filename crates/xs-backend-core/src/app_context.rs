@@ -1,17 +1,15 @@
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
-use std::time::Duration;
-use std::{rc::Rc, time::Instant};
+use std::rc::Rc;
 
 use xs_layout::{DummyContainer, View};
 use xs_platform_event::KeyEvent;
 
-use crate::focus::{FocusHandle, NavigationNodeId};
+use crate::focus::{FocusHandle, FocusManager, NavigationNodeId};
 use crate::node::NodeId;
-use crate::{Element, NavigationNode};
-use crate::{Render, focus::FocusManager};
+use crate::{Element, NavigationNode, Render};
 
-struct RootElement;
+pub struct RootElement;
 impl Element for RootElement {
     fn paint(&self, _ctx: &mut AppContext, _views: Vec<View>) -> View {
         Box::new(DummyContainer {})
@@ -26,34 +24,26 @@ impl Render for RootElement {
 
 pub struct AppContext {
     pub running: bool,
-    pub start: Instant,
-    pub now: Duration,
     pub key_down: Option<KeyEvent>,
     pub nav: FocusManager,
     pub nodes: HashMap<NodeId, Box<dyn Any>>,
     pub current_node_id: NodeId,
     pub current_nav_node_id: NavigationNodeId,
-    pub contexts: HashMap<TypeId, Box<dyn Any>>,
 }
 
 impl AppContext {
-    pub fn new(now: Duration) -> Self {
-        let root_element = RootElement {};
+    pub fn new() -> Self {
         AppContext {
-            now,
             running: true,
-            start: Instant::now(),
             key_down: None,
             nav: FocusManager::new(),
-            current_node_id: (0, 0, root_element.type_id()),
+            current_node_id: (0, 0, TypeId::of::<RootElement>()),
             current_nav_node_id: 0,
             nodes: HashMap::new(),
-            contexts: HashMap::new(),
         }
     }
 
     pub fn dispatch(&mut self) {
-        self.now = Instant::now().duration_since(self.start);
         if let Some(KeyEvent { code, .. }) = self.key_down {
             self.nav.process_key(code);
             self.key_down = None;

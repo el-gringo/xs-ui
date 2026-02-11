@@ -1,4 +1,4 @@
-let wasm;
+let wasm, app;
 
 const heap = new Array(128).fill(undefined);
 
@@ -443,6 +443,10 @@ const FS = {
     loaded_files: [],
     unique_id: 0
 };
+const SAPP_MODIFIER_SHIFT = 1;
+const SAPP_MODIFIER_CTRL = 2;
+const SAPP_MODIFIER_ALT = 4;
+//const SAPP_MODIFIER_SUPER = 8;
 
 const canvas = document.getElementById('glcanvas');
 /**
@@ -451,13 +455,14 @@ const canvas = document.getElementById('glcanvas');
 const gl = canvas.getContext('webgl2');
 canvas.focus();
 
+const FPS = 1;
+const INTERVAL = 1000 / FPS;
 
 const env = {
   init_canvas: function() {
     const pixelRatio = window.devicePixelRatio || 1.0;
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
-    console.log('init_canvas', canvas.width, canvas.height, pixelRatio);
   },
   console_log: function (ptr, len) {
     console.log(getStringFromWasm0(ptr, len));
@@ -486,77 +491,22 @@ const env = {
   canvas_height: function () {
       return Math.floor(canvas.height);
   },
-  fs_load_file: function (ptr, len) {
-      var url = UTF8ToString(ptr, len);
-      var file_id = FS.unique_id;
-      FS.unique_id += 1;
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', url, true);
-      xhr.responseType = 'arraybuffer';
-
-      xhr.onreadystatechange = function () {
-          // looks like readyState === 4 will be fired on either successful or unsuccessful load:
-          // https://stackoverflow.com/a/19247992
-          if (this.readyState === 4) {
-              if (this.status === 200) {
-                  var uInt8Array = new Uint8Array(this.response);
-
-                  FS.loaded_files[file_id] = uInt8Array;
-                  wasm_exports.file_loaded(file_id);
-              } else {
-                  FS.loaded_files[file_id] = null;
-                  wasm_exports.file_loaded(file_id);
-              }
-          }
-      };
-      xhr.send();
-
-      return file_id;
-  },
-  fs_get_buffer_size: function (file_id) {
-      if (FS.loaded_files[file_id] == null) {
-          return -1;
-      } else {
-          return FS.loaded_files[file_id].length;
+  init: function () {
+    canvas.onkeydown = function onKeyDown(event) {
+      const { keyCode, ctrlKey, shiftKey, altKey, repeat } = event;
+      let modifiers = 0;
+      if (ctrlKey) {
+          modifiers |= SAPP_MODIFIER_CTRL;
       }
-  },
-  fs_take_buffer: function (file_id, ptr, max_length) {
-      var file = FS.loaded_files[file_id];
-      console.assert(file.length <= max_length);
-      var dest = new Uint8Array(wasm.memory.buffer, ptr, max_length);
-      for (var i = 0; i < file.length; i++) {
-          dest[i] = file[i];
+      if (shiftKey) {
+          modifiers |= SAPP_MODIFIER_SHIFT;
       }
-      delete FS.loaded_files[file_id];
-  },
-
-  sapp_is_fullscreen: function () {
-      let fullscreenElement = document.fullscreenElement;
-
-      return fullscreenElement != null && fullscreenElement.id == canvas.id;
-  },
-  sapp_set_fullscreen: function (fullscreen) {
-      if (!fullscreen) {
-          document.exitFullscreen();
-      } else {
-          canvas.requestFullscreen();
+      if (altKey) {
+          modifiers |= SAPP_MODIFIER_ALT;
       }
-  },
-  sapp_set_cursor_grab: function (grab) {
-      if (grab) {
-          canvas.requestPointerLock();
-      } else {
-          document.exitPointerLock();
-      }
-  },
-  sapp_set_cursor: function (ptr, len) {
-      canvas.style.cursor = UTF8ToString(ptr, len);
-  },
-
-  new_float32_array: function(ptr, size) {
-    //const float_array = new Float32Array(wasm.memory.buffer).subarray(ptr, ptr + size);
-    const float_array = getArray(ptr, Float32Array, size)
-    console.log('float_array', ptr, [ ...float_array ]);
+      wasm.key_down(keyCode, modifiers, repeat);
+    }
+    loop_frames();
   },
   glViewport: function (x, y, width, height) {
     gl.viewport(x, y, width, height);
@@ -640,7 +590,6 @@ const env = {
       gl.uniform1f(GL.uniforms[location], value);
   },
   glUniform1i: function (location, value) {
-      console.log('glUniform1i', location, value);
       GL.validateGLObjectID(GL.uniforms, location, 'glUniform1i', 'location');
       gl.uniform1i(GL.uniforms[location], value);
   },
@@ -703,7 +652,6 @@ const env = {
   glGetUniformLocation: function (program, name, len) {
       GL.validateGLObjectID(GL.programs, program, 'glGetUniformLocation', 'program');
       const fieldName = UTF8ToString(name, len);
-      console.log('fieldName', fieldName);
       var arrayIndex = 0;
     let uniformName = fieldName;
       // If user passed an array accessor "[index]", parse the array index off the accessor.
@@ -712,8 +660,6 @@ const env = {
           arrayIndex = fieldName[leftBrace + 1] != ']' ? parseInt(fieldName.slice(leftBrace + 1)) : 0; // "index]", parseInt will ignore the ']' at the end; but treat "foo[]" as "foo[0]"
           uniformName = fieldName.slice(0, leftBrace);
       }
-      console.log('fieldName', uniformName);
-    console.log('uniformName', uniformName);
       var uniformInfo = GL.programInfos[program] && GL.programInfos[program].uniforms[uniformName]; // returns pair [ dimension_of_uniform_array, uniform_location ]
       if (uniformInfo && arrayIndex >= 0 && arrayIndex < uniformInfo[0]) { // Check if user asked for an out-of-bounds element, i.e. for 'vec4 colors[3];' user could ask for 'colors[10]' which should return -1.
           const location = uniformInfo[1]+ arrayIndex;
@@ -756,7 +702,6 @@ const env = {
   },
   glBufferData: function (target, ptr, size, usage) {
       data = getArray(ptr, Float32Array, size);
-    console.log('glBufferData', ptr, data);
       gl.bufferData(target, data, usage);
   },
   glBufferSubData: function (target, offset, size, data) {
@@ -1063,7 +1008,6 @@ const env = {
   glGenerateMipmap: function (index) {
       gl.generateMipmap(index);
   },
-
 };
 
 function load(wasmUrl) {
@@ -1075,6 +1019,11 @@ function load(wasmUrl) {
       cachedInt32Memory0 = null;
       cachedUint32Memory0 = null;
       cachedUint8Memory0 = null;
-      wasm['main']();
+      wasm.main();
     });
+}
+
+function loop_frames() {
+  wasm.frame();
+  setTimeout(loop_frames, INTERVAL);
 }

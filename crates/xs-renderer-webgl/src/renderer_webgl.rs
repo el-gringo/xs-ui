@@ -1,4 +1,4 @@
-use xs_layout::colors::BLACK;
+use xs_layout::colors::TRANSPARENT;
 use xs_layout::{BoxConstraints, Layout, LayoutTree};
 use xs_math::{Rectangle, Vector2};
 use xs_renderer_core::Renderer;
@@ -6,11 +6,10 @@ use xs_renderer_core::Renderer;
 use crate::glsl::StandardShader;
 use crate::webgl;
 
-
 pub struct RendererWebGl {
     width: i32,
     height: i32,
-    shaders: StandardShader
+    shaders: StandardShader,
 }
 
 impl RendererWebGl {
@@ -19,18 +18,16 @@ impl RendererWebGl {
         Self {
             width,
             height,
-            shaders
+            shaders,
         }
     }
 }
 
 impl Renderer for RendererWebGl {
-    fn init(&mut self) {
-
-    }
+    fn init(&mut self) {}
 
     fn draw_frame(&mut self, widget_tree: Box<dyn Layout>) {
-        webgl::clear(BLACK);
+        webgl::clear(TRANSPARENT);
 
         let mut tree = LayoutTree::new();
         let viewport = Vector2::new(self.width as f32, self.height as f32);
@@ -43,7 +40,6 @@ impl Renderer for RendererWebGl {
         let root_lbox = xs_layout::LayoutBox::from_child(root_sbox, (0.0, 0.0));
         let root_id = tree.insert(root_lbox);
         tree.set_root(Some(root_id));
-
         for (_, child, offset) in tree.iter() {
             let min = offset + Vector2::new(child.bounds.x, child.bounds.y) + child.margin.min();
             let max = Vector2::new(child.bounds.width, child.bounds.height) - child.margin.max();
@@ -53,5 +49,13 @@ impl Renderer for RendererWebGl {
                 self.shaders.paint_rect(rect, &material);
             }
         }
+    }
+
+    fn screen_width(&self) -> i32 {
+        self.width
+    }
+
+    fn screen_height(&self) -> i32 {
+        self.height
     }
 }

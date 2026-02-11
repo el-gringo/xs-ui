@@ -7,3 +7,4 @@ edition.workspace = true
 [dependencies]
 xs-platform-event.workspace = true
 xs-layout.workspace = true
+xs-renderer-core.workspace = true

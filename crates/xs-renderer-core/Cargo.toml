@@ -6,6 +6,7 @@ edition.workspace = true
 
 [dependencies]
 xs-layout.workspace = true
+xs-platform-event.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

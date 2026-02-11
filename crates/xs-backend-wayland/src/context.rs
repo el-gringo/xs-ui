@@ -1,4 +1,4 @@
-use std::{ffi::c_void, ptr::null_mut, time::Duration};
+use std::{ffi::c_void, ptr::null_mut};
 
 use xs_backend_core::AppContext;
 use xs_backend_wayland_client::{
@@ -45,7 +45,7 @@ impl WaylandContext {
         let lib_wayland_egl = LibWaylandEgl::try_load().expect("failed to load libwayland-egl.so");
         let lib_egl = LibEgl::try_load().expect("failed to load libEGL.so");
         let lib_xkb = LibXkbCommon::try_load().expect("failed to load libxkbcommon.so");
-        let app_context = AppContext::new(Duration::new(0, 0));
+        let app_context = AppContext::new();
 
         WaylandContext {
             app_context,

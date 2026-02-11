@@ -20,7 +20,7 @@
 <body>
     <canvas id="glcanvas" tabindex="1"></canvas>
     <script src="assets/script.js"></script>
-    <script>load("/app.wasm");</script>
+    <script>load(`/app.wasm?${Date.now()}`);</script>
     <script>
       const MODE = "development";
       if (MODE === "development") {

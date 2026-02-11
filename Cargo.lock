@@ -6,11 +6,7 @@ version = 4
 name = "app"
 version = "0.1.0"
 dependencies = [
- "xs-backend",
- "xs-core",
- "xs-layout",
- "xs-primitive",
- "xs-renderer-core",
+ "xs",
 ]
 
 [[package]]
@@ -197,6 +193,13 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 [[package]]
 name = "xs"
 version = "0.1.0"
+dependencies = [
+ "xs-backend",
+ "xs-backend-core",
+ "xs-layout",
+ "xs-primitive",
+ "xs-renderer",
+]
 
 [[package]]
 name = "xs-backend"
@@ -212,9 +215,10 @@ dependencies = [
 name = "xs-backend-browser"
 version = "0.1.0"
 dependencies = [
+ "xs-backend-core",
  "xs-layout",
+ "xs-platform-event",
  "xs-renderer-core",
- "xs-renderer-webgl",
 ]
 
 [[package]]
@@ -223,6 +227,7 @@ version = "0.1.0"
 dependencies = [
  "xs-layout",
  "xs-platform-event",
+ "xs-renderer-core",
 ]
 
 [[package]]
@@ -241,7 +246,6 @@ dependencies = [
  "xs-platform-linux",
  "xs-primitive",
  "xs-renderer-core",
- "xs-renderer-opengl",
 ]
 
 [[package]]
@@ -344,6 +348,10 @@ dependencies = [
 [[package]]
 name = "xs-renderer"
 version = "0.1.0"
+dependencies = [
+ "xs-renderer-opengl",
+ "xs-renderer-webgl",
+]
 
 [[package]]
 name = "xs-renderer-core"
@@ -351,6 +359,7 @@ version = "0.1.0"
 dependencies = [
  "pretty_assertions",
  "xs-layout",
+ "xs-platform-event",
 ]
 
 [[package]]

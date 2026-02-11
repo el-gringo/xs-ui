@@ -6,5 +6,6 @@ edition.workspace = true
 
 [dependencies]
 xs-layout = { workspace = true }
+xs-backend-core = { workspace = true }
+xs-platform-event = { workspace = true }
 xs-renderer-core = { workspace = true }
-xs-renderer-webgl = { workspace = true }

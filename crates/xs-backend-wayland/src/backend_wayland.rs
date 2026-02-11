@@ -1,11 +1,10 @@
-use std::{ptr::null_mut};
+use std::{ptr::null_mut, rc::Rc};
 
-use xs_backend_core::Render;
+use xs_backend_core::{Backend, Render};
 use xs_backend_wayland_client::{
     WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
 };
 use xs_renderer_core::Renderer;
-use xs_renderer_opengl::RendererOpenGl;
 
 use crate::{
     config::WaylandConfig,
@@ -41,49 +40,48 @@ pub fn create_surface(ctx: &mut WaylandContext) -> *mut wl_surface {
 }
 
 pub struct BackendWayland {
-    config: WaylandConfig,
+    id: &'static str,
+    title: &'static str,
+    renderer: Box<dyn Renderer>,
 }
 
 impl BackendWayland {
-    pub fn new(width: i32, height: i32) -> Self {
-        let config = WaylandConfig {
-            window_title: String::from("Test"),
-            window_width: width,
-            window_height: height,
-            fullscreen: false,
-        };
-        Self { config }
+    pub fn new(id: &'static str, title: &'static str, renderer: Box<dyn Renderer>) -> Self {
+        Self {
+            id,
+            title,
+            renderer,
+        }
     }
 
-    pub fn run<F>(&mut self, mut create_root: F)
-    where
-        F: FnMut() -> Box<dyn Render>,
-    {
-        let width = self.config.window_width;
-        let height = self.config.window_height;
-        let mut renderer = RendererOpenGl::new(width, height);
+    pub fn log(&self, _message: &str) {}
+}
+
+impl Backend for BackendWayland {
+    fn run(&mut self, root: Box<dyn Render>) {
+        let config = WaylandConfig {
+            app_id: self.id,
+            window_title: self.title,
+            window_width: self.renderer.screen_width(),
+            window_height: self.renderer.screen_height(),
+            fullscreen: false,
+        };
         let mut ctx = WaylandContext::new();
         connect(&mut ctx);
         create_registry(&mut ctx);
         create_seat(&mut ctx);
         create_surface(&mut ctx);
-        create_egl_window(
-            &mut ctx,
-            self.config.window_width,
-            self.config.window_height,
-        );
+        create_egl_window(&mut ctx, config.window_width, config.window_height);
         create_xdg(&mut ctx);
-        set_app_id(&mut ctx, "app".into());
-        set_title(&mut ctx, "Title".into());
-        renderer.init();
+        set_app_id(&mut ctx, self.id.into());
+        set_title(&mut ctx, self.title.into());
+        self.renderer.init();
+        let root = Rc::new(root);
         while ctx.dispatch_pending() != -1 && ctx.app_context.running {
             ctx.app_context.dispatch();
-            let root = create_root();
-            let frame = ctx.app_context.render(root.into(), 0, 0);
-            renderer.draw_frame(frame);
+            let frame = ctx.app_context.render(root.clone(), 0, 0);
+            self.renderer.draw_frame(frame);
             ctx.swap_buffers();
         }
     }
-
-    pub fn log(&self, _message: &str) {}
 }

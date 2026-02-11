@@ -1,11 +1,12 @@
 mod app_context;
+mod backend;
 mod element;
+mod focus;
 mod node;
 mod render;
-//mod entity;
-pub mod focus;
 
-pub use app_context::AppContext;
+pub use app_context::{AppContext, RootElement};
+pub use backend::{Backend, BackendDummy};
 pub use element::Element;
+pub use focus::{NavigationNode, FocusHandle};
 pub use render::Render;
-pub use focus::NavigationNode;

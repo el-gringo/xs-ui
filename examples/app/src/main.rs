@@ -1,9 +1,7 @@
-use xs_backend::{AppContext, Backend, Element, NavigationNode, Render, focus::FocusHandle};
-use xs_layout::{
-    Color,
-    colors::{BLUE, GRAY, GREEN, RED, WHITE},
+use xs::{
+    AppContext, Application, BLUE, Color, Element, FocusHandle, GRAY, GREEN, NavigationNode, RED,
+    Render, WHITE, div,
 };
-use xs_primitive::div;
 
 struct Sidebar {
     buttons: Vec<Button>,
@@ -76,13 +74,11 @@ fn sidebar() -> Sidebar {
     Sidebar::new()
 }
 
-#[track_caller]
 pub fn button(color: Color) -> Button {
     Button::new(color)
 }
 
 struct App;
-
 impl Render for App {
     fn render(&self, _ctx: &mut AppContext) -> Box<dyn Element> {
         div()
@@ -92,6 +88,10 @@ impl Render for App {
 }
 
 pub fn main() {
-    let mut backend = Backend::new(1280, 720);
-    backend.run(|| Box::new(App {}));
+    Application::new()
+        .id("app")
+        .title("App")
+        .width(960)
+        .height(540)
+        .run(Box::new(App {}));
 }

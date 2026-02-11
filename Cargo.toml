@@ -18,6 +18,7 @@ authors = [
 edition = "2024"
 
 [workspace.dependencies]
+xs = { path = "crates/xs" }
 xs-backend = { path = "crates/xs-backend" }
 xs-backend-core = { path = "crates/xs-backend-core" }
 xs-backend-browser = { path = "crates/xs-backend-browser" }
@@ -37,6 +38,7 @@ xs-math = { path = "crates/xs-math" }
 xs-platform-event = { path = "crates/xs-platform-event" }
 xs-platform-linux = { path = "crates/xs-platform-linux" }
 xs-primitive = { path = "crates/xs-primitive" }
+xs-renderer = { path = "crates/xs-renderer" }
 xs-renderer-core = { path = "crates/xs-renderer-core" }
 xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
 xs-renderer-webgl = { path = "crates/xs-renderer-webgl" }

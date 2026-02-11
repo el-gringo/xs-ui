@@ -54,6 +54,15 @@ impl Renderer for RendererOpenGl {
         self.shaders.insert("default".into(), shader);
     }
 
+    fn screen_width(&self) -> i32 {
+        self.width
+    }
+
+
+    fn screen_height(&self) -> i32 {
+        self.height
+    }
+
     fn draw_frame(&mut self, widget_tree: Box<dyn Layout>) {
         if let Some(shader) = self.shaders.get_mut("default") {
             unsafe {

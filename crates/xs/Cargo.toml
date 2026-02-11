@@ -1,0 +1,12 @@
+[package]
+name = "xs"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-backend.workspace = true
+xs-backend-core.workspace = true
+xs-layout.workspace = true
+xs-primitive.workspace = true
+xs-renderer.workspace = true

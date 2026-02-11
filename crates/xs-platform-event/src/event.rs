@@ -1,3 +1,8 @@
+pub enum Event {
+    RequestAnimationFrame,
+    KeyDown(KeyEvent),
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
 #[repr(u8)]
 pub enum MouseButton {
@@ -142,7 +147,7 @@ pub enum KeyCode {
     Unknown = 0x01ff,
 }
 
-#[derive(Copy, Clone, PartialEq, Default)]
+#[derive(Copy, Clone, PartialEq, Default, Debug)]
 pub struct KeyMods {
     pub shift: bool,
     pub ctrl: bool,
@@ -158,7 +163,7 @@ pub enum TouchPhase {
     Cancelled,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct KeyEvent {
     pub code: KeyCode,
     pub mods: KeyMods,
