@@ -14,7 +14,7 @@ use xs::{
 
 use crate::{body::body, button::button, card::card, sidebar::sidebar, theme::GRAY3};
 
-static IMAGE1: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/fabcf1f1-5ef0-4551-9a3b-a6ff953bbcd9.jpg";
+static IMAGE1: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/812ca374-a473-4cb8-ae0b-eebdd8a7ccfe.jpg";
 static IMAGE2: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/440cf8a3-1389-4475-9b65-6e1dba693235.jpg";
 static IMAGE3: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/4a8eb065-deca-47c7-a574-048a63e6b668.jpg";
 
