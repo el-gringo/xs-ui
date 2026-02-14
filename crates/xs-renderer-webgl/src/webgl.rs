@@ -1,21 +1,25 @@
 //use bytemuck::cast_slice;
-use xs_layout::Color;
-use xs_math::Vector3;
 use crate::bindings::*;
-
+use xs_layout::{Color, Image};
+use xs_math::Vector3;
 
 fn cast_slice(p: &[Vector3]) -> &[f32] {
-    unsafe  {
+    unsafe {
         ::core::slice::from_raw_parts(
             (p as *const [Vector3]) as *const f32,
-            ::core::mem::size_of::<Vector3>() / 4 * p.len()
+            ::core::mem::size_of::<Vector3>() / 4 * p.len(),
         )
     }
 }
 
 pub fn clear(color: Color) {
     unsafe {
-        glClearColor(color.r as GLfloat, color.g as GLfloat, color.b as GLfloat, color.a as GLfloat);
+        glClearColor(
+            color.r as GLfloat,
+            color.g as GLfloat,
+            color.b as GLfloat,
+            color.a as GLfloat,
+        );
         glClear(GL_COLOR_BUFFER_BIT);
     }
 }
@@ -26,43 +30,39 @@ pub fn set_viewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei) {
     }
 }
 
-#[allow(dead_code)]
-pub fn draw_line(
-    program: GLuint,
-    vertex_attribute_name: &str,
-    buffer: &Buffer,
-) {
-    unsafe {
-        glUseProgram(program);
-        glBindBuffer(GL_ARRAY_BUFFER, buffer.buffer);
-        let location = glGetAttribLocation(
-            program,
-            vertex_attribute_name.as_ptr() as *const GLchar,
-            vertex_attribute_name.len() as u32
-        );
-        glVertexAttribPointer(
-            location as u32,
-            buffer.element_size as i32,
-            GL_FLOAT,
-            GL_FALSE as u8,
-            0,
-            0 as *const ::core::ffi::c_void,
-        );
-        glEnableVertexAttribArray(location as GLuint);
-        glDrawArrays(
-            GL_LINES,
-            0,
-            (buffer.len / buffer.element_size) as i32,
-        );
-        glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
-    }
-}
+// #[allow(dead_code)]
+// pub fn draw_line(
+//     program: GLuint,
+//     vertex_attribute_name: &str,
+//     buffer: &Buffer,
+// ) {
+//     unsafe {
+//         glUseProgram(program);
+//         glBindBuffer(GL_ARRAY_BUFFER, buffer.buffer);
+//         let location = glGetAttribLocation(
+//             program,
+//             vertex_attribute_name.as_ptr() as *const GLchar,
+//             vertex_attribute_name.len() as u32
+//         );
+//         glVertexAttribPointer(
+//             location as u32,
+//             buffer.element_size as i32,
+//             GL_FLOAT,
+//             GL_FALSE as u8,
+//             0,
+//             0 as *const ::core::ffi::c_void,
+//         );
+//         glEnableVertexAttribArray(location as GLuint);
+//         glDrawArrays(
+//             GL_LINES,
+//             0,
+//             (buffer.len / buffer.element_size) as i32,
+//         );
+//         glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
+//     }
+// }
 
-pub fn draw_mesh(
-    program: GLuint,
-    vertex_attribute_name: &str,
-    vertices: Vec<Vector3>
-) {
+pub fn draw_mesh(program: GLuint, vertex_attribute_name: &str, vertices: Vec<Vector3>) {
     unsafe {
         /*
         glEnable(GL_BLEND);
@@ -79,7 +79,7 @@ pub fn draw_mesh(
         let location = glGetAttribLocation(
             program,
             vertex_attribute_name.as_ptr() as *const GLchar,
-            vertex_attribute_name.len() as u32
+            vertex_attribute_name.len() as u32,
         );
         glVertexAttribPointer(
             location as u32,
@@ -90,11 +90,7 @@ pub fn draw_mesh(
             0 as *const ::core::ffi::c_void,
         );
         glEnableVertexAttribArray(location as u32);
-        glDrawArrays(
-            GL_TRIANGLES,
-            0,
-            (buffer.len / buffer.element_size) as i32,
-        );
+        glDrawArrays(GL_TRIANGLES, 0, (buffer.len / buffer.element_size) as i32);
         glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
     }
 }
@@ -120,101 +116,78 @@ pub fn new_array_buffer(values: &[Vector3]) -> Buffer {
     buffer
 }
 
-pub fn set_uniform_i32(
-    program: GLuint,
-    field: &str,
-    value: i32,
-) {
+pub fn set_uniform_i32(program: GLuint, field: &str, value: i32) {
     unsafe {
         glUseProgram(program);
-        let location = glGetUniformLocation(
-            program,
-            field.as_ptr() as *const _,
-            field.len() as u32
-        );
+        let location =
+            glGetUniformLocation(program, field.as_ptr() as *const _, field.len() as u32);
         glUniform1i(location, value);
     }
 }
 
-pub fn set_uniform_f32(
-    program: GLuint,
-    field: &str,
-    value: f32,
-) {
+pub fn set_uniform_f32(program: GLuint, field: &str, value: f32) {
     unsafe {
         glUseProgram(program);
-        let location = glGetUniformLocation(
-            program,
-            field.as_ptr() as *const _,
-            field.len() as u32
-        );
+        let location =
+            glGetUniformLocation(program, field.as_ptr() as *const _, field.len() as u32);
         glUniform1f(location, value);
     }
 }
 
-pub fn set_uniform_vec2(
-    program: GLuint,
-    field: &str,
-    value: [f32; 2],
-) {
+pub fn set_uniform_vec2(program: GLuint, field: &str, value: [f32; 2]) {
     unsafe {
         glUseProgram(program);
-        let location = glGetUniformLocation(
-            program,
-            field.as_ptr() as *const _,
-            field.len() as u32
-        );
-        glUniform2fv(
-            location,
-            value.len() as i32,
-            value.as_ptr() as *const _,
-            field.len() as u32
-        );
+        let location =
+            glGetUniformLocation(program, field.as_ptr() as *const _, field.len() as u32);
+        if location >= 0 {
+            glUniform2fv(
+                location,
+                value.len() as i32,
+                value.as_ptr() as *const _,
+                field.len() as u32,
+            );
+        }  else {
+            log(&format!("set_uniform_vec2: {} {} {}", field, value[0], value[1]));
+        }
+
     }
 }
 
-pub fn set_uniform_vec4(
-    program: GLuint,
-    field: &str,
-    value: [f32; 4],
-) {
+pub fn set_uniform_vec4(program: GLuint, field: &str, value: [f32; 4]) {
     unsafe {
         glUseProgram(program);
-        let location = glGetUniformLocation(
-            program,
-            field.as_ptr() as *const _,
-            field.len() as u32
-        );
+        let location =
+            glGetUniformLocation(program, field.as_ptr() as *const _, field.len() as u32);
         glUniform4fv(
             location,
             value.len() as i32,
             value.as_ptr() as *const _,
-            field.len() as u32
+            field.len() as u32,
         );
+    }
+}
+
+pub fn set_uniform1i(program: GLuint, field: &str, value: i32) {
+    unsafe {
+        glUseProgram(program);
+        let location =
+            glGetUniformLocation(program, field.as_ptr() as *const _, field.len() as u32);
+        glUniform1i(location, value);
     }
 }
 
 /// This will try to create a shader program that uses the provided vertex and
 /// fragment shader sourcecodes.
-pub fn create_shader_program(
-    vertex_shader_src: &str,
-    fragment_shader_src: &str,
-) -> GLuint {
+pub fn create_shader_program(vertex_shader_src: &str, fragment_shader_src: &str) -> GLuint {
     let vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_shader_src);
-    let fragment_shader = compile_shader(
-        GL_FRAGMENT_SHADER,
-        fragment_shader_src,
-    );
+    let fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_shader_src);
     link_program(vertex_shader, fragment_shader)
 }
 
 /// Try to link the shader program. If linking fails, this will attempt to get
 /// the error message from the program info log. If that also fails, it
 /// will return a generic error.
-pub fn link_program(
-    vertex_shader: GLuint,
-    fragment_shader: GLuint,
-) -> GLuint {
+pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
     unsafe {
         let program = glCreateProgram();
         glAttachShader(program, vertex_shader);
@@ -234,13 +207,14 @@ pub fn link_program(
 /// Attempt to compile the shader. If compilation fails, this will attempt to
 /// get the error message from the shader info log. If that also fails, it will
 /// return a generic error.
-pub fn compile_shader(
-    shader_type: u32,
-    source: &str,
-) -> GLuint {
+pub fn compile_shader(shader_type: u32, source: &str) -> GLuint {
     unsafe {
         let shader = glCreateShader(shader_type);
-        glShaderSource(shader, source.as_ptr() as *const GLchar, source.len() as i32);
+        glShaderSource(
+            shader,
+            source.as_ptr() as *const GLchar,
+            source.len() as i32,
+        );
         glCompileShader(shader);
         /*
         let maybe_link_status = glGetProgramParameter(shader, GL_COMPILE_STATUS);
@@ -250,6 +224,49 @@ pub fn compile_shader(
         }
         */
         shader
+    }
+}
+
+fn is_power_of_2(value: i32) -> bool {
+    (value & (value - 1)) == 0
+}
+
+unsafe extern "C" {
+    pub fn console_log(ptr: u32, len: u32);
+}
+
+pub fn log(message: &str) {
+    let bytes = message.as_bytes();
+    unsafe {
+        console_log(bytes.as_ptr() as u32, bytes.len() as u32);
+    }
+}
+
+pub fn load_texture(image: &Image, texture: usize, width: i32, height: i32) -> GLuint {
+    unsafe {
+        let ptr = glCreateTexture();
+        glActiveTexture(texture.try_into().unwrap());
+        glBindTexture(GL_TEXTURE_2D, ptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA,
+            width,
+            height,
+            0,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            image.as_ptr()
+        );
+        if is_power_of_2(width) && is_power_of_2(height) {
+            glGenerateMipmap(GL_TEXTURE_2D);
+        } else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        }
+        ptr
     }
 }
 

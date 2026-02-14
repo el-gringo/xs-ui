@@ -1,4 +1,6 @@
 #![allow(non_snake_case, non_camel_case_types, non_upper_case_globals, dead_code)]
+
+use xs_layout::Image;
 pub type GLenum = ::core::ffi::c_uint;
 pub type GLboolean = ::core::ffi::c_uchar;
 pub type GLbitfield = ::core::ffi::c_uint;
@@ -302,6 +304,7 @@ pub const ERROR_INVALID_PROFILE_ARB: u32 = 0x2096;
 pub const ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB: u32 = 0x2054;
 
 unsafe extern "C" {
+    pub fn glActiveTexture(texture_index: GLuint);
     pub fn glClear(mask: GLbitfield);
     pub fn glClearColor(red: GLfloat, green: GLfloat, blue: GLfloat, alpha: GLfloat);
     pub fn glViewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei);
@@ -322,6 +325,7 @@ unsafe extern "C" {
         size: GLsizeiptr,
         usage: GLenum,
     );
+
     pub fn glEnable(cap: GLenum);
     pub fn glBindBuffer(target: GLenum, buffer: GLuint);
     pub fn glUniform1i(location: GLint, v0: GLint);
@@ -342,4 +346,20 @@ unsafe extern "C" {
     );
     pub fn glCompileShader(shader: GLuint);
     pub fn glGetAttribLocation(program: GLuint, name: *const GLchar, len: GLuint) -> GLint;
+
+    pub fn glTexParameteri(target: GLenum, param: GLuint, pname: GLenum);
+    pub fn glTexImage2D(
+        target: GLenum,
+        level: GLint,
+        internalFormat: GLenum,
+        width: GLsizei,
+        height: GLsizei,
+        border: GLint,
+        format: GLenum,
+        r#type: GLenum,
+        source: i32
+    );
+    pub fn glGenerateMipmap(target: GLenum);
+    pub fn glCreateTexture() -> GLuint;
+    pub fn glBindTexture(target: GLenum, texture: GLuint);
 }

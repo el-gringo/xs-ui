@@ -1,5 +1,5 @@
 use xs_layout::{
-    Axis, BorderSide, Borders, Color, CrossAxisAlignment, EdgeInsets, MainAxisAlignment
+    Axis, BorderSide, Borders, Color, CrossAxisAlignment, EdgeInsets, MainAxisAlignment,
 };
 
 #[derive(Clone, Copy)]
@@ -27,9 +27,10 @@ impl Default for StylePosition {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Style {
     pub background_color: Color,
+    pub background_image: Option<&'static str>,
 
     pub border: Borders,
     pub border_top: Option<BorderSide>,
@@ -63,40 +64,4 @@ pub struct Style {
     pub flex_shrink: bool,
     pub justify_content: MainAxisAlignment,
     pub align_items: CrossAxisAlignment,
-}
-
-impl Default for Style {
-    fn default() -> Self {
-        Self {
-            background_color: Default::default(),
-            border: Default::default(),
-            border_top: Default::default(),
-            border_right: Default::default(),
-            border_bottom: Default::default(),
-            border_left: Default::default(),
-            margin: Default::default(),
-            margin_top: Default::default(),
-            margin_right: Default::default(),
-            margin_bottom: Default::default(),
-            margin_left: Default::default(),
-            padding: Default::default(),
-            padding_top: Default::default(),
-            padding_right: Default::default(),
-            padding_bottom: Default::default(),
-            padding_left: Default::default(),
-            display: Default::default(),
-            position: Default::default(),
-            top: Default::default(),
-            right: Default::default(),
-            bottom: Default::default(),
-            left: Default::default(),
-            width: Default::default(),
-            height: Default::default(),
-            flex_direction: Default::default(),
-            flex_grow: Default::default(),
-            flex_shrink: Default::default(),
-            justify_content: Default::default(),
-            align_items: Default::default(),
-        }
-    }
 }

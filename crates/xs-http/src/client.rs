@@ -47,13 +47,13 @@ fn parse_header_line(header_line: String) -> (String, String) {
     (key.trim().to_string(), value.trim().to_string())
 }
 
-fn prepare_headers(method: String, url: Url, headers: BTreeMap<String, Vec<String>>) -> Vec<String> {
+fn prepare_headers(method: String, url: Url, headers: HttpHeaders) -> Vec<String> {
     let mut payload: Vec<String> = Vec::new();
     let request_line = format!("{} {} HTTP/1.1", method, url.pathname);
     payload.push(request_line);
     payload.push(format!("Host: {}", url.hostname));
-    for (key, values) in headers {
-        payload.push(format!("{}: {}", key, values.join("")))
+    for (key, value) in headers {
+        payload.push(format!("{}: {}", key, value))
     }
     payload.push(String::new());
     payload.push(String::new());
@@ -83,7 +83,7 @@ fn parse_response_status(status_line: String) -> Result<(u16, String), HttpRespo
 
 pub struct HttpClient {
     url: Url,
-    headers: Option<BTreeMap<String, Vec<String>>>,
+    headers: HttpHeaders,
     socket: Option<Arc<Socket>>
 }
 
@@ -91,18 +91,23 @@ impl HttpClient {
     pub fn new(url: Url) -> Self {
         Self {
             url,
-            headers: None,
+            headers: HttpHeaders::new(),
             socket: None
         }
     }
 
-    pub fn set_socket(mut self, socket: Arc<Socket>) -> Self {
+    pub fn socket(mut self, socket: Arc<Socket>) -> Self {
         self.socket = Some(socket);
         self
     }
 
-    pub fn set_headers(mut self, headers: BTreeMap<String, Vec<String>>) -> Self {
-        self.headers = Some(headers);
+    pub fn header(mut self, key: String, value: String) -> Self {
+        self.headers.insert(key, value);
+        self
+    }
+
+    pub fn headers(mut self, headers: HttpHeaders) -> Self {
+        self.headers = headers;
         self
     }
 
@@ -121,7 +126,7 @@ impl HttpClient {
     fn send(mut self, method: &str, body: Option<&[u8]>) -> HttpResponse {
         let url = self.url.to_owned();
         let raw_headers= self.headers.to_owned();
-        let headers = prepare_headers(method.into(), url, raw_headers.clone().unwrap_or_default());
+        let headers = prepare_headers(method.into(), url, raw_headers.clone());
         let socket = match self.socket.clone() {
             Some(s) => s.clone(),
             None => Arc::new(self.create_socket())

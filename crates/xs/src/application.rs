@@ -1,48 +1,47 @@
-use xs_backend_core::{BackendDummy, Render};
+use std::str;
 
-pub struct Application {
-    id: &'static str,
-    title: &'static str,
-    width: i32,
-    height: i32,
-    backend: Box<dyn xs_backend_core::Backend>
-}
+use xs_backend_core::{App, Backend, Render};
+use xs_renderer::Renderer;
 
+pub struct Application(App);
 impl Application {
     pub fn new() -> Self {
-        Application {
+        Self(App {
             id: "app",
             title: "App",
             width: 960,
             height: 540,
-            backend: Box::new(BackendDummy {}) as Box<dyn xs_backend_core::Backend>
-        }
+            backend: None,
+        })
     }
 
     pub fn id(mut self, id: &'static str) -> Self {
-        self.id = id;
+        self.0.id = id;
         self
     }
 
     pub fn title(mut self, title: &'static str) -> Self {
-        self.title = title;
+        self.0.title = title;
         self
     }
 
     pub fn height(mut self, height: i32) -> Self {
-        self.height = height;
+        self.0.height = height;
         self
     }
 
     pub fn width(mut self, width: i32) -> Self {
-        self.width = width;
+        self.0.width = width;
         self
     }
 
-    pub fn run(mut self, root: Box<dyn Render>) {
-        let renderer = Box::new(xs_renderer::Renderer::new(self.width, self.height));
-        let backend = xs_backend::Backend::new(self.id, self.title, renderer);
-        self.backend = Box::new(backend);
-        self.backend.run(root);
+    pub fn run(self, root: Box<dyn Render>) {
+        let renderer = Box::new(Renderer::new(self.0.width, self.0.height));
+        let mut backend = xs_backend::Backend::new(
+            self.0.id,
+            self.0.title,
+            renderer,
+        );
+        backend.run(root);
     }
 }

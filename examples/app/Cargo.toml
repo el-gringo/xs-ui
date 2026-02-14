@@ -4,5 +4,9 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[[example]]
+name = "app"
+path = "src/main.rs"
+
 [dependencies]
 xs.workspace = true

@@ -1,4 +1,6 @@
-pub type HttpHeaders = std::collections::HashMap<String, String>;
+use std::collections::HashMap;
+
+pub type HttpHeaders = HashMap<String, String>;
 
 #[derive(Debug)]
 pub struct HttpResponse {

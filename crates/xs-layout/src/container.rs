@@ -3,7 +3,7 @@ use xs_math::Vector2;
 use crate::base::{Alignment, EdgeInsets};
 use crate::decoration::{Borders, Material};
 use crate::tree::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
-use crate::{Color, View};
+use crate::{Color, Image, View};
 
 fn clamp_f32(value: f32, min: f32, max: f32) -> f32 {
     if value < min {
@@ -57,6 +57,7 @@ pub struct Container {
     pub borders: Borders,
     pub margin: EdgeInsets,
     pub color: Color,
+    pub image: Option<Image>,
     pub child: Option<View>,
 }
 
@@ -139,6 +140,7 @@ impl Container {
             material: Some(Material {
                 fill: self.color,
                 borders: self.borders,
+                image: self.image.clone()
             }),
             margin: self.margin,
         }
@@ -156,6 +158,7 @@ impl Container {
             material: Some(Material {
                 fill: self.color,
                 borders: self.borders,
+                image: self.image.clone()
             }),
             margin: self.margin,
         }

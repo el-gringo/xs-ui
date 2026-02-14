@@ -1,11 +1,12 @@
 use xs_math::Vector2;
-use crate::Color;
+use crate::{Color, Image};
 
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Material {
     pub borders: Borders,
     pub fill: Color,
+    pub image: Option<Image>,
 }
 
 impl Material {
@@ -14,6 +15,7 @@ impl Material {
         Material {
             borders: Borders::none(),
             fill,
+            image: None
         }
     }
 }

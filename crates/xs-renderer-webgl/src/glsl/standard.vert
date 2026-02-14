@@ -1,3 +1,5 @@
+precision mediump float;
+
 // Position of the vertex
 attribute vec2 a_position;
 

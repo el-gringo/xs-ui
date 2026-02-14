@@ -84,4 +84,7 @@ impl Backend for BackendWayland {
             ctx.swap_buffers();
         }
     }
+
+    fn load_image(&mut self, _src: &'static str) {
+    }
 }

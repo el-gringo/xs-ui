@@ -1,25 +1,28 @@
-use std::rc::Rc;
+use std::{any::TypeId, rc::Rc};
 
 use crate::style::{Style, StyleDisplay, StylePosition};
 use xs_backend_core::{AppContext, Element, Render};
 use xs_layout::{
-    Axis, BorderSide, Borders, Color, Container, CrossAxisAlignment, EdgeInsets, Flex,
-    MainAxisAlignment, Positioned, View,
+    Axis, BorderSide, Borders, Color, Container, CrossAxisAlignment, EdgeInsets, Flex, MainAxisAlignment, Positioned, View
 };
 
+#[derive(Default, Clone)]
 pub struct Div {
+    pub id: Option<&'static str>,
     pub style: Style,
     pub children: Vec<Rc<Box<dyn Render>>>,
 }
 
 impl Div {
     pub fn new() -> Self {
-        let x = Self {
-            style: Style::default(),
-            children: Vec::new(),
-        };
-        x
+        Default::default()
     }
+
+    pub fn id(mut self, id: &'static str) -> Self {
+        self.id = Some(id);
+        self
+    }
+
     //
     // POSITION
     //
@@ -53,7 +56,7 @@ impl Div {
         self
     }
 
-    pub fn heigth(mut self, size: f32) -> Self {
+    pub fn height(mut self, size: f32) -> Self {
         self.style.height = Some(size);
         self
     }
@@ -150,6 +153,11 @@ impl Div {
         self
     }
 
+    pub fn background_image(mut self, src: &'static str) -> Self {
+        self.style.background_image = Some(src);
+        self
+    }
+
     //
     // FLEX
     //
@@ -186,7 +194,6 @@ impl Div {
     //
     // OTHER
     //
-    #[track_caller]
     pub fn child(mut self, child: Box<dyn Render>) -> Self {
         self.children.push(Rc::new(child));
         self
@@ -199,9 +206,42 @@ impl Div {
     }
 }
 
-impl Element for Style {
-    fn paint(&self, _ctx: &mut AppContext, children: Vec<View>) -> View {
-        let style = &self;
+// impl Element for Div {
+//     fn id(&self) -> &'static str {
+//         self.id.unwrap_or("div")
+//     }
+
+//     fn children(&self) -> Vec<Rc<Box<dyn Render>>> {
+//         self.children.iter().map(|child| child.clone()).collect()
+//     }
+
+//     fn paint(&self, ctx: &mut AppContext, views: Vec<View>) -> View {
+//         self.style.paint(ctx, views)
+//     }
+// }
+
+impl Render for Div {
+    fn tag(&self) -> TypeId {
+        TypeId::of::<Div>()
+    }
+
+    fn render(&self, _ctx: &mut AppContext) -> Box<dyn Element> {
+        Box::new(self.clone())
+    }
+}
+
+
+impl Element for Div {
+    fn id(&self) -> &'static str {
+        self.id.unwrap_or("div")
+    }
+
+    fn children(&self) -> Vec<Rc<Box<dyn Render>>> {
+        self.children.iter().map(|child| child.clone()).collect()
+    }
+
+    fn paint(&self, ctx: &mut AppContext, children: Vec<View>) -> View {
+        let style = self.style;
         let child: Option<View> = if children.len() > 0 {
             Some(match style.display {
                 StyleDisplay::Flex => Box::new(Flex {
@@ -222,7 +262,19 @@ impl Element for Style {
         } else {
             None
         };
+        let image = if style.background_image.is_some() {
+            let src = style.background_image.unwrap();
+            if let Some(image) = ctx.ressources.get(src) {
+                Some(image.clone())
+            } else {
+                ctx.load_image(src);
+                None
+            }
+        } else {
+            None
+        };
         let container = Box::new(Container {
+            image,
             color: style.background_color,
             width: style.width,
             height: style.height,
@@ -243,24 +295,20 @@ impl Element for Style {
     }
 }
 
-impl Element for Div {
-    fn children(&self) -> Vec<Rc<Box<dyn Render>>> {
-        self.children.iter().map(|child| child.clone()).collect()
-    }
-
-    fn paint(&self, ctx: &mut AppContext, views: Vec<View>) -> View {
-        self.style.paint(ctx, views)
+impl From<Div> for Box<dyn Element> {
+    fn from(value: Div) -> Self {
+        Box::new(value)
     }
 }
 
-impl Render for Div {
-    fn render(&self, _ctx: &mut AppContext) -> Box<dyn Element> {
-        Box::new(self.style)
-    }
-}
+// impl Into<Box<dyn Element>> for Div {
+//     fn into(self) -> Box<dyn Element> {
+//         Box::new(self)
+//     }
+// }
 
-impl Into<Box<dyn Element>> for Div {
-    fn into(self) -> Box<dyn Element> {
+impl Into<Box<dyn Render>> for Div  {
+    fn into(self) -> Box<dyn Render> {
         Box::new(self)
     }
 }

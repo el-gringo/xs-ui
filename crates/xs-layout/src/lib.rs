@@ -13,6 +13,9 @@ pub use container::*;
 mod decoration;
 pub use decoration::*;
 
+mod image;
+pub use image::*;
+
 mod tree;
 pub use tree::*;
 

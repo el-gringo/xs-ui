@@ -1,6 +1,6 @@
-use crate::webgl;
+use crate::webgl::{self, log};
 use xs_math::{Rectangle, Vector2, Vector3};
-use xs_layout::{BorderSide, Borders, Material};
+use xs_layout::{BorderSide, Borders, Image, Material};
 
 use crate::bindings::*;
 
@@ -31,18 +31,7 @@ impl StandardShader {
         self.viewport = viewport;
     }
 
-    fn set_uniforms(&self) {
-        webgl::set_uniform_vec2(self.program, "u_viewport", self.viewport.into());
-    }
-
-    #[allow(dead_code)]
-    pub fn paint_line(&self, vertices: &[Vector3]) {
-        self.set_uniforms();
-        let buffer = webgl::new_array_buffer(vertices);
-        webgl::draw_line(self.program, "a_position", &buffer);
-    }
-
-    pub fn paint_rect(&mut self, rect: Rectangle, material: &Material) {
+    pub fn paint_rect(&mut self, rect: Rectangle, material: &Material, texture: Option<usize>) {
         let min_x = rect.x;
         let min_y = rect.y;
         let max_x = rect.x + rect.width;
@@ -52,6 +41,9 @@ impl StandardShader {
         webgl::set_uniform_vec2(self.program, "u_rect_min", [min_x, min_y]);
         webgl::set_uniform_vec2(self.program, "u_rect_max", [max_x, max_y]);
         self.set_borders(material.borders);
+        if let Some(texture) = texture {
+            webgl::set_uniform1i(self.program, "u_texture", texture as i32);
+        }
         let vertices: [Vector3; 6] = [
             Vector3::new(min_x, min_y, 0.0),
             Vector3::new(min_x, max_y, 0.0),

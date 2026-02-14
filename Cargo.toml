@@ -3,8 +3,8 @@ resolver = "2"
 members = [
     "crates/*",
     #"crates/xs-macro/tests",
-    "examples/app",
-    "tools/cli"
+    "examples/*",
+    "tools/*"
 ]
 default-members = [
     "examples/app"

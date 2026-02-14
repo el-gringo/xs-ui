@@ -1,6 +1,7 @@
 pub enum Event {
-    RequestAnimationFrame,
+    ImageLoaded(&'static str, u32),
     KeyDown(KeyEvent),
+    RequestAnimationFrame,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
