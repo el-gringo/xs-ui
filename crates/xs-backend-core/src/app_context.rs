@@ -102,10 +102,13 @@ impl AppContext {
             load_image(bytes.as_ptr() as u32, bytes.len() as u32);
         }
     }
+
     #[cfg(not(target_arch = "wasm32"))]
     pub fn load_image(&mut self, _src: &'static str) {}
 }
 
+
 unsafe extern "C" {
+    #[cfg(target_arch = "wasm32")]
     pub fn load_image(ptr: u32, len: u32);
 }

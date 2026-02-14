@@ -1,8 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{AppContext, BLUE, Element, FocusHandle, NavigationNode, Render, div};
-
-use crate::theme::GRAY3;
+use xs::{AppContext, Element, FocusHandle, NavigationNode, Render, div};
 
 pub struct Body {
     pub children: Vec<Rc<Box<dyn Render>>>,

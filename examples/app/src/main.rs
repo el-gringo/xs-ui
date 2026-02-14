@@ -12,7 +12,7 @@ use xs::{
     AppContext, Application, BLUE, Element, FocusHandle, GREEN, NavigationNode, RED, Render, div,
 };
 
-use crate::{body::body, button::button, card::card, sidebar::sidebar, theme::GRAY3};
+use crate::{body::body, button::button, card::card, sidebar::sidebar};
 
 static IMAGE1: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/812ca374-a473-4cb8-ae0b-eebdd8a7ccfe.jpg";
 static IMAGE2: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/440cf8a3-1389-4475-9b65-6e1dba693235.jpg";
@@ -39,7 +39,6 @@ impl Render for MyApp {
                         div()
                             .row()
                             .padding_top(64.)
-                            //.justify_content(xs::MainAxisAlignment::Center)
                             .child(card().id("card1").thumbnail(IMAGE1).into())
                             .child(card().id("card2").thumbnail(IMAGE2).into())
                             .child(card().id("card3").thumbnail(IMAGE3).into())

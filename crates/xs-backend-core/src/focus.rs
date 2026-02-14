@@ -1,5 +1,5 @@
 use std::{
-    cell::{RefCell, RefMut},
+    cell::RefCell,
     collections::VecDeque,
     rc::Rc,
 };
@@ -307,18 +307,5 @@ impl FocusManager {
                 child.borrow_mut().has_focus = false;
             }
         }
-    }
-
-    fn debug_node(&self, prefix: &str, node: &RefCell<NavigationNode>) {
-        let node = node.borrow();
-        println!(
-            "{} node: {} {:?} {} {} {}",
-            prefix,
-            node.key,
-            node.layout,
-            node.has_focus,
-            node.selected_index,
-            node.children.len()
-        );
     }
 }

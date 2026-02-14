@@ -1,8 +1,8 @@
 use std::any::TypeId;
 
-use xs::{AppContext, Element, FocusHandle, GRAY, NavigationNode, RED, Render, TRANSPARENT, WHITE, div};
+use xs::{AppContext, Element, FocusHandle, NavigationNode, RED, Render, TRANSPARENT, WHITE, div};
 
-use crate::theme::{GRAY3, GRAY4};
+use crate::theme::GRAY3;
 
 pub struct Card {
     id: &'static str,
