@@ -30,6 +30,7 @@ xs-backend-wayland-xkb = { path = "crates/xs-backend-wayland-xkb" }
 xs-core = { path = "crates/xs-core" }
 xs-egl-sys = { path = "crates/xs-egl-sys" }
 xs-gl-sys = { path = "crates/xs-gl-sys" }
+xs-js-sys = { path = "crates/xs-js-sys" }
 xs-layout = { path = "crates/xs-layout" }
 xs-http = { path = "crates/xs-http" }
 # xs-macro = { path = "crates/xs-macro" }

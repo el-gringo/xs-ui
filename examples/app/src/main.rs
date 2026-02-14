@@ -12,7 +12,8 @@ static GREY1: Color = Color::rgba(0.09, 0.09, 0.09, 255.0);
 static GREY2: Color = Color::rgba(0.11, 0.11, 0.11, 255.0);
 static GREY3: Color = Color::rgba(0.16, 0.16, 0.16, 255.0);
 static GREY4: Color = Color::rgba(0.24, 0.24, 0.24, 255.0);
-static IMAGE: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/fabcf1f1-5ef0-4551-9a3b-a6ff953bbcd9.jpg";
+static IMAGE1: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/fabcf1f1-5ef0-4551-9a3b-a6ff953bbcd9.jpg";
+static IMAGE2: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/440cf8a3-1389-4475-9b65-6e1dba693235.jpg";
 
 struct Sidebar {
     buttons: Vec<Button>,
@@ -124,44 +125,33 @@ impl Render for MyApp {
             )
             .child(
                 div()
-                    .id("overcontent")
+                    .id("body")
+                    .column()
                     .background_color(GREY3)
                     .child(
                         div()
-                            .id("content")
-                            .column()
-                            .justify_content(xs::MainAxisAlignment::Center)
-                            //.align_items(xs::CrossAxisAlignment::Center)
-                            .background_color(GREY4)
-                            // .child(
-                            //     img("https://video.monsieurbidouille.fr/lazy-static/thumbnails/fabcf1f1-5ef0-4551-9a3b-a6ff953bbcd9.jpg")
-                            //         .width(223.)
-                            //         .height(122.)
-                            //         .into()
-                            // )
+                            .row()
+                            //.justify_content(xs::MainAxisAlignment::Center)
                             .child(
                                 div()
-                                    .id("thumbnail")
-                                    .background_color(RED)
-                                    .child(
-                                        div()
-                                            .width(223.)
-                                            .height(122.)
-                                            .background_color(RED)
-                                            //.background_image("https://video.monsieurbidouille.fr/lazy-static/thumbnails/fabcf1f1-5ef0-4551-9a3b-a6ff953bbcd9.jpg")
-                                            .into(),
-                                    )
-                                    .into(),
-                            )
-                            .child(
-                                div()
-                                    .id("bluecell")
+                                    .id("thumbnail1")
                                     .width(223.)
                                     .height(122.)
-                                    .background_color(BLUE)
-                                    .into(),
+                                    .margin_right(32.)
+                                    .background_color(GREY4)
+                                    .background_image(IMAGE1)
+                                    .into()
                             )
-                            .into(),
+                            .child(
+                                div()
+                                    .id("thumbnail2")
+                                    .width(223.)
+                                    .height(122.)
+                                    .background_color(GREY4)
+                                    .background_image(IMAGE2)
+                                    .into()
+                            )
+                            .into()
                     )
                     .into(),
             )

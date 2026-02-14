@@ -32,7 +32,7 @@ pub struct AppContext {
     pub nodes: HashMap<NodeId, Box<dyn Any>>,
     pub current_node_id: NodeId,
     pub current_nav_node_id: NavigationNodeId,
-    pub ressources: HashMap<&'static str, Image>,
+    pub ressources: HashMap<u32, Option<Image>>,
 }
 
 impl AppContext {
@@ -102,8 +102,7 @@ impl AppContext {
         }
     }
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn load_image(&mut self, _src: &'static str) {
-    }
+    pub fn load_image(&mut self, _src: &'static str) {}
 }
 
 unsafe extern "C" {

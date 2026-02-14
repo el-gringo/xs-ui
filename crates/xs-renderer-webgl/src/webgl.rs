@@ -71,8 +71,26 @@ pub fn draw_mesh(program: GLuint, vertex_attribute_name: &str, vertices: Vec<Vec
             GL_ONE_MINUS_SRC_ALPHA,
         );
         */
-        let buffer = new_array_buffer(&vertices);
-        glBindBuffer(GL_ARRAY_BUFFER, buffer.buffer);
+        let vertice_buffer = new_array_buffer(&vertices);
+        glBindBuffer(GL_ARRAY_BUFFER, vertice_buffer.buffer);
+
+        // let texture_coordinates = [
+        //     // Front
+        //     0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+        //     // Back
+        //     0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+        //     // Top
+        //     0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+        //     // Bottom
+        //     0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+        //     // Right
+        //     0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+        //     // Left
+        //     0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+        //   ];
+
+        // let texture_coordinates_buffer = new_array_buffer(texture_coordinates.to_vec());
+        // glBindBuffer(GL_ARRAY_BUFFER, texture_coordinates_buffer.buffer);
 
         // Upload to GPU
         glUseProgram(program);
@@ -83,14 +101,18 @@ pub fn draw_mesh(program: GLuint, vertex_attribute_name: &str, vertices: Vec<Vec
         );
         glVertexAttribPointer(
             location as u32,
-            buffer.element_size as i32,
+            vertice_buffer.element_size as i32,
             GL_FLOAT,
             GL_FALSE as u8,
             0,
             0 as *const ::core::ffi::c_void,
         );
         glEnableVertexAttribArray(location as u32);
-        glDrawArrays(GL_TRIANGLES, 0, (buffer.len / buffer.element_size) as i32);
+        glDrawArrays(
+            GL_TRIANGLES,
+            0,
+            (vertice_buffer.len / vertice_buffer.element_size) as i32,
+        );
         glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
     }
 }
@@ -139,17 +161,12 @@ pub fn set_uniform_vec2(program: GLuint, field: &str, value: [f32; 2]) {
         glUseProgram(program);
         let location =
             glGetUniformLocation(program, field.as_ptr() as *const _, field.len() as u32);
-        if location >= 0 {
-            glUniform2fv(
-                location,
-                value.len() as i32,
-                value.as_ptr() as *const _,
-                field.len() as u32,
-            );
-        }  else {
-            log(&format!("set_uniform_vec2: {} {} {}", field, value[0], value[1]));
-        }
-
+        glUniform2fv(
+            location,
+            value.len() as i32,
+            value.as_ptr() as *const _,
+            field.len() as u32,
+        );
     }
 }
 
@@ -231,17 +248,6 @@ fn is_power_of_2(value: i32) -> bool {
     (value & (value - 1)) == 0
 }
 
-unsafe extern "C" {
-    pub fn console_log(ptr: u32, len: u32);
-}
-
-pub fn log(message: &str) {
-    let bytes = message.as_bytes();
-    unsafe {
-        console_log(bytes.as_ptr() as u32, bytes.len() as u32);
-    }
-}
-
 pub fn load_texture(image: &Image, texture: usize, width: i32, height: i32) -> GLuint {
     unsafe {
         let ptr = glCreateTexture();
@@ -257,7 +263,7 @@ pub fn load_texture(image: &Image, texture: usize, width: i32, height: i32) -> G
             0,
             GL_RGBA,
             GL_UNSIGNED_BYTE,
-            image.as_ptr()
+            image.as_ptr(),
         );
         if is_power_of_2(width) && is_power_of_2(height) {
             glGenerateMipmap(GL_TEXTURE_2D);

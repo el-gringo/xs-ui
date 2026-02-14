@@ -5,6 +5,6 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-xs-layout = { workspace = true }
-xs-math = { workspace = true }
-xs-renderer-core = { workspace = true }
+xs-layout.workspace = true
+xs-math.workspace = true
+xs-renderer-core.workspace = true

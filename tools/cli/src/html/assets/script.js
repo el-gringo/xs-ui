@@ -1,6 +1,7 @@
-let wasm, app;
+let wasm;
 
-const heap = new Array(128).fill(undefined);
+//const memory = new WebAssembly.Memory({ initial: 20, maximum: 100 });
+const heap = Array.from({ length: 128 }).fill(undefined);
 
 heap.push(undefined, null, true, false);
 
@@ -39,6 +40,7 @@ const cachedTextDecoder = new TextDecoder("utf-8", {
 cachedTextDecoder.decode();
 
 let cachedUint8Memory0 = null;
+
 
 function getUint8Memory0() {
   if (cachedUint8Memory0 === null || cachedUint8Memory0.byteLength === 0) {
@@ -627,11 +629,10 @@ const env = {
   },
   load_image(ptr, len) {
     let src = getStringFromWasm0(ptr, len);
-    console.log('load_image', src);
     const image = new Image();
     image.onload = function onImageLoaded() {
       const img = add_heap_object(image);
-      wasm.on_image_loaded(src, img);
+      wasm.on_image_loaded(ptr, img);
     };
     image.crossOrigin = true;
     image.src = src;
@@ -673,7 +674,6 @@ const env = {
     _glGenObject(n, textures, "createTexture", GL.textures, "glGenTextures");
   },
   glActiveTexture: function (texture_index) {
-    console.log("glActiveTexture", texture_index);
     gl.activeTexture(gl["TEXTURE" + texture_index]);
   },
   glBindTexture: function (target, texture) {

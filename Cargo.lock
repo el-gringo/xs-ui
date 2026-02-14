@@ -124,6 +124,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "peertube"
+version = "0.1.0"
+dependencies = [
+ "xs",
+]
+
+[[package]]
 name = "pkg-config"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -216,6 +223,7 @@ name = "xs-backend-browser"
 version = "0.1.0"
 dependencies = [
  "xs-backend-core",
+ "xs-js-sys",
  "xs-layout",
  "xs-platform-event",
  "xs-renderer-core",
@@ -312,6 +320,10 @@ dependencies = [
  "openssl",
  "xs-url",
 ]
+
+[[package]]
+name = "xs-js-sys"
+version = "0.1.0"
 
 [[package]]
 name = "xs-layout"

@@ -262,14 +262,14 @@ impl Element for Div {
         } else {
             None
         };
+
         let image = if style.background_image.is_some() {
             let src = style.background_image.unwrap();
-            if let Some(image) = ctx.ressources.get(src) {
-                Some(image.clone())
-            } else {
+            let ptr = src.as_bytes().as_ptr() as u32;
+            if ctx.ressources.get(&ptr).is_none() {
                 ctx.load_image(src);
-                None
             }
+            ctx.ressources.entry(ptr).or_insert(None).clone()
         } else {
             None
         };

@@ -1,6 +1,6 @@
-use crate::webgl::{self, log};
+use crate::webgl;
 use xs_math::{Rectangle, Vector2, Vector3};
-use xs_layout::{BorderSide, Borders, Image, Material};
+use xs_layout::{BorderSide, Borders, Material};
 
 use crate::bindings::*;
 
@@ -42,7 +42,10 @@ impl StandardShader {
         webgl::set_uniform_vec2(self.program, "u_rect_max", [max_x, max_y]);
         self.set_borders(material.borders);
         if let Some(texture) = texture {
+            webgl::set_uniform1i(self.program, "u_texture_enabled", 1);
             webgl::set_uniform1i(self.program, "u_texture", texture as i32);
+        } else {
+            webgl::set_uniform1i(self.program, "u_texture_enabled", 0);
         }
         let vertices: [Vector3; 6] = [
             Vector3::new(min_x, min_y, 0.0),
