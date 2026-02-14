@@ -56,9 +56,9 @@ impl AppContext {
     }
 
     pub fn render(&mut self, widget: Rc<Box<dyn Render>>, depth: usize, index: usize) -> View {
-        let element = widget.render(self);
         let type_id = widget.tag().clone();
         self.current_node_id = (depth, index, type_id);
+        let element = widget.render(self);
         let container_id = self.nav.current_container_id;
         let mut views = Vec::new();
         for (index, child) in element.children().iter().enumerate() {
@@ -76,6 +76,7 @@ impl AppContext {
     {
         let node_id = self.current_node_id.clone();
         if self.nodes.get(&node_id).is_none() {
+            println!("use_state: {:?}", node_id);
             let state = Box::new(init(self));
             self.nodes.insert(node_id, state);
         }

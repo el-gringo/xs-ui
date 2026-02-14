@@ -199,9 +199,8 @@ impl Div {
         self
     }
 
-    pub fn children(mut self, children: impl IntoIterator<Item = Box<dyn Render>>) -> Self {
-        let iterator = children.into_iter().map(|child| Rc::new(child));
-        self.children.extend(iterator);
+    pub fn children(mut self, children: impl IntoIterator<Item = Rc<Box<dyn Render>>>) -> Self {
+        self.children.extend(children);
         self
     }
 }

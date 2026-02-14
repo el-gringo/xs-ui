@@ -81,6 +81,7 @@ impl Backend for BackendWayland {
             ctx.app_context.dispatch();
             let frame = ctx.app_context.render(root.clone(), 0, 0);
             self.renderer.draw_frame(frame);
+            ctx.app_context.nav.update();
             ctx.swap_buffers();
         }
     }

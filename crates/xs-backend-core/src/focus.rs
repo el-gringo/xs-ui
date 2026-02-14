@@ -1,4 +1,8 @@
-use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+use std::{
+    cell::{RefCell, RefMut},
+    collections::VecDeque,
+    rc::Rc,
+};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum NavigationLayout {
@@ -43,16 +47,20 @@ impl NavigationNode {
         self
     }
 
-    pub fn previous(&mut self) {
+    pub fn previous(&mut self) -> bool {
         if self.selected_index > 0 {
             self.selected_index -= 1;
+            return false;
         }
+        true
     }
 
-    pub fn next(&mut self) {
+    pub fn next(&mut self) -> bool {
         if self.selected_index < self.children.len() - 1 {
             self.selected_index += 1;
+            return false;
         }
+        true
     }
 }
 
@@ -79,21 +87,57 @@ impl NavigationTree {
     }
 
     pub fn insert(&mut self, lnode: NavigationNode) -> NavigationNodeId {
+        let id = self.nodes.len();
         self.nodes.push(RefCell::new(lnode));
-        self.nodes.len() - 1
+        id
     }
 
     pub fn iter(&self) -> NavigationTreeIterator<'_> {
+        self.iter_from_node(self.root)
+    }
+
+    pub fn iter_from_node(
+        &self,
+        root: Option<NavigationNodeId>,
+    ) -> NavigationTreeIterator<'_> {
         NavigationTreeIterator {
             tree: self,
-            parents: match self.root {
+            parents: match root {
                 Some(root) => VecDeque::from([root]),
                 None => VecDeque::new(),
             },
-            remaining: match self.root {
+            remaining: match root {
                 Some(root) => VecDeque::from([(0, root)]),
                 None => VecDeque::new(),
             },
+        }
+    }
+
+    pub fn debug_node(&self, prefix: &str, node_id: NavigationNodeId) {
+        if let Some(node) = self.get(node_id) {
+            let node = node.borrow();
+            println!(
+                "{} node {}: {} {} {:?} {} {}",
+                prefix,
+                if node.has_focus { "*" } else { " " },
+                node_id,
+                node.key,
+                node.layout,
+                node.selected_index,
+                node.children.len()
+            );
+        } else {
+            println!("node {} not found", node_id);
+        }
+    }
+
+    pub fn debug(&self, node_id: NavigationNodeId, depth: u32) {
+        self.debug_node(&"  ".repeat(depth as usize), node_id);
+        if let Some(node) = self.get(node_id) {
+            let ids = node.borrow().children.clone();
+            for id in ids {
+                self.debug(id, depth + 1);
+            }
         }
     }
 }
@@ -116,9 +160,10 @@ impl<'a> Iterator for NavigationTreeIterator<'a> {
         let (index, child_id) = self.remaining.pop_front()?;
         let parent = self.tree.get(parent_id)?;
         let child = self.tree.get(child_id)?;
+        let count = child.borrow().children.len();
         for (pos, child) in child.borrow().children.iter().rev().enumerate() {
             self.parents.push_front(child_id);
-            self.remaining.push_front((pos, *child));
+            self.remaining.push_front((count - pos - 1, *child));
         }
         Some((parent, index, child))
     }
@@ -132,6 +177,7 @@ pub struct FocusHandle {
 impl FocusHandle {
     pub fn new(node: NavigationNode, tree: Rc<RefCell<NavigationTree>>) -> Self {
         let id = tree.borrow_mut().insert(node);
+        tree.borrow().debug_node(&format!("new {}", id), id);
         Self {
             id,
             tree: tree.clone(),
@@ -161,7 +207,7 @@ pub struct FocusManager {
 impl FocusManager {
     pub fn new() -> Self {
         let mut tree = NavigationTree::new();
-        let mut root = NavigationNode::new("root").vertical();
+        let mut root = NavigationNode::new("root").horizontal();
         root.has_focus = true;
         let id = tree.insert(root);
         tree.set_root(Some(id));
@@ -171,8 +217,6 @@ impl FocusManager {
             active_element_id: id,
         }
     }
-
-    pub fn update(&mut self) {}
 
     fn initialize_node(&mut self, container_id: NavigationNodeId, node: &mut NavigationNode) {
         node.parent = container_id;
@@ -184,7 +228,7 @@ impl FocusManager {
             }
             parent.selected_index = parent.children.len();
         }
-        if parent.children.len() == 0 {
+        if parent.has_focus && parent.children.len() == 0 {
             node.has_focus = true
         }
     }
@@ -212,58 +256,69 @@ impl FocusManager {
     }
 
     pub fn process_key(&mut self, key_code: KeyCode) {
-        let tree = self.tree.borrow();
-
-        let active_element_id = self.active_element_id;
-        while active_element_id > 0 {
-            let parent_id = tree.get(active_element_id).unwrap().borrow_mut().parent;
-            let mut parent = tree.get(parent_id).unwrap().borrow_mut();
-            let layout = parent.layout;
-            match layout {
-                Horizontal => {
-                    match key_code {
-                        KeyCode::Left => {
-                            parent.previous();
-                        }
-                        KeyCode::Right => {
-                            parent.next();
-                        }
-                        _ => {}
-                    };
+        self.tree.borrow().debug_node("previous focus", self.active_element_id);
+        self.tree.borrow().debug(0, 0);
+        {
+            let tree = self.tree.borrow();
+            let mut propagate = true;
+            let mut current_element_id = self.active_element_id;
+            loop {
+                let node = tree.get(current_element_id).unwrap();
+                let parent_id = node.borrow().parent;
+                current_element_id = parent_id;
+                let parent = tree.get(parent_id).unwrap();
+                let layout = parent.borrow().layout;
+                match (layout, key_code) {
+                    (Horizontal, KeyCode::Left) |
+                    (Verical, KeyCode::Up) => {
+                        propagate = parent.borrow_mut().previous();
+                    },
+                    (Horizontal, KeyCode::Right) |
+                    (Verical, KeyCode::Down) => {
+                        propagate = parent.borrow_mut().next();
+                    }
+                    _ => {}
                 }
-                Verical => {
-                    match key_code {
-                        KeyCode::Up => {
-                            parent.previous();
-                        }
-                        KeyCode::Down => {
-                            parent.next();
-                        }
-                        _ => {}
-                    };
+                if current_element_id == 0 || !propagate {
+                    break;
                 }
-                _ => {}
             }
-            let selected_index = parent.selected_index;
-            for (index, child_id) in parent.children.iter().enumerate() {
-                tree.get(*child_id).unwrap().borrow_mut().has_focus = index == selected_index;
-            }
-            break;
         }
-        self.debug();
+        self.update();
+        self.tree.borrow().debug_node("new focus", self.active_element_id);
+        self.tree.borrow().debug(0, 0);
     }
 
-    pub fn debug(&self) {
+    pub fn update(&mut self) {
         let tree = self.tree.borrow();
-        for (_parent, _index, child) in tree.iter() {
-            let child = child.borrow();
-            println!(
-                "node: {} {:?} {} {}",
-                child.key,
-                child.layout,
-                child.has_focus,
-                child.children.len()
-            );
+        for (parent, index, child) in tree.iter() {
+            let parent_has_focus = parent.borrow().has_focus;
+            let selected_index = parent.borrow().selected_index;
+            if parent_has_focus {
+                if index == selected_index {
+                    child.borrow_mut().has_focus = true;
+                    if child.borrow().children.len() == 0 {
+                        self.active_element_id = parent.borrow().children[selected_index];
+                    }
+                } else {
+                    child.borrow_mut().has_focus = false;
+                }
+            } else {
+                child.borrow_mut().has_focus = false;
+            }
         }
+    }
+
+    fn debug_node(&self, prefix: &str, node: &RefCell<NavigationNode>) {
+        let node = node.borrow();
+        println!(
+            "{} node: {} {:?} {} {} {}",
+            prefix,
+            node.key,
+            node.layout,
+            node.has_focus,
+            node.selected_index,
+            node.children.len()
+        );
     }
 }

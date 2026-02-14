@@ -50,6 +50,8 @@ pub struct BackendBrowser {
 
 impl BackendBrowser {
     pub fn new(id: &'static str, title: &'static str, renderer: Box<dyn Renderer>) -> Self {
+        let width = renderer.screen_width();
+        let height = renderer.screen_height();
         let app_context = AppContext::new();
         let root = Rc::new(Box::new(RootElement {}) as Box<dyn Render>);
         let inner = Rc::new(RefCell::new(BackendBrowserInner {
@@ -59,7 +61,7 @@ impl BackendBrowser {
         }));
         GLOBAL.with(|global| *global.borrow_mut() = Some(inner.clone()));
         unsafe {
-            bindings::init_canvas();
+            bindings::init_canvas(width, height);
         }
         Self { id, title, inner }
     }

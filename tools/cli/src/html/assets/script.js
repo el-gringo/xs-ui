@@ -1,4 +1,5 @@
-let wasm;
+let wasm, start;
+let max_render_time = 0;
 
 //const memory = new WebAssembly.Memory({ initial: 20, maximum: 100 });
 const heap = Array.from({ length: 128 }).fill(undefined);
@@ -574,14 +575,17 @@ const canvas = document.getElementById("glcanvas");
 const gl = canvas.getContext("webgl2");
 canvas.focus();
 
-const FPS = 1;
+const FPS = 60;
 const FRAME_INTERVAL = 1000 / FPS;
 
 const env = {
-  init_canvas: function () {
+  init_canvas: function (width, height) {
+    console.log('init_canvas', width, height);
     const pixelRatio = window.devicePixelRatio || 1.0;
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
   },
   console_log: function (ptr, len) {
     console.log(getStringFromWasm0(ptr, len));
@@ -625,6 +629,7 @@ const env = {
       }
       wasm.key_down(keyCode, modifiers, repeat);
     };
+    start = performance.now();
     loop_frames();
   },
   load_image(ptr, len) {
@@ -1324,6 +1329,16 @@ function load(wasmUrl) {
 }
 
 function loop_frames() {
+  const frame_start = performance.now();
   wasm.frame();
+  const frame_duration = performance.now() - frame_start;
+  if (frame_duration > max_render_time) {
+    max_render_time = frame_duration;
+  }
+  if (performance.now() - start > 1000) {
+    console.log('max_render_time', max_render_time);
+    max_render_time = 0;
+    start = performance.now();
+  }
   setTimeout(loop_frames, FRAME_INTERVAL);
 }
