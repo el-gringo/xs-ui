@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::io::{BufRead, BufReader, Read};
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use xs_url::url::Url;
@@ -173,9 +172,9 @@ impl HttpClient {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, io::Write};
+    use std::io::Write;
     use xs_url::url::Url;
-    use crate::client::{HttpClient, prepare_headers};
+    use crate::{client::{HttpClient, prepare_headers}, response::HttpHeaders};
 
     const TEST_HOST: &str = "127.0.0.1";
     const TEST_PORT: u16 = 63215;
@@ -201,9 +200,9 @@ mod tests {
     #[test]
     fn generate_request_with_headers() {
         let url = Url::parse("http://localhost:8080/").unwrap();
-        let mut headers = BTreeMap::new();
-        headers.insert("Authorization".to_string(), vec!["Bearer token".to_string()]);
-        headers.insert("Content-Type".to_string(), vec!["application/json".to_string()]);
+        let mut headers = HttpHeaders::new();
+        headers.insert("Authorization".to_string(), "Bearer token".to_string());
+        headers.insert("Content-Type".to_string(), "application/json".to_string());
         let payload = prepare_headers("GET".to_string(), url, headers);
         assert_eq!(payload.len(), 6);
         assert_eq!(payload[0], "GET / HTTP/1.1");
