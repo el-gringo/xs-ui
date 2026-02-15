@@ -312,6 +312,12 @@ impl Into<Box<dyn Render>> for Div  {
     }
 }
 
+impl Into<Rc<Box<dyn Render>>> for Div  {
+    fn into(self) -> Rc<Box<dyn Render>> {
+        Rc::new(Box::new(self))
+    }
+}
+
 pub fn div() -> Div {
     Div::new()
 }

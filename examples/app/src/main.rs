@@ -6,7 +6,7 @@ mod card;
 mod sidebar;
 mod theme;
 
-use std::{any::TypeId, rc::Rc};
+use std::any::TypeId;
 
 use xs::{
     AppContext, Application, BLUE, Element, FocusHandle, GREEN, NavigationNode, RED, Render, div,
@@ -35,15 +35,13 @@ impl Render for MyApp {
             )
             .child(
                 body()
-                    .children([Rc::new(
-                        div()
-                            .row()
-                            .padding_top(64.)
-                            .child(card().id("card1").thumbnail(IMAGE1).into())
-                            .child(card().id("card2").thumbnail(IMAGE2).into())
-                            .child(card().id("card3").thumbnail(IMAGE3).into())
-                            .into(),
-                    )])
+                    .children([div()
+                        .row()
+                        .padding_top(64.)
+                        .child(card().id("card1").thumbnail(IMAGE1).into())
+                        .child(card().id("card2").thumbnail(IMAGE2).into())
+                        .child(card().id("card3").thumbnail(IMAGE3).into())
+                        .into()])
                     .into(),
             )
             .into()
