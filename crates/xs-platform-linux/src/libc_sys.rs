@@ -39,7 +39,7 @@ pub const PROT_WRITE: c_int = 2;
 
 pub const MAP_SHARED: c_int = 1;
 pub const MAP_PRIVATE: c_int = 2;
-pub const MAP_FAILED: *mut c_void = 0xFFFFFFFFFFFFFFFF as *mut c_void;
+pub const MAP_FAILED: *mut c_void = !0 as *mut c_void;
 
 pub const O_CLOEXEC: c_int = 0x80000;
 
