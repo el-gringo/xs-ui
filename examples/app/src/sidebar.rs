@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use xs::{AppContext, BLUE, Element, FocusHandle, GREEN, NavigationNode, RED, Render, div};
+use xs::{Context, BLUE, Element, FocusHandle, GREEN, NavigationNode, RED, Render, div};
 
 use crate::{
     button::{Button, button},
@@ -30,11 +30,11 @@ impl Sidebar {
 }
 
 impl Render for Sidebar {
-    fn render(&self, ctx: &mut AppContext) -> Box<dyn Element> {
-        let _nav_node = ctx.use_state::<FocusHandle>(|ctx| {
-            let node = NavigationNode::new("sidebar").vertical();
-            ctx.nav.create_handle(node)
-        });
+    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
+        // let _ = ctx.use_state::<FocusHandle>(|ctx| {
+        //     let node = NavigationNode::new("sidebar").vertical();
+        //     ctx.nav.create_handle(node)
+        // });
 
         div()
             .id("sidebar")

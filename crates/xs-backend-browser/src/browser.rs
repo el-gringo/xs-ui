@@ -1,16 +1,14 @@
-use std::{
-    cell::RefCell,
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{
-    bindings, browser_event::{translate_keycode, translate_mod}
+    bindings,
+    browser_event::{translate_keycode, translate_mod},
 };
-use xs_backend_core::{AppContext, Backend, Render, RootElement};
+
+use xs_core::{AppContext, Application, Backend, Render, Renderer, RootElement};
 use xs_js_sys::log;
 use xs_layout::Image;
 use xs_platform_event::{Event, KeyEvent};
-use xs_renderer_core::Renderer;
 
 struct BackendBrowserInner {
     renderer: Box<dyn Renderer>,
@@ -19,17 +17,15 @@ struct BackendBrowserInner {
 }
 
 impl BackendBrowserInner {
-    pub fn frame(&mut self) {
-        self.app_context.dispatch();
-        let frame = self.app_context.render(self.root.clone(), 0, 0);
-        self.renderer.draw_frame(frame);
-    }
+    pub fn frame(&mut self) {}
 
     pub fn handle_event(&mut self, event: Event) {
         match event {
-            Event::ImageLoaded(src_ptr, ptr) => {
+            Event::ImageLoaded(src_ptr, ptr, width, height, texture_index) => {
                 if let Some(image) = self.app_context.ressources.get_mut(&src_ptr) {
-                    image.replace(Image(ptr.try_into().unwrap()));
+                    log(&format!("Event::ImageLoaded: {texture_index}"));
+                    let ptr: i32 = ptr.try_into().unwrap();
+                    image.replace(Image::new(ptr, width, height, texture_index));
                 }
             }
             Event::RequestAnimationFrame => {
@@ -42,30 +38,8 @@ impl BackendBrowserInner {
     }
 }
 
-pub struct BackendBrowser {
-    id: &'static str,
-    title: &'static str,
-    inner: Rc<RefCell<BackendBrowserInner>>,
-}
-
+pub struct BackendBrowser;
 impl BackendBrowser {
-    pub fn new(id: &'static str, title: &'static str, renderer: Box<dyn Renderer>) -> Self {
-        let width = renderer.screen_width();
-        let height = renderer.screen_height();
-        let app_context = AppContext::new();
-        let root = Rc::new(Box::new(RootElement {}) as Box<dyn Render>);
-        let inner = Rc::new(RefCell::new(BackendBrowserInner {
-            renderer,
-            app_context,
-            root,
-        }));
-        GLOBAL.with(|global| *global.borrow_mut() = Some(inner.clone()));
-        unsafe {
-            bindings::init_canvas(width, height);
-        }
-        Self { id, title, inner }
-    }
-
     pub fn get_time(self) -> f64 {
         unsafe { bindings::now() }
     }
@@ -73,24 +47,55 @@ impl BackendBrowser {
     pub fn log(message: &str) {
         log(message);
     }
+
+
 }
 
 impl Backend for BackendBrowser {
-    fn run(&mut self, root: Box<dyn Render>) {
-        log(&("runnning ".to_owned() + self.id + " " + self.title));
-        self.inner.borrow_mut().root = Rc::new(root);
+    fn run(
+        &mut self,
+        app: &mut Application,
+        root: Box<dyn Render>,
+    ) {
+        //log(&("runnning ".to_owned() + self.app.id + " " + self.app.title));
         unsafe {
-            bindings::run();
+            bindings::init(app.width, app.height);
         };
-    }
+        log("coucou");
+        let root = Rc::new(root);
+        let frame = renderer.render(app, root.clone());
+        // ctx.renderer.draw_frame(frame);
+        // ctx.nav.update();
 
-    fn load_image(&mut self, src: &'static str) {
+
+        // let f = Rc::new(RefCell::new(None));
+        // let g = f.clone();
+        // *g.borrow_mut() = Some(Closure::new(|| {
+        //     log("request_animation_frame closure");
+        //     app.with_context(|mut ctx| {
+        //         let frame = ctx.render(app, root.clone(), 0, 0);
+        //         ctx.renderer.draw_frame(frame);
+        //         ctx.nav.update();
+        //     })
+        // }));
+        // request_animation_frame(g.borrow().as_ref().unwrap());
+
+    }
+    fn load_image(&mut self, src: &'static str, texture_index: u32) {
         unsafe {
             let (ptr, len) = {
                 let bytes = src.as_bytes();
                 (bytes.as_ptr() as u32, bytes.len() as u32)
             };
-            bindings::load_image(ptr, len);
+            bindings::load_image(ptr, len, texture_index);
+        }
+    }
+
+    fn new_image(&mut self, mut array: Vec<u8>, width: u32) -> u32 {
+        unsafe {
+            let ptr = array.as_mut_ptr() as u32;
+            let len = array.len().try_into().unwrap();
+            bindings::new_image(ptr, len, width)
         }
     }
 }
@@ -130,7 +135,14 @@ pub extern "C" fn key_down(key: u32, modifiers: u32, _repeat: bool) {
 // }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn on_image_loaded(src_ptr: u32, image_ptr: u32) {
-    let event = Event::ImageLoaded(src_ptr, image_ptr);
+pub extern "C" fn on_image_loaded(
+    src_ptr: u32,
+    _str_len: u32,
+    image_ptr: u32,
+    width: u32,
+    height: u32,
+    texture_index: u32,
+) {
+    let event = Event::ImageLoaded(src_ptr, image_ptr, width, height, texture_index);
     tl_event_handler(event);
 }

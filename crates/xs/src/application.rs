@@ -1,47 +1,18 @@
-use std::str;
-
-use xs_backend_core::{App, Backend, Render};
+use xs_core::{AppContext, Application, Backend, BackendDummy, Render, RendererDummy, TextSystem};
 use xs_renderer::Renderer;
 
-pub struct Application(App);
-impl Application {
-    pub fn new() -> Self {
-        Self(App {
-            id: "app",
-            title: "App",
-            width: 960,
-            height: 540,
-            backend: None,
-        })
-    }
+pub trait Runnable {
+    fn run(&mut self, root: Box<dyn Render>);
+}
 
-    pub fn id(mut self, id: &'static str) -> Self {
-        self.0.id = id;
-        self
-    }
-
-    pub fn title(mut self, title: &'static str) -> Self {
-        self.0.title = title;
-        self
-    }
-
-    pub fn height(mut self, height: i32) -> Self {
-        self.0.height = height;
-        self
-    }
-
-    pub fn width(mut self, width: i32) -> Self {
-        self.0.width = width;
-        self
-    }
-
-    pub fn run(self, root: Box<dyn Render>) {
-        let renderer = Box::new(Renderer::new(self.0.width, self.0.height));
-        let mut backend = xs_backend::Backend::new(
-            self.0.id,
-            self.0.title,
-            renderer,
-        );
-        backend.run(root);
+impl Runnable for Application {
+    fn run(&mut self, root: Box<dyn Render>) {
+        let mut text_system = Box::new(xs_text_system::TextSystem::new());
+        let font_family = "IBMPlexSans Regular";
+        let data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
+        text_system.load_font(font_family, data);
+        self.ctx.renderer = Box::new(Renderer::new(self.width, self.height, text_system));
+        self.ctx.backend = Box::new(xs_backend::Backend);
+        self.ctx.backend.run(self, root);
     }
 }

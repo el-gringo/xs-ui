@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use xs::{AppContext, Element, FocusHandle, NavigationNode, RED, Render, TRANSPARENT, WHITE, div};
+use xs::{Context, Element, Render, WHITE, div};
 
 use crate::theme::GRAY3;
 
@@ -26,23 +26,22 @@ impl Card {
 }
 
 impl Render for Card {
-    fn render(&self, ctx: &mut AppContext) -> Box<dyn Element> {
-        let nav_node =
-            ctx.use_state::<FocusHandle>(|ctx| ctx.nav.create_handle(NavigationNode::new(self.id)));
+    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
+        // let nav_node =
+        //     ctx.use_state::<FocusHandle>(|ctx| ctx.nav.create_handle(NavigationNode::new(self.id)));
         div()
             .column()
-            .width(260.)
-            .height(180.)
-            .margin_left(32.)
+            .width(320.)
+            .height(240.)
             .background_color(WHITE)
             .justify_content(xs::MainAxisAlignment::Start)
             .align_items(xs::CrossAxisAlignment::Center)
-            .border(if nav_node.has_focus() { RED } else { TRANSPARENT }, 4.)
+            //.border(if nav_node.has_focus() { RED } else { TRANSPARENT }, 4.)
             .child(
                 div()
-                    .width(233.)
-                    .height(122.)
-                    .margin_top(16.)
+                    .width(280.)
+                    .height(157.)
+                    .margin_top(8.)
                     .background_color(GRAY3)
                     .background_image(self.thumbnail)
                     .into()

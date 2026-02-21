@@ -1,6 +1,5 @@
 use std::{ffi::c_void, ptr::null_mut};
 
-use xs_backend_core::AppContext;
 use xs_backend_wayland_client::{
     LibWaylandClient, WL_SURFACE_COMMIT, wl_compositor, wl_display, wl_registry, wl_request,
     wl_seat, wl_surface,
@@ -8,6 +7,7 @@ use xs_backend_wayland_client::{
 use xs_backend_wayland_egl::{LibWaylandEgl, wl_egl_window};
 use xs_backend_wayland_extensions::xdg_shell::{xdg_surface, xdg_toplevel, xdg_wm_base};
 use xs_backend_wayland_xkb::{LibXkbCommon, XkbKeymap, xkb_context, xkb_state};
+use xs_core::AppContext;
 use xs_egl_sys::LibEgl;
 
 pub struct WaylandContext {
@@ -73,7 +73,7 @@ impl WaylandContext {
 
             xkb_context: null_mut(),
             xkb_state: null_mut(),
-            xkb_keymap: Default::default()
+            xkb_keymap: Default::default(),
         }
     }
 

@@ -33,10 +33,10 @@ function add_heap_object(obj) {
   return idx;
 }
 
-const cachedTextDecoder = new TextDecoder("utf-8", {
-  ignoreBOM: true,
-  fatal: true,
-});
+  const cachedTextDecoder = new TextDecoder("utf-8", {
+    ignoreBOM: true,
+    fatal: true,
+  });
 
 cachedTextDecoder.decode();
 
@@ -51,7 +51,7 @@ function getUint8Memory0() {
 }
 
 function getStringFromWasm0(ptr, len) {
-  return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
+    return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 
 function UTF8ToString(ptr, maxBytesToRead) {
@@ -578,15 +578,24 @@ canvas.focus();
 const FPS = 60;
 const FRAME_INTERVAL = 1000 / FPS;
 
+function request_animation_frame(closure, vcall) {
+  return requestAnimationFrame(() => {
+    const frame_start = performance.now();;
+    wasm.callback(closure, vcall)
+    const frame_duration = performance.now() - frame_start;
+    if (frame_duration > max_render_time) {
+      max_render_time = frame_duration;
+    }
+    if (performance.now() - start > 1000) {
+      console.log('max_render_time', max_render_time);
+      max_render_time = 0;
+      start = performance.now();
+    }
+    request_animation_frame(closure, vcall);
+  });
+}
+
 const env = {
-  init_canvas: function (width, height) {
-    console.log('init_canvas', width, height);
-    const pixelRatio = window.devicePixelRatio || 1.0;
-    canvas.width = width;
-    canvas.height = height;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-  },
   console_log: function (ptr, len) {
     console.log(getStringFromWasm0(ptr, len));
   },
@@ -614,7 +623,21 @@ const env = {
   canvas_height: function () {
     return Math.floor(canvas.height);
   },
-  run: function () {
+  new_string(ptr, len) {
+    let str = getStringFromWasm0(ptr, len);
+    return add_heap_object(str);
+  },
+  new_image(ptr, len, width) {
+    let imageData = new ImageData(getArray(ptr, Uint8ClampedArray, len), width);
+    let image_ptr = add_heap_object(imageData);
+    return image_ptr;
+  },
+  init: function (width, height) {
+    const pixelRatio = window.devicePixelRatio || 1.0;
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
     canvas.onkeydown = function onKeyDown(event) {
       const { keyCode, ctrlKey, shiftKey, altKey, repeat } = event;
       let modifiers = 0;
@@ -627,17 +650,20 @@ const env = {
       if (altKey) {
         modifiers |= SAPP_MODIFIER_ALT;
       }
-      wasm.key_down(keyCode, modifiers, repeat);
+      //wasm.key_down(keyCode, modifiers, repeat);
     };
     start = performance.now();
-    loop_frames();
+    // for (let i = 0; i < 1000; ++i) {
+    //   requestAnimationFrame(loop_frames);
+    // }
   },
-  load_image(ptr, len) {
+  request_animation_frame,
+  load_image(ptr, len, texture_index) {
     let src = getStringFromWasm0(ptr, len);
     const image = new Image();
     image.onload = function onImageLoaded() {
-      const img = add_heap_object(image);
-      wasm.on_image_loaded(ptr, img);
+      const img_ptr = add_heap_object(image);
+      wasm.on_image_loaded(ptr, len, img_ptr, image.naturalWidth, image.naturalHeight, texture_index);
     };
     image.crossOrigin = true;
     image.src = src;
@@ -694,8 +720,10 @@ const env = {
     border,
     format,
     type,
-    source,
+    image,
   ) {
+    const source = get_object(image);
+    console.log('texImage2D', source);
     gl.texImage2D(
       target,
       level,
@@ -705,7 +733,7 @@ const env = {
       border,
       format,
       type,
-      get_object(source),
+      source
     );
   },
   glTexSubImage2D: function (
@@ -1326,19 +1354,4 @@ function load(wasmUrl) {
       cachedUint8Memory0 = null;
       wasm.main();
     });
-}
-
-function loop_frames() {
-  const frame_start = performance.now();
-  wasm.frame();
-  const frame_duration = performance.now() - frame_start;
-  if (frame_duration > max_render_time) {
-    max_render_time = frame_duration;
-  }
-  if (performance.now() - start > 1000) {
-    console.log('max_render_time', max_render_time);
-    max_render_time = 0;
-    start = performance.now();
-  }
-  setTimeout(loop_frames, FRAME_INTERVAL);
 }

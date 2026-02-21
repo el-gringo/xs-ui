@@ -1,5 +1,5 @@
 pub enum Event {
-    ImageLoaded(u32, u32),
+    ImageLoaded(u32, u32, u32, u32, u32),
     KeyDown(KeyEvent),
     RequestAnimationFrame,
 }

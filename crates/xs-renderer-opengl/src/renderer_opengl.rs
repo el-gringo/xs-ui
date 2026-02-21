@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+use xs_core::{Application, Renderer, TextSystem};
 use xs_gl_sys::{glClear, glFlush, GL_COLOR_BUFFER_BIT};
-use xs_layout::{BoxConstraints, Layout, LayoutBox, LayoutTree};
+use xs_layout::{BoxConstraints, Image, Layout, LayoutBox, LayoutTree};
 use xs_math::Vector2;
-use xs_renderer_core::Renderer;
 
 use crate::mesh::Mesh;
 use crate::shader::{
@@ -18,15 +18,20 @@ pub struct RendererOpenGl {
     width: i32,
     height: i32,
     shaders: HashMap<String, ShaderGlsl>,
+    textures: HashMap<Image, usize>,
+    text_system: Box<dyn TextSystem>,
 }
 
 impl RendererOpenGl {
-    pub fn new(width: i32, height: i32) -> Self {
-        let shaders = HashMap::new();
+    pub fn new(width: i32, height: i32, text_system: Box<dyn TextSystem>) -> Self {
+        let shaders = Default::default();
+        let textures = Default::default();
         Self {
             width,
             height,
             shaders,
+            textures,
+            text_system
         }
     }
 }

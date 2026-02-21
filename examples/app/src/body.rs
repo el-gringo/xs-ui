@@ -1,10 +1,12 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{AppContext, Element, FocusHandle, NavigationNode, Render, div};
+use xs::{Context, Element, FocusHandle, NavigationNode, Render, WHITE, div};
 
 pub struct Body {
     pub children: Vec<Rc<Box<dyn Render>>>,
 }
+
+const TITLE: &str = "PeerTube";
 
 impl Body {
     pub fn child(mut self, child: Box<dyn Render>) -> Self {
@@ -19,11 +21,11 @@ impl Body {
 }
 
 impl Render for Body {
-    fn render(&self, ctx: &mut AppContext) -> Box<dyn Element> {
-        let _ = ctx.use_state::<FocusHandle>(|ctx| {
-            ctx.nav
-                .create_handle(NavigationNode::new("body").horizontal())
-        });
+    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
+        // let _ = ctx.use_state::<FocusHandle>(|ctx| {
+        //     ctx.nav
+        //         .create_handle(NavigationNode::new("body").horizontal())
+        // });
         div()
             .id("body")
             .column()

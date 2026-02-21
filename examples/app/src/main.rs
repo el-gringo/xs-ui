@@ -9,7 +9,8 @@ mod theme;
 use std::any::TypeId;
 
 use xs::{
-    AppContext, Application, BLUE, Element, FocusHandle, GREEN, NavigationNode, RED, Render, div,
+    Application, BLUE, Context, Element, GREEN, RED, Render, Runnable,
+    div,
 };
 
 use crate::{body::body, button::button, card::card, sidebar::sidebar};
@@ -20,11 +21,11 @@ static IMAGE3: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails
 
 struct MyApp;
 impl Render for MyApp {
-    fn render(&self, ctx: &mut AppContext) -> Box<dyn Element> {
-        let _ = ctx.use_state::<FocusHandle>(|ctx| {
-            ctx.nav
-                .create_handle(NavigationNode::new("app").horizontal())
-        });
+    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+        // let _ = ctx.use_state::<FocusHandle>(|ctx| {
+        //     ctx.nav
+        //         .create_handle(NavigationNode::new("app").horizontal())
+        // });
         div()
             .id("app")
             .row()
@@ -35,13 +36,19 @@ impl Render for MyApp {
             )
             .child(
                 body()
-                    .children([div()
-                        .row()
-                        .padding_top(64.)
-                        .child(card().id("card1").thumbnail(IMAGE1).into())
-                        .child(card().id("card2").thumbnail(IMAGE2).into())
-                        .child(card().id("card3").thumbnail(IMAGE3).into())
-                        .into()])
+                    .children([
+                        // div()
+                        //     .height(50.)
+                        //     .text("PeerTube")
+                        //     .into(),
+                        div()
+                            .row()
+                            .padding_top(64.)
+                            .child(card().id("card1").thumbnail(IMAGE1).into())
+                            .child(card().id("card2").thumbnail(IMAGE2).into())
+                            .child(card().id("card3").thumbnail(IMAGE3).into())
+                            .into(),
+                    ])
                     .into(),
             )
             .into()

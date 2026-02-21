@@ -5,6 +5,6 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-xs-platform-event.workspace = true
+xs-core.workspace = true
 xs-layout.workspace = true
-xs-renderer-core.workspace = true
+xs-platform-event.workspace = true

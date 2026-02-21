@@ -1,15 +1,17 @@
 use std::{any::TypeId, rc::Rc};
 
 use crate::style::{Style, StyleDisplay, StylePosition};
-use xs_backend_core::{AppContext, Element, Render};
+use xs_core::{Application, Backend, Element, Render, TextSystem};
 use xs_layout::{
-    Axis, BorderSide, Borders, Color, Container, CrossAxisAlignment, EdgeInsets, Flex, MainAxisAlignment, Positioned, View
+    Axis, BorderSide, Borders, Color, Container, CrossAxisAlignment, DummyContainer, EdgeInsets,
+    Flex, Image, MainAxisAlignment, Positioned, View,
 };
 
 #[derive(Default, Clone)]
 pub struct Div {
     pub id: Option<&'static str>,
     pub style: Style,
+    pub text: &'static str,
     pub children: Vec<Rc<Box<dyn Render>>>,
 }
 
@@ -203,6 +205,11 @@ impl Div {
         self.children.extend(children);
         self
     }
+
+    pub fn text(mut self, text: &'static str) -> Self {
+        self.text = text;
+        self
+    }
 }
 
 // impl Element for Div {
@@ -221,27 +228,76 @@ impl Div {
 
 impl Render for Div {
     fn tag(&self) -> TypeId {
-        TypeId::of::<Div>()
+        TypeId::of::<Self>()
     }
 
-    fn render(&self, _ctx: &mut AppContext) -> Box<dyn Element> {
+    fn render(&self, _ctx: &mut Application) -> Box<dyn Element> {
         Box::new(self.clone())
     }
 }
-
 
 impl Element for Div {
     fn id(&self) -> &'static str {
         self.id.unwrap_or("div")
     }
 
-    fn children(&self) -> Vec<Rc<Box<dyn Render>>> {
-        self.children.iter().map(|child| child.clone()).collect()
+    fn children(&self) -> &[Rc<Box<dyn Render>>] {
+        &self.children
     }
 
-    fn paint(&self, ctx: &mut AppContext, children: Vec<View>) -> View {
-        let style = self.style;
-        let child: Option<View> = if children.len() > 0 {
+    fn paint(&self, app: &mut Application, children: &[View]) -> View {
+        let mut style = self.style;
+
+        let text_texture = if self.text.len() > 0 {
+            let ptr = self.text.as_bytes().as_ptr() as u32;
+            if ctx.ressources.get(&ptr).is_none() {
+                let (data, width, height) = app.ctx
+                    .text_system
+                    .render_text(self.text, "IBMPlexSans Regular", 100.)
+                    .unwrap();
+                style.width = Some(width as f32);
+                style.height = Some(height as f32);
+                xs_js_sys::log(&format!(
+                    "text_system.render_text: '{}' {} {}",
+                    self.text, width, height
+                ));
+                let texture_index = app.ctx.ressources.len() as u32;
+                let img_ptr = app.ctx.backend.new_image(data, width);
+                app.ctx.ressources.insert(
+                    ptr,
+                    Some(Image::new(
+                        img_ptr.try_into().unwrap(),
+                        width,
+                        height,
+                        texture_index,
+                    )),
+                );
+            }
+            app.ctx.ressources.get(&ptr).unwrap().clone()
+        } else {
+            None
+        };
+
+        let image = if style.background_image.is_some() {
+            let src = style.background_image.unwrap();
+            let ptr = src.as_bytes().as_ptr() as u32;
+            if app.ctx.ressources.get(&ptr).is_none() {
+                let texture_index = app.ctx.ressources.len() as u32;
+                app.ctx.backend.load_image(src, texture_index);
+            }
+            app.ctx.ressources.entry(ptr).or_insert(None).clone()
+        } else {
+            None
+        };
+
+        let child: Option<View> = if let Some(text_texture) = text_texture {
+            Some(Box::new(Container {
+                width: Some(text_texture.width as f32),
+                height: Some(text_texture.height as f32),
+                image: Some(text_texture),
+                ..Default::default()
+            }))
+        } else if children.len() > 0 {
             Some(match style.display {
                 StyleDisplay::Flex => Box::new(Flex {
                     axis: style.flex_direction,
@@ -262,16 +318,11 @@ impl Element for Div {
             None
         };
 
-        let image = if style.background_image.is_some() {
-            let src = style.background_image.unwrap();
-            let ptr = src.as_bytes().as_ptr() as u32;
-            if ctx.ressources.get(&ptr).is_none() {
-                ctx.load_image(src);
-            }
-            ctx.ressources.entry(ptr).or_insert(None).clone()
-        } else {
-            None
-        };
+        // if let Some(ref text_texture) = image {
+        //     style.width = Some(text_texture.width as f32);
+        //     style.height = Some(text_texture.height as f32);
+        // }
+
         let container = Box::new(Container {
             image,
             color: style.background_color,
@@ -300,19 +351,13 @@ impl From<Div> for Box<dyn Element> {
     }
 }
 
-// impl Into<Box<dyn Element>> for Div {
-//     fn into(self) -> Box<dyn Element> {
-//         Box::new(self)
-//     }
-// }
-
-impl Into<Box<dyn Render>> for Div  {
+impl Into<Box<dyn Render>> for Div {
     fn into(self) -> Box<dyn Render> {
         Box::new(self)
     }
 }
 
-impl Into<Rc<Box<dyn Render>>> for Div  {
+impl Into<Rc<Box<dyn Render>>> for Div {
     fn into(self) -> Rc<Box<dyn Render>> {
         Rc::new(Box::new(self))
     }
