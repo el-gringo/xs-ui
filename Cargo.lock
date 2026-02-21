@@ -231,6 +231,14 @@ name = "test_utils"
 version = "0.1.0"
 
 [[package]]
+name = "text-system"
+version = "0.1.0"
+dependencies = [
+ "xs-core",
+ "xs-text-system",
+]
+
+[[package]]
 name = "tiny-skia-path"
 version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -265,9 +273,11 @@ version = "0.1.0"
 dependencies = [
  "xs-backend",
  "xs-backend-core",
+ "xs-core",
  "xs-layout",
  "xs-primitive",
  "xs-renderer",
+ "xs-text-system",
 ]
 
 [[package]]
@@ -285,19 +295,19 @@ name = "xs-backend-browser"
 version = "0.1.0"
 dependencies = [
  "xs-backend-core",
+ "xs-core",
  "xs-js-sys",
  "xs-layout",
  "xs-platform-event",
- "xs-renderer-core",
 ]
 
 [[package]]
 name = "xs-backend-core"
 version = "0.1.0"
 dependencies = [
+ "xs-core",
  "xs-layout",
  "xs-platform-event",
- "xs-renderer-core",
 ]
 
 [[package]]
@@ -309,6 +319,7 @@ dependencies = [
  "xs-backend-wayland-egl",
  "xs-backend-wayland-extensions",
  "xs-backend-wayland-xkb",
+ "xs-core",
  "xs-egl-sys",
  "xs-gl-sys",
  "xs-layout",
@@ -360,6 +371,10 @@ dependencies = [
 [[package]]
 name = "xs-core"
 version = "0.1.0"
+dependencies = [
+ "xs-layout",
+ "xs-platform-event",
+]
 
 [[package]]
 name = "xs-egl-sys"
@@ -416,6 +431,8 @@ name = "xs-primitive"
 version = "0.1.0"
 dependencies = [
  "xs-backend-core",
+ "xs-core",
+ "xs-js-sys",
  "xs-layout",
 ]
 
@@ -440,20 +457,30 @@ dependencies = [
 name = "xs-renderer-opengl"
 version = "0.1.0"
 dependencies = [
+ "xs-core",
  "xs-gl-sys",
  "xs-layout",
  "xs-math",
  "xs-platform-linux",
- "xs-renderer-core",
 ]
 
 [[package]]
 name = "xs-renderer-webgl"
 version = "0.1.0"
 dependencies = [
+ "xs-core",
+ "xs-js-sys",
  "xs-layout",
  "xs-math",
  "xs-renderer-core",
+]
+
+[[package]]
+name = "xs-text-system"
+version = "0.1.0"
+dependencies = [
+ "xs-core",
+ "xs-text-system-glyph",
 ]
 
 [[package]]

@@ -43,7 +43,8 @@ xs-renderer = { path = "crates/xs-renderer" }
 xs-renderer-core = { path = "crates/xs-renderer-core" }
 xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
 xs-renderer-webgl = { path = "crates/xs-renderer-webgl" }
-xs-text-system-glyph = { path = "crates/xs-text-system-glyph", no-default-features = true, features = [ "std", "opentype-layout", "variable-fonts", "glyph-names" ] }
+xs-text-system = { path = "crates/xs-text-system" }
+xs-text-system-glyph = { path = "crates/xs-text-system-glyph" }
 xs-text-system-rasterizer = { path = "crates/xs-text-system-rasterizer" }
 xs-text-system-ttf-parser = { path = "crates/xs-text-system-ttf-parser" }
 xs-tls = { path = "crates/xs-tls" }
