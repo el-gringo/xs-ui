@@ -47,7 +47,7 @@ impl<T: Default + 'static> Render for Grid<T> {
         TypeId::of::<Self>()
     }
 
-    fn render(&self, _app: &mut xs::Application) -> Box<dyn xs::Element> {
+    fn render(&self, _app: &mut xs::Context) -> Box<dyn xs::Element> {
         let cells: Vec<Rc<Box<dyn Render>>> = self.items.iter().map(|_item| {
             div()
                 .width(self.cell_width)

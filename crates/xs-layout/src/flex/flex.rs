@@ -64,14 +64,3 @@ impl Flex {
         )
     }
 }
-
-pub trait FlexItemLayout {
-    fn flex_grow(&self) -> f32;
-    fn flex_shrink(&self) -> f32;
-    fn flex_basis(&self) -> f32;
-    fn align_self(&self) -> AlignItems;
-    fn min_main(&self) -> f32;
-    fn max_main(&self) -> f32;
-    fn min_cross(&self) -> f32;
-    fn max_cross(&self) -> f32;
-}

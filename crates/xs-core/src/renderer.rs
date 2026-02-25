@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use xs_layout::{Layout, View};
 
-use crate::{Application, Element, Render, core::NodeId, navigation::NavigationNodeId};
+use crate::{Application, Context, Element, Render, core::NodeId, navigation::NavigationNodeId};
 
 type RcWidget = Rc<Box<dyn Render>>;
 
@@ -33,10 +33,8 @@ pub trait Renderer {
         let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Vec::new();
         while let Some(item) = stack.pop() {
             let node_id: NodeId = (item.widget.tag(), item.depth, item.index);
-            app.ctx.current_node_id = node_id;
-            app.ctx.nav.current_container_id = item.nav_id;
-            let element = item.widget.render(app);
-            let nav_id = app.ctx.nav.current_container_id;
+            let mut ctx = Context::new(app, node_id, item.nav_id);
+            let element = item.widget.render(&mut ctx);
 
             // Get children before moving element
             let children: Vec<Rc<Box<dyn Render>>> = element.children().to_vec();
@@ -51,7 +49,7 @@ pub trait Renderer {
                     depth: item.depth + 1,
                     index: child_index,
                     parent_index: Some(current_index),
-                    nav_id: nav_id
+                    nav_id: ctx.nav_id
                 });
             }
         }
@@ -66,7 +64,7 @@ pub trait Renderer {
 
         // Process in reverse order (children before parents)
         for i in (0..rendered_elements.len()).rev() {
-            let (parent_index, element) = &rendered_elements[i];
+            let (_parent_index, element) = &rendered_elements[i];
 
             // Find all children of this element
             let mut children_views: Vec<View> = Vec::new();

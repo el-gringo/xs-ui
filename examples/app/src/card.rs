@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use xs::{AlignItems, Application, Element, FocusHandle, JustifyContent, NavigationNode, RED, Render, TRANSPARENT, WHITE, div};
+use xs::{AlignItems, Context, Element, FocusHandle, JustifyContent, NavigationNode, RED, Render, TRANSPARENT, WHITE, div};
 
 use crate::theme::GRAY3;
 
@@ -29,9 +29,9 @@ impl Card {
 }
 
 impl Render for Card {
-    fn render(&self, app: &mut Application) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
         let nav_node =
-            app.ctx.use_state::<FocusHandle>(|ctx| ctx.nav.create_handle(NavigationNode::new(self.id)));
+            ctx.use_state::<FocusHandle>(|ctx| ctx.focus_handle(NavigationNode::new(self.id)));
         div()
             .column()
             .width(320.)

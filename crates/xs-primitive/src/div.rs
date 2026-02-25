@@ -1,6 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs_core::{Application, Element, Render};
+use xs_core::{Application, Context, Element, Render};
 use xs_layout::{
     AlignItems, BorderSide, Borders, BoxConstraints, Color, EdgeInsets, FlexDirection,
     JustifyContent, Layout, LayoutTree, Material, Positioned, SizedLayoutBox, Style, StyleDisplay,
@@ -280,7 +280,7 @@ impl Render for Div {
         TypeId::of::<Self>()
     }
 
-    fn render(&self, _ctx: &mut Application) -> Box<dyn Element> {
+    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
         Box::new(self.clone())
     }
 }

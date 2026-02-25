@@ -1,10 +1,9 @@
 use crate::{
     AlignContent, AlignItems, BorderSide, Borders, BoxConstraints, Color, EdgeInsets,
-    FlexDirection, FlexWrap, Image, JustifyContent, Layout, LayoutTree, Material, SizedLayoutBox,
+    FlexDirection, FlexWrap, JustifyContent, Layout, LayoutTree, Material, SizedLayoutBox,
     View,
 };
 use std::rc::Rc;
-use xs_math::Vector2;
 
 #[derive(Clone, Copy)]
 pub enum StyleDisplay {
@@ -174,8 +173,7 @@ impl Style {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Borders, View};
-    use std::rc::Rc;
+    use crate::Borders;
     use xs_math::Vector2;
 
     #[test]

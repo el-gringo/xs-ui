@@ -1,7 +1,7 @@
 mod app_context;
 mod application;
 mod backend;
-//mod context;
+mod context;
 mod core;
 mod element;
 mod navigation;
@@ -12,7 +12,7 @@ mod text_system;
 pub use app_context::AppContext;
 pub use application::Application;
 pub use backend::{Backend, BackendDummy};
-//pub use context::Context;
+pub use context::Context;
 pub use core::Undefined;
 pub use element::{Element, RootElement};
 pub use navigation::{FocusHandle, FocusManager, NavigationNode};

@@ -10,15 +10,11 @@ mod theme;
 use std::any::TypeId;
 
 use xs::{
-    AlignItems, Application, Element, FocusHandle, NavigationNode, ORANGE, Render, div, run
+    AlignItems, Application, Context, Element, FocusHandle, NavigationNode, ORANGE, Render, div,
+    run,
 };
 
-use crate::{
-    body::body,
-    card::card,
-    sidebar::sidebar,
-    theme::GRAY4,
-};
+use crate::{body::body, card::card, sidebar::sidebar, theme::GRAY4};
 
 static IMAGE1: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/812ca374-a473-4cb8-ae0b-eebdd8a7ccfe.jpg";
 static IMAGE2: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/440cf8a3-1389-4475-9b65-6e1dba693235.jpg";
@@ -26,16 +22,15 @@ static IMAGE3: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails
 
 struct MyApp;
 impl Render for MyApp {
-    fn render(&self, app: &mut Application) -> Box<dyn Element> {
-        let _ = app.ctx.use_state::<FocusHandle>(|ctx| {
-            ctx.nav
-                .create_handle(NavigationNode::new("app").horizontal())
+    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+        let _ = ctx.use_state::<FocusHandle>(|ctx| {
+            ctx.focus_handle(NavigationNode::new("app").horizontal())
         });
         div()
             .id("app")
             .row()
-            .width(app.width as f32)
-            .height(app.height as f32)
+            .width(ctx.app.width as f32)
+            .height(ctx.app.height as f32)
             .justify_content(xs::JustifyContent::FlexStart)
             .align_items(AlignItems::FlexStart)
             //.background_color(YELLOW)

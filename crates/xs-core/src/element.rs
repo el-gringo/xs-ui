@@ -2,7 +2,7 @@ use std::{any::TypeId, rc::Rc};
 
 use xs_layout::{DummyContainer, View};
 
-use crate::{render::Render, Application};
+use crate::{Application, Context, render::Render};
 
 pub trait Element {
     fn id(&self) -> &'static str {
@@ -22,7 +22,7 @@ impl Element for RootElement {
 }
 
 impl Render for RootElement {
-    fn render(&self, _ctx: &mut Application) -> Box<dyn Element> {
+    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
         Box::new(RootElement {})
     }
     fn tag(&self) -> std::any::TypeId {

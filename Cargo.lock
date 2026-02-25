@@ -373,6 +373,7 @@ name = "xs-core"
 version = "0.1.0"
 dependencies = [
  "xs-layout",
+ "xs-math",
  "xs-platform-event",
 ]
 
@@ -432,7 +433,6 @@ version = "0.1.0"
 dependencies = [
  "xs-backend-core",
  "xs-core",
- "xs-js-sys",
  "xs-layout",
 ]
 

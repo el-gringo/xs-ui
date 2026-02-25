@@ -7,7 +7,7 @@ use xs_layout::Image;
 use xs_platform_event::KeyEvent;
 
 use crate::{
-    Backend, BackendDummy, FocusHandle, FocusManager, NavigationNode, Renderer, RendererDummy,
+    Backend, BackendDummy, FocusManager, Renderer, RendererDummy,
     TextSystem, core::NodeId, navigation::NavigationNodeId, text_system::TextSystemDummy,
 };
 
@@ -45,27 +45,5 @@ impl AppContext {
             self.nav.process_key(code);
             self.key_down = None;
         }
-    }
-
-    pub fn use_state<S>(&mut self, init: impl FnOnce(&mut AppContext) -> S) -> &mut S
-    where
-        S: Any,
-    {
-        let node_id = self.current_node_id.clone();
-        if self.nodes.get(&node_id).is_none() {
-            let state = Box::new(init(self));
-            self.nodes.insert(node_id, state);
-        }
-        self.nodes
-            .get_mut(&node_id)
-            .unwrap()
-            .downcast_mut()
-            .unwrap()
-    }
-
-    pub fn focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
-        let handle = self.nav.create_handle(node);
-        self.current_nav_node_id = handle.id;
-        handle
     }
 }

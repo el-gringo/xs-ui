@@ -15,17 +15,6 @@ struct Item {
     margin: EdgeInsets,
 }
 
-pub trait FlexItemLayout {
-    fn flex_grow(&self) -> f32;
-    fn flex_shrink(&self) -> f32;
-    fn flex_basis(&self) -> f32;
-    fn align_self(&self) -> AlignItems;
-    fn min_main(&self) -> f32;
-    fn max_main(&self) -> f32;
-    fn min_cross(&self) -> f32;
-    fn max_cross(&self) -> f32;
-}
-
 impl Layout for Style {
     fn flex_grow(&self) -> f32 {
         self.flex_grow
@@ -291,48 +280,59 @@ impl Layout for Style {
     }
 }
 
-impl FlexItemLayout for Style {
-    fn flex_grow(&self) -> f32 {
-        self.flex_grow
-    }
-    fn flex_shrink(&self) -> f32 {
-        self.flex_shrink
-    }
-    fn flex_basis(&self) -> f32 {
-        self.flex_basis
-    }
-    fn align_self(&self) -> AlignItems {
-        self.align_self
-    }
-    fn min_main(&self) -> f32 {
-        if self.is_row() {
-            self.min_width.unwrap_or(0.0)
-        } else {
-            self.min_height.unwrap_or(0.0)
-        }
-    }
-    fn max_main(&self) -> f32 {
-        if self.is_row() {
-            self.max_width.unwrap_or(f32::INFINITY)
-        } else {
-            self.max_height.unwrap_or(f32::INFINITY)
-        }
-    }
-    fn min_cross(&self) -> f32 {
-        if self.is_row() {
-            self.min_height.unwrap_or(0.0)
-        } else {
-            self.min_width.unwrap_or(0.0)
-        }
-    }
-    fn max_cross(&self) -> f32 {
-        if self.is_row() {
-            self.max_height.unwrap_or(f32::INFINITY)
-        } else {
-            self.max_width.unwrap_or(f32::INFINITY)
-        }
-    }
-}
+// pub trait FlexItemLayout {
+//     fn flex_grow(&self) -> f32;
+//     fn flex_shrink(&self) -> f32;
+//     fn flex_basis(&self) -> f32;
+//     fn align_self(&self) -> AlignItems;
+//     fn min_main(&self) -> f32;
+//     fn max_main(&self) -> f32;
+//     fn min_cross(&self) -> f32;
+//     fn max_cross(&self) -> f32;
+// }
+
+// impl FlexItemLayout for Style {
+//     fn flex_grow(&self) -> f32 {
+//         self.flex_grow
+//     }
+//     fn flex_shrink(&self) -> f32 {
+//         self.flex_shrink
+//     }
+//     fn flex_basis(&self) -> f32 {
+//         self.flex_basis
+//     }
+//     fn align_self(&self) -> AlignItems {
+//         self.align_self
+//     }
+//     fn min_main(&self) -> f32 {
+//         if self.is_row() {
+//             self.min_width.unwrap_or(0.0)
+//         } else {
+//             self.min_height.unwrap_or(0.0)
+//         }
+//     }
+//     fn max_main(&self) -> f32 {
+//         if self.is_row() {
+//             self.max_width.unwrap_or(f32::INFINITY)
+//         } else {
+//             self.max_height.unwrap_or(f32::INFINITY)
+//         }
+//     }
+//     fn min_cross(&self) -> f32 {
+//         if self.is_row() {
+//             self.min_height.unwrap_or(0.0)
+//         } else {
+//             self.min_width.unwrap_or(0.0)
+//         }
+//     }
+//     fn max_cross(&self) -> f32 {
+//         if self.is_row() {
+//             self.max_height.unwrap_or(f32::INFINITY)
+//         } else {
+//             self.max_width.unwrap_or(f32::INFINITY)
+//         }
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
