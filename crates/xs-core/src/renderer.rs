@@ -85,6 +85,7 @@ pub trait Renderer {
             views[i] = Some(view);
         }
 
+        app.ctx.nav.update();
         // The root is the first element (index 0)
         views[0].as_ref().unwrap().clone()
     }
