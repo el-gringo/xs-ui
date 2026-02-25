@@ -6,7 +6,7 @@ use crate::{
 };
 
 use xs_core::{AppContext, Application, Backend, Render, Renderer};
-use xs_js_sys::log;
+use xs_js_sys::{Closure, log, request_animation_frame};
 use xs_layout::Image;
 use xs_platform_event::{Event, KeyEvent};
 
@@ -69,6 +69,10 @@ impl Backend for BackendBrowser {
         let root = Rc::new(root);
         let widget_tree = renderer.render(app, root.clone());
         renderer.draw_frame(&widget_tree);
+        request_animation_frame(&Closure::new(|| {
+            let widget_tree = renderer.render(app, root.clone());
+            renderer.draw_frame(&widget_tree);
+        }));
         //app.ctx.nav.update();
 
 

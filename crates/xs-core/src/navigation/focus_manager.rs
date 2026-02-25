@@ -46,16 +46,16 @@ impl FocusManager {
     }
 
     fn attach(&mut self, container_id: NavigationNodeId, handle: &FocusHandle) {
-        self.tree
-            .borrow_mut()
-            .get(container_id)
-            .unwrap()
-            .borrow_mut()
-            .children
-            .push(handle.id);
+        if let Some(container) = self.tree.borrow_mut().get(container_id) {
+            container.borrow_mut().children.push(handle.id);
+        }
     }
 
-    pub fn create_handle(&mut self, container_id: NavigationNodeId, mut node: NavigationNode) -> FocusHandle {
+    pub fn create_handle(
+        &mut self,
+        container_id: NavigationNodeId,
+        mut node: NavigationNode,
+    ) -> FocusHandle {
         self.initialize_node(container_id, &mut node);
         let has_focus = node.has_focus;
         let handle = FocusHandle::new(node, self.tree.clone());
