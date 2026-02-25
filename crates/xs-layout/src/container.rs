@@ -155,6 +155,7 @@ impl Container {
 mod tests {
     use super::*;
     use crate::colors::{GREEN, RED};
+    use std::rc::Rc;
     use test_utils::assert_slice_eq;
     use xs_math::Rectangle;
 

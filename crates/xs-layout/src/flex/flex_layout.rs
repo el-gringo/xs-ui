@@ -33,14 +33,6 @@ impl Layout for Style {
 
         let w = self.width.unwrap_or(constraints.max.x);
         let h = self.height.unwrap_or(constraints.max.y);
-        eprintln!(
-            "DEBUG flex: w={}, h={}, explicit_h={:?}, is_column={}, children={}",
-            w,
-            h,
-            self.height,
-            self.is_row(),
-            self.children.len()
-        );
         let pw = self.padding.left + self.padding.right + self.border.total_width();
         let ph = self.padding.top + self.padding.bottom + self.border.total_height();
         let inner = Vector2::new((w - pw).max(0.0), (h - ph).max(0.0));
@@ -149,10 +141,6 @@ impl Layout for Style {
                 .iter()
                 .map(|i| if main_is_x { i.size.x } else { i.size.y })
                 .sum();
-            let _line_cross = line
-                .iter()
-                .map(|i| if main_is_x { i.size.y } else { i.size.x })
-                .fold(0.0f32, |a, b| a.max(b));
 
             let start_offset = match self.justify_content {
                 JustifyContent::Center => (container_main - line_main) / 2.0,
@@ -226,18 +214,6 @@ impl Layout for Style {
             child_ids.reverse();
         }
 
-        let content_w: f32 = lines
-            .iter()
-            .flat_map(|l| l.iter())
-            .map(|i| i.size.x)
-            .fold(0.0f32, |a, b| a.max(b));
-        let content_h: f32 = lines
-            .iter()
-            .map(|l| {
-                l.iter().map(|i| i.size.y).sum::<f32>() + gap * (l.len().saturating_sub(1)) as f32
-            })
-            .sum();
-
         let final_w = self.width.unwrap_or(w);
         let final_h = self.height.unwrap_or(h);
 
@@ -254,13 +230,6 @@ impl Layout for Style {
             children: child_ids.clone(),
             material: self.material.clone(),
         });
-
-        if self.height.is_some() {
-            eprintln!(
-                "DEBUG flex: final_h={}, children_y positions will be calculated",
-                final_h
-            );
-        }
 
         SizedLayoutBox {
             margin: self.margin,
@@ -279,60 +248,6 @@ impl Layout for Style {
         self.margin
     }
 }
-
-// pub trait FlexItemLayout {
-//     fn flex_grow(&self) -> f32;
-//     fn flex_shrink(&self) -> f32;
-//     fn flex_basis(&self) -> f32;
-//     fn align_self(&self) -> AlignItems;
-//     fn min_main(&self) -> f32;
-//     fn max_main(&self) -> f32;
-//     fn min_cross(&self) -> f32;
-//     fn max_cross(&self) -> f32;
-// }
-
-// impl FlexItemLayout for Style {
-//     fn flex_grow(&self) -> f32 {
-//         self.flex_grow
-//     }
-//     fn flex_shrink(&self) -> f32 {
-//         self.flex_shrink
-//     }
-//     fn flex_basis(&self) -> f32 {
-//         self.flex_basis
-//     }
-//     fn align_self(&self) -> AlignItems {
-//         self.align_self
-//     }
-//     fn min_main(&self) -> f32 {
-//         if self.is_row() {
-//             self.min_width.unwrap_or(0.0)
-//         } else {
-//             self.min_height.unwrap_or(0.0)
-//         }
-//     }
-//     fn max_main(&self) -> f32 {
-//         if self.is_row() {
-//             self.max_width.unwrap_or(f32::INFINITY)
-//         } else {
-//             self.max_height.unwrap_or(f32::INFINITY)
-//         }
-//     }
-//     fn min_cross(&self) -> f32 {
-//         if self.is_row() {
-//             self.min_height.unwrap_or(0.0)
-//         } else {
-//             self.min_width.unwrap_or(0.0)
-//         }
-//     }
-//     fn max_cross(&self) -> f32 {
-//         if self.is_row() {
-//             self.max_height.unwrap_or(f32::INFINITY)
-//         } else {
-//             self.max_width.unwrap_or(f32::INFINITY)
-//         }
-//     }
-// }
 
 #[cfg(test)]
 mod tests {
