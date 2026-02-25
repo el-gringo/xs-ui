@@ -15,6 +15,69 @@ struct Item {
     margin: EdgeInsets,
 }
 
+impl Item {
+    fn main(&self, is_row: bool) -> f32 {
+        if is_row {
+            self.size.x
+        } else {
+            self.size.y
+        }
+    }
+
+    fn cross(&self, is_row: bool) -> f32 {
+        if is_row {
+            self.size.y
+        } else {
+            self.size.x
+        }
+    }
+
+    fn set_main(&mut self, is_row: bool, value: f32) {
+        if is_row {
+            self.size.x = value;
+        } else {
+            self.size.y = value;
+        }
+    }
+
+    fn main_margin(&self, is_row: bool) -> (f32, f32) {
+        if is_row {
+            (self.margin.left, self.margin.right)
+        } else {
+            (self.margin.top, self.margin.bottom)
+        }
+    }
+
+    fn cross_margin(&self, is_row: bool) -> (f32, f32) {
+        if is_row {
+            (self.margin.top, self.margin.bottom)
+        } else {
+            (self.margin.left, self.margin.right)
+        }
+    }
+}
+
+fn justify_offset(container_main: f32, content_main: f32, justify: JustifyContent) -> f32 {
+    match justify {
+        JustifyContent::Center => (container_main - content_main) / 2.0,
+        JustifyContent::FlexEnd => (container_main - content_main).max(0.0),
+        _ => 0.0,
+    }
+}
+
+fn align_offset(
+    container_cross: f32,
+    item_cross: f32,
+    margins: (f32, f32),
+    align: AlignItems,
+) -> f32 {
+    match align {
+        AlignItems::Center => (container_cross - item_cross - margins.0 - margins.1) / 2.0,
+        AlignItems::FlexEnd => (container_cross - item_cross - margins.0 - margins.1).max(0.0),
+        _ => 0.0,
+    }
+}
+
 impl Layout for Style {
     fn flex_grow(&self) -> f32 {
         self.flex_grow
@@ -24,7 +87,7 @@ impl Layout for Style {
         let main_is_x = self.is_row();
         let is_wrap = matches!(self.flex_wrap, FlexWrap::Wrap | FlexWrap::WrapReverse);
         let is_reverse = self.is_reverse();
-        let gap = if self.is_row() {
+        let gap = if main_is_x {
             self.columns_gap
         } else {
             self.row_gap
@@ -74,7 +137,7 @@ impl Layout for Style {
             let mut current = Vec::new();
             let mut current_main = 0.0f32;
             for item in items.drain(..) {
-                let item_main = if main_is_x { item.size.x } else { item.size.y };
+                let item_main = item.main(main_is_x);
                 if !current.is_empty() && current_main + gap + item_main > container_main {
                     lines.push(current);
                     current = Vec::new();
@@ -97,9 +160,7 @@ impl Layout for Style {
         let total_main: f32 = lines
             .iter()
             .map(|l| {
-                l.iter()
-                    .map(|i| if main_is_x { i.size.x } else { i.size.y })
-                    .sum::<f32>()
+                l.iter().map(|i| i.main(main_is_x)).sum::<f32>()
                     + gap * (l.len().saturating_sub(1)) as f32
             })
             .sum();
@@ -110,18 +171,15 @@ impl Layout for Style {
             .flat_map(|l| l.iter())
             .map(|i| i.flex_grow)
             .sum();
+
         if total_grow > 0.0 && free_space > 0.0 {
             for line in &mut lines {
                 for item in line.iter_mut() {
                     if item.flex_grow > 0.0 {
                         let grow = free_space * item.flex_grow / total_grow;
-                        let current = if main_is_x { item.size.x } else { item.size.y };
+                        let current = item.main(main_is_x);
                         let new_main = (current + grow).clamp(item.min_main, item.max_main);
-                        if main_is_x {
-                            item.size.x = new_main
-                        } else {
-                            item.size.y = new_main
-                        };
+                        item.set_main(main_is_x, new_main);
                     }
                 }
             }
@@ -129,63 +187,24 @@ impl Layout for Style {
 
         let mut child_ids = Vec::new();
         let padding_min = self.padding.min();
-        let justify_offset = match self.justify_content {
-            JustifyContent::Center => (container_main - total_main) / 2.0,
-            JustifyContent::FlexEnd => (container_main - total_main).max(0.0),
-            _ => 0.0,
-        };
-        let mut main_pos = padding_min.x + padding_min.y + justify_offset;
+        let justify_base = justify_offset(container_main, total_main, self.justify_content);
+        let mut main_pos = padding_min.x + padding_min.y + justify_base;
 
         for line in &lines {
-            let line_main: f32 = line
-                .iter()
-                .map(|i| if main_is_x { i.size.x } else { i.size.y })
-                .sum();
-
-            let start_offset = match self.justify_content {
-                JustifyContent::Center => (container_main - line_main) / 2.0,
-                JustifyContent::FlexEnd => (container_main - line_main).max(0.0),
-                _ => 0.0,
-            };
-
+            let line_main: f32 = line.iter().map(|i| i.main(main_is_x)).sum();
+            let start_offset = justify_offset(container_main, line_main, self.justify_content);
             let container_cross = if main_is_x { inner.y } else { inner.x };
 
             let mut cursor = main_pos + start_offset;
             for item in line {
-                let item_main = if main_is_x { item.size.x } else { item.size.y };
-                let item_cross = if main_is_x { item.size.y } else { item.size.x };
-
-                let margin_main_start = if main_is_x {
-                    item.margin.left
-                } else {
-                    item.margin.top
-                };
-                let margin_main_end = if main_is_x {
-                    item.margin.right
-                } else {
-                    item.margin.bottom
-                };
-                let margin_cross_start = if main_is_x {
-                    item.margin.top
-                } else {
-                    item.margin.left
-                };
-                let margin_cross_end = if main_is_x {
-                    item.margin.bottom
-                } else {
-                    item.margin.right
-                };
-
-                let cross_offset = match self.align_items {
-                    AlignItems::Center => {
-                        (container_cross - item_cross - margin_cross_start - margin_cross_end) / 2.0
-                    }
-                    AlignItems::FlexEnd => {
-                        (container_cross - item_cross - margin_cross_start - margin_cross_end)
-                            .max(0.0)
-                    }
-                    _ => 0.0,
-                };
+                let (margin_main_start, margin_main_end) = item.main_margin(main_is_x);
+                let (margin_cross_start, margin_cross_end) = item.cross_margin(main_is_x);
+                let cross_offset = align_offset(
+                    container_cross,
+                    item.cross(main_is_x),
+                    (margin_cross_start, margin_cross_end),
+                    self.align_items,
+                );
 
                 let px = if main_is_x {
                     cursor + margin_main_start
@@ -205,7 +224,7 @@ impl Layout for Style {
                     material: item.material.clone(),
                 });
                 child_ids.push(box_id);
-                cursor += item_main + margin_main_start + margin_main_end + gap;
+                cursor += item.main(main_is_x) + margin_main_start + margin_main_end + gap;
             }
             main_pos += line_main + gap;
         }
@@ -214,13 +233,14 @@ impl Layout for Style {
             child_ids.reverse();
         }
 
-        let final_w = self.width.unwrap_or(w);
-        let final_h = self.height.unwrap_or(h);
-
-        let final_w = final_w
+        let final_w = self
+            .width
+            .unwrap_or(w)
             .max(self.min_width.unwrap_or(0.0))
             .min(self.max_width.unwrap_or(f32::INFINITY));
-        let final_h = final_h
+        let final_h = self
+            .height
+            .unwrap_or(h)
             .max(self.min_height.unwrap_or(0.0))
             .min(self.max_height.unwrap_or(f32::INFINITY));
 
