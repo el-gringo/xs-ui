@@ -173,59 +173,66 @@ impl Layout for Style {
             .sum();
 
         if total_grow > 0.0 && free_space > 0.0 {
-            for line in &mut lines {
-                for item in line.iter_mut() {
-                    if item.flex_grow > 0.0 {
-                        let grow = free_space * item.flex_grow / total_grow;
-                        let current = item.main(main_is_x);
-                        let new_main = (current + grow).clamp(item.min_main, item.max_main);
-                        item.set_main(main_is_x, new_main);
-                    }
-                }
-            }
+            lines
+                .iter_mut()
+                .flat_map(|line| line.iter_mut())
+                .filter(|i| i.flex_grow > 0.0)
+                .for_each(|item| {
+                    let grow = free_space * item.flex_grow / total_grow;
+                    let current = item.main(main_is_x);
+                    let new_main = (current + grow).clamp(item.min_main, item.max_main);
+                    item.set_main(main_is_x, new_main);
+                });
         }
 
         let mut child_ids = Vec::new();
         let padding_min = self.padding.min();
         let justify_base = justify_offset(container_main, total_main, self.justify_content);
+        let container_cross = if main_is_x { inner.y } else { inner.x };
+
         let mut main_pos = padding_min.x + padding_min.y + justify_base;
 
         for line in &lines {
             let line_main: f32 = line.iter().map(|i| i.main(main_is_x)).sum();
             let start_offset = justify_offset(container_main, line_main, self.justify_content);
-            let container_cross = if main_is_x { inner.y } else { inner.x };
 
-            let mut cursor = main_pos + start_offset;
-            for item in line {
-                let (margin_main_start, margin_main_end) = item.main_margin(main_is_x);
-                let (margin_cross_start, margin_cross_end) = item.cross_margin(main_is_x);
-                let cross_offset = align_offset(
-                    container_cross,
-                    item.cross(main_is_x),
-                    (margin_cross_start, margin_cross_end),
-                    self.align_items,
-                );
+            let (line_ids, _new_cursor) = line.iter().fold(
+                (Vec::new(), main_pos + start_offset),
+                |(mut ids, cursor), item| {
+                    let (margin_main_start, margin_main_end) = item.main_margin(main_is_x);
+                    let (margin_cross_start, margin_cross_end) = item.cross_margin(main_is_x);
+                    let cross_offset = align_offset(
+                        container_cross,
+                        item.cross(main_is_x),
+                        (margin_cross_start, margin_cross_end),
+                        self.align_items,
+                    );
 
-                let px = if main_is_x {
-                    cursor + margin_main_start
-                } else {
-                    padding_min.x + cross_offset + margin_cross_start
-                };
-                let py = if main_is_x {
-                    padding_min.y + cross_offset + margin_cross_start
-                } else {
-                    cursor + margin_main_start
-                };
+                    let px = if main_is_x {
+                        cursor + margin_main_start
+                    } else {
+                        padding_min.x + cross_offset + margin_cross_start
+                    };
+                    let py = if main_is_x {
+                        padding_min.y + cross_offset + margin_cross_start
+                    } else {
+                        cursor + margin_main_start
+                    };
 
-                let box_id = tree.insert(LayoutBox {
-                    bounds: Rectangle::new(px, py, item.size.x, item.size.y),
-                    margin: item.margin,
-                    children: item.children.clone(),
-                    material: item.material.clone(),
-                });
-                child_ids.push(box_id);
-                cursor += item.main(main_is_x) + margin_main_start + margin_main_end + gap;
-            }
+                    let box_id = tree.insert(LayoutBox {
+                        bounds: Rectangle::new(px, py, item.size.x, item.size.y),
+                        margin: item.margin,
+                        children: item.children.clone(),
+                        material: item.material.clone(),
+                    });
+                    ids.push(box_id);
+                    (
+                        ids,
+                        cursor + item.main(main_is_x) + margin_main_start + margin_main_end + gap,
+                    )
+                },
+            );
+            child_ids.extend(line_ids);
             main_pos += line_main + gap;
         }
 
