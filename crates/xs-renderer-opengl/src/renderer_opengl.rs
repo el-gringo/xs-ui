@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use xs_core::{Application, Renderer, TextSystem};
+use xs_core::{Renderer, TextSystem};
 use xs_gl_sys::{glClear, glFlush, GL_COLOR_BUFFER_BIT};
-use xs_layout::{BoxConstraints, Image, Layout, LayoutBox, LayoutTree};
+use xs_layout::{BoxConstraints, Image, LayoutBox, LayoutTree, View};
 use xs_math::Vector2;
 
 use crate::mesh::Mesh;
@@ -31,7 +31,7 @@ impl RendererOpenGl {
             height,
             shaders,
             textures,
-            text_system
+            text_system,
         }
     }
 }
@@ -43,6 +43,8 @@ impl Renderer for RendererOpenGl {
             ("u_color".to_string(), (Float4, 1)),
             ("u_rect_min".to_string(), (Float2, 1)),
             ("u_rect_max".to_string(), (Float2, 1)),
+            ("u_texture_enabled".to_string(), (Float2, 1)),
+            ("u_texture".to_string(), (Int1, 1))
         ];
         for index in 0..4 {
             let prefix = format!("u_borders[{}]", index);
@@ -63,12 +65,11 @@ impl Renderer for RendererOpenGl {
         self.width
     }
 
-
     fn screen_height(&self) -> i32 {
         self.height
     }
 
-    fn draw_frame(&mut self, widget_tree: Box<dyn Layout>) {
+    fn draw_frame(&mut self, widget_tree: &View) {
         if let Some(shader) = self.shaders.get_mut("default") {
             unsafe {
                 glClear(GL_COLOR_BUFFER_BIT);
@@ -80,16 +81,18 @@ impl Renderer for RendererOpenGl {
             };
             let root_sbox = widget_tree.layout(&mut tree, &constraints);
             let root_lbox = LayoutBox::from_child(root_sbox, (0.0, 0.0));
-            let root_id = tree.insert(root_lbox);
+            let root_id = tree.insert(root_lbox.clone());
             tree.set_root(Some(root_id));
-            for (_, child, offset) in tree.iter() {
+            tree.debug();
+            for (_, _, _, _, child, offset) in tree.iter() {
                 let origin = Vector2::new(child.bounds.x, child.bounds.y);
                 let size = Vector2::new(child.bounds.width, child.bounds.height);
                 let min = offset + origin + child.margin.min();
                 let max = offset + origin + size - child.margin.max();
                 if let Some(material) = &child.material {
                     let vertices = &[
-                        min.x, min.y, 0.0, min.x, max.y, 0.0, max.x, min.y, 0.0, min.x, max.y, 0.0,
+                        min.x, min.y, 0.0, min.x, max.y, 0.0,
+                        max.x, min.y, 0.0, min.x, max.y, 0.0,
                         max.x, min.y, 0.0, max.x, max.y, 0.0,
                     ];
                     let mut mesh = Mesh::new(vertices);
@@ -126,6 +129,12 @@ impl Renderer for RendererOpenGl {
                             let name = prefix.clone() + ".enabled";
                             shader.set_uniform_1i(&name, 0);
                         }
+                    }
+                    if let Some(image) = &material.image {
+                        shader.set_uniform_1i("u_texture_enabled", 1);
+                        shader.set_uniform_1i("u_texture", image.texture_index as i32);
+                    } else {
+                        shader.set_uniform_1i("u_texture_enabled", 0);
                     }
                     shader.apply_attributes();
                     mesh.end();

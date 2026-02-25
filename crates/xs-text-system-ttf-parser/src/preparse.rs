@@ -1,5 +1,7 @@
 //! Logic to avoid re-parsing subtables in ttf_parser::Face methods
-use crate::{Face, GlyphId, Tag, cmap, convert::{AsFaceRef, FaceMut}, kern, owned::OwnedFace};
+use crate::{Face, GlyphId, cmap, convert::{AsFaceRef, FaceMut}, kern, owned::OwnedFace};
+#[cfg(feature = "variable-fonts")]
+use crate::Tag;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 use core::fmt;
@@ -138,6 +140,7 @@ where
     F: FaceMut,
 {
     #[inline]
+    #[cfg(feature = "variable-fonts")]
     fn set_variation(&mut self, axis: Tag, value: f32) -> Option<()> {
         self.face.set_variation(axis, value)
     }
@@ -147,6 +150,7 @@ where
     F: FaceMut,
 {
     #[inline]
+    #[cfg(feature = "variable-fonts")]
     fn set_variation(&mut self, axis: Tag, value: f32) -> Option<()> {
         (*self).set_variation(axis, value)
     }

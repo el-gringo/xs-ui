@@ -41,11 +41,18 @@ pub fn create_surface(ctx: &mut WaylandContext) -> *mut wl_surface {
 pub struct BackendWayland;
 
 impl BackendWayland {
-    pub fn log(&self, _message: &str) {}
+    pub fn new() -> Self {
+        Self
+    }
 }
 
 impl Backend for BackendWayland {
-    fn run(&mut self, app: &mut Application, root: Box<dyn Render>) {
+    fn run(
+        &mut self,
+        app: &mut Application,
+        renderer: &mut Box<dyn Renderer>,
+        root: Box<dyn Render>,
+    ) {
         let config = WaylandConfig {
             app_id: app.id,
             window_title: app.title,
@@ -53,23 +60,26 @@ impl Backend for BackendWayland {
             window_height: app.height,
             fullscreen: false,
         };
-        let mut ctx = WaylandContext::new();
+        let mut ctx = WaylandContext::new(app);
+        let app_id = ctx.app.id;
+        let app_title = ctx.app.title;
         connect(&mut ctx);
         create_registry(&mut ctx);
         create_seat(&mut ctx);
         create_surface(&mut ctx);
         create_egl_window(&mut ctx, config.window_width, config.window_height);
         create_xdg(&mut ctx);
-        set_app_id(&mut ctx, app.id.into());
-        set_title(&mut ctx, app.title.into());
-        app.ctx.renderer.init();
+        set_app_id(&mut ctx, app_id.into());
+        set_title(&mut ctx, app_title.into());
+        renderer.init();
         let root = Rc::new(root);
-        while ctx.dispatch_pending() != -1 && ctx.app_context.running {
-            ctx.app_context.dispatch();
-            let frame = ctx.app_context.render(app, root.clone());
-            app.ctx.renderer.draw_frame(frame);
-            ctx.app_context.nav.update();
+        while ctx.dispatch_pending() != -1 && ctx.app.ctx.running {
+            ctx.app.ctx.dispatch();
+            let widget_tree = renderer.render(ctx.app, root.clone());
+            renderer.draw_frame(&widget_tree);
+            ctx.app.ctx.nav.tree.borrow().debug(0, 0);
             ctx.swap_buffers();
+            //std::thread::sleep(std::time::Duration::from_secs(3));
         }
     }
 

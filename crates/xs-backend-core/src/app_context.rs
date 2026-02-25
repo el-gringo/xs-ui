@@ -61,7 +61,7 @@ impl AppContext {
         // }
         // let frame = element.paint(self, views);
         // frame
-        Box::new(DummyContainer)
+        Rc::new(DummyContainer)
     }
 
     pub fn use_state<S>(&mut self, init: impl FnOnce(&mut AppContext) -> S) -> &mut S

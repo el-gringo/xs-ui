@@ -1,8 +1,4 @@
-use std::rc::Rc;
-
-use xs_layout::View;
-
-use crate::{AppContext, Render};
+use crate::AppContext;
 
 pub struct Application {
     pub id: &'static str,

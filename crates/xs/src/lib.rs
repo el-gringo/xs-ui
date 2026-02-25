@@ -1,8 +1,7 @@
-mod application;
+mod runtime;
 
-pub use application::Runnable;
-
-pub use xs_core::{Application, Context, Element, Render, NavigationNode, FocusHandle};
+pub use runtime::run;
+pub use xs_core::{Application, Element, Render, NavigationNode, FocusHandle};
 pub use xs_layout::{
     colors::*,
     *

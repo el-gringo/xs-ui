@@ -5,7 +5,7 @@ use crate::{
     browser_event::{translate_keycode, translate_mod},
 };
 
-use xs_core::{AppContext, Application, Backend, Render, Renderer, RootElement};
+use xs_core::{AppContext, Application, Backend, Render, Renderer};
 use xs_js_sys::log;
 use xs_layout::Image;
 use xs_platform_event::{Event, KeyEvent};
@@ -40,6 +40,10 @@ impl BackendBrowserInner {
 
 pub struct BackendBrowser;
 impl BackendBrowser {
+    pub fn new() -> Self {
+        Self
+    }
+
     pub fn get_time(self) -> f64 {
         unsafe { bindings::now() }
     }
@@ -55,17 +59,17 @@ impl Backend for BackendBrowser {
     fn run(
         &mut self,
         app: &mut Application,
+        renderer: &mut Box<dyn Renderer>,
         root: Box<dyn Render>,
     ) {
         //log(&("runnning ".to_owned() + self.app.id + " " + self.app.title));
         unsafe {
             bindings::init(app.width, app.height);
         };
-        log("coucou");
         let root = Rc::new(root);
-        let frame = renderer.render(app, root.clone());
-        // ctx.renderer.draw_frame(frame);
-        // ctx.nav.update();
+        let widget_tree = renderer.render(app, root.clone());
+        renderer.draw_frame(&widget_tree);
+        //app.ctx.nav.update();
 
 
         // let f = Rc::new(RefCell::new(None));

@@ -7,11 +7,11 @@ use xs_backend_wayland_client::{
 use xs_backend_wayland_egl::{LibWaylandEgl, wl_egl_window};
 use xs_backend_wayland_extensions::xdg_shell::{xdg_surface, xdg_toplevel, xdg_wm_base};
 use xs_backend_wayland_xkb::{LibXkbCommon, XkbKeymap, xkb_context, xkb_state};
-use xs_core::AppContext;
+use xs_core::Application;
 use xs_egl_sys::LibEgl;
 
-pub struct WaylandContext {
-    pub app_context: AppContext,
+pub struct WaylandContext<'a> {
+    pub app: &'a mut Application,
 
     pub client: LibWaylandClient,
     pub lib_wayland_egl: LibWaylandEgl,
@@ -39,16 +39,14 @@ pub struct WaylandContext {
     pub xkb_keymap: XkbKeymap,
 }
 
-impl WaylandContext {
-    pub fn new() -> WaylandContext {
+impl<'a> WaylandContext<'a> {
+    pub fn new(app: &'a mut Application) -> WaylandContext<'a> {
         let client = LibWaylandClient::try_load().expect("failed to load libwayland-client.so");
         let lib_wayland_egl = LibWaylandEgl::try_load().expect("failed to load libwayland-egl.so");
         let lib_egl = LibEgl::try_load().expect("failed to load libEGL.so");
         let lib_xkb = LibXkbCommon::try_load().expect("failed to load libxkbcommon.so");
-        let app_context = AppContext::new();
-
         WaylandContext {
-            app_context,
+            app,
 
             client,
             lib_wayland_egl,

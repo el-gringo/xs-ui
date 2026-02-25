@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use xs_math::Vector2;
 
 use crate::base::{Alignment, EdgeInsets};
@@ -15,29 +17,8 @@ fn clamp_f32(value: f32, min: f32, max: f32) -> f32 {
     value
 }
 
-pub struct Spacer {}
-
-impl Layout for Spacer {
-    fn flex_factor(&self) -> Option<f32> {
-        None
-    }
-    fn layout(&self, _: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
-        SizedLayoutBox {
-            size: constraints.max,
-            children: vec![],
-            material: None,
-            margin: EdgeInsets::zero(),
-        }
-    }
-}
-
 pub struct DummyContainer;
-
 impl Layout for DummyContainer {
-    fn flex_factor(&self) -> Option<f32> {
-        None
-    }
-
     fn layout(&self, _tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         SizedLayoutBox {
             margin: EdgeInsets::zero(),
@@ -62,9 +43,6 @@ pub struct Container {
 }
 
 impl Layout for Container {
-    fn flex_factor(&self) -> Option<f32> {
-        None
-    }
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         match &self.child {
             Some(child) => self.layout_with_child(tree, constraints, child.as_ref()),
@@ -140,7 +118,7 @@ impl Container {
             material: Some(Material {
                 fill: self.color,
                 borders: self.borders,
-                image: self.image.clone()
+                image: self.image.clone(),
             }),
             margin: self.margin,
         }
@@ -158,7 +136,7 @@ impl Container {
             material: Some(Material {
                 fill: self.color,
                 borders: self.borders,
-                image: self.image.clone()
+                image: self.image.clone(),
             }),
             margin: self.margin,
         }
@@ -236,7 +214,7 @@ mod tests {
     pub fn container_with_child_has_same_size_as_child_in_unbounded_parent() {
         let container = Container {
             color: GREEN,
-            child: Some(Box::new(Container {
+            child: Some(Rc::new(Container {
                 width: Some(50.0),
                 height: Some(50.0),
                 color: RED,

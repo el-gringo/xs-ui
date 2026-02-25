@@ -1,6 +1,8 @@
 #![warn(clippy::all, clippy::pedantic)]
 #![allow(clippy::similar_names)]
 
+pub use xs_math::Vector2;
+
 mod base;
 pub use base::*;
 
@@ -13,14 +15,17 @@ pub use container::*;
 mod decoration;
 pub use decoration::*;
 
+mod flex;
+pub use flex::*;
+
 mod image;
 pub use image::*;
+
+mod style;
+pub use style::*;
 
 mod tree;
 pub use tree::*;
 
 mod widget;
 pub use widget::*;
-
-mod flex;
-pub use flex::*;

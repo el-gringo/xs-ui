@@ -5,13 +5,13 @@
 // [skrifa](https://github.com/googlefonts/fontations/tree/main/skrifa).
 
 #[cfg(feature = "variable-fonts")]
+use crate::NormalizedCoordinate;
+#[cfg(feature = "variable-fonts")]
 use crate::delta_set::DeltaSetIndexMap;
-use crate::parser::{FromData, LazyArray16, Offset, Offset24, Offset32, Stream, F2DOT14};
+use crate::parser::{F2DOT14, FromData, LazyArray16, Offset, Offset24, Offset32, Stream};
 #[cfg(feature = "variable-fonts")]
 use crate::var_store::ItemVariationStore;
-#[cfg(feature = "variable-fonts")]
-use crate::NormalizedCoordinate;
-use crate::{cpal, Fixed, LazyArray32, RectF, Transform};
+use crate::{Fixed, LazyArray32, RectF, Transform, cpal};
 use crate::{GlyphId, RgbaColor};
 
 /// A [base glyph](
@@ -90,20 +90,22 @@ impl<'a> ClipList<'a> {
         let offset = record.clip_box_offset.to_usize();
         self.data.get(offset..).and_then(|data| {
             let mut s = Stream::new(data);
-            let format = s.read::<u8>()?;
-
+            #[allow(dead_code)]
             #[cfg(not(feature = "variable-fonts"))]
             let deltas = [0.0, 0.0, 0.0, 0.0];
             #[cfg(feature = "variable-fonts")]
-            let deltas = if format == 2 {
-                let mut var_s = s.clone();
-                var_s.advance(8);
-                let var_index_base = var_s.read::<u32>()?;
+            {
+                let format = s.read::<u8>()?;
+                let deltas = if format == 2 {
+                    let mut var_s = s.clone();
+                    var_s.advance(8);
+                    let var_index_base = var_s.read::<u32>()?;
 
-                variation_data.read_deltas::<4>(var_index_base, coords)
-            } else {
-                [0.0, 0.0, 0.0, 0.0]
-            };
+                    variation_data.read_deltas::<4>(var_index_base, coords)
+                } else {
+                    [0.0, 0.0, 0.0, 0.0]
+                };
+            }
 
             Some(ClipBox {
                 x_min: s.read::<i16>()? as f32 + deltas[0],

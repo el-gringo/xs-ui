@@ -39,7 +39,7 @@ pub unsafe extern "C" fn keyboard_handle_key(
         let code = translate_keysym(keysym);
         let mods = ctx.xkb_keymap.get_keymods(lib_xkb, xkb_state);
         if state == 1 {
-            ctx.app_context.key_down = Some(KeyEvent::new(code, mods));
+            ctx.app.ctx.key_down = Some(KeyEvent::new(code, mods));
         }
     }
 }

@@ -1,6 +1,5 @@
-use xs_math::Vector2;
 use crate::{Color, Image};
-
+use xs_math::Vector2;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Material {
@@ -15,8 +14,14 @@ impl Material {
         Material {
             borders: Borders::none(),
             fill,
-            image: None
+            image: None,
         }
+    }
+}
+
+impl Default for Material {
+    fn default() -> Material {
+        Material::filled(Color::rgba(0.0, 0.0, 0.0, 0.0))
     }
 }
 
@@ -144,13 +149,5 @@ impl Borders {
             None => 0.0,
         };
         top + bottom
-    }
-}
-
-impl Default for Material {
-    fn default() -> Material {
-        Material::filled(
-            Color::rgba(0.0, 0.0, 0.0, 0.0)
-        )
     }
 }

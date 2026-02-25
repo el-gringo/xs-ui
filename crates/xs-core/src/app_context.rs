@@ -1,15 +1,15 @@
 use std::{
     any::{Any, TypeId},
-
-    collections::HashMap,
-    rc::Rc,
+    collections::HashMap
 };
 
-use xs_layout::{Image, View};
+use xs_layout::Image;
 use xs_platform_event::KeyEvent;
 
-use crate::{Backend, BackendDummy, FocusHandle, FocusManager, NavigationNode, Renderer, RendererDummy, TextSystem, core::NodeId, focus::NavigationNodeId, text_system::TextSystemDummy};
-
+use crate::{
+    Backend, BackendDummy, FocusHandle, FocusManager, NavigationNode, Renderer, RendererDummy,
+    TextSystem, core::NodeId, navigation::NavigationNodeId, text_system::TextSystemDummy,
+};
 
 pub struct AppContext {
     pub running: bool,
@@ -53,7 +53,6 @@ impl AppContext {
     {
         let node_id = self.current_node_id.clone();
         if self.nodes.get(&node_id).is_none() {
-            println!("use_state: {:?}", node_id);
             let state = Box::new(init(self));
             self.nodes.insert(node_id, state);
         }

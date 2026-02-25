@@ -8,4 +8,3 @@ edition.workspace = true
 xs-core.workspace = true
 xs-layout.workspace = true
 xs-backend-core.workspace = true
-xs-js-sys.workspace = true

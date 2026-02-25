@@ -3,7 +3,7 @@ pub struct Image {
     ptr: i32,
     pub width: u32,
     pub height: u32,
-    pub texture_index: u32
+    pub texture_index: u32,
 }
 
 impl Image {
@@ -12,7 +12,7 @@ impl Image {
             ptr,
             width,
             height,
-            texture_index
+            texture_index,
         }
     }
 

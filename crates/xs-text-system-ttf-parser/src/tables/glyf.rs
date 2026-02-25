@@ -625,10 +625,12 @@ impl<'a> Table<'a> {
     }
 
     /// Returns the number of points in this outline.
+    #[cfg(feature = "variable-fonts")]
     pub(crate) fn outline_points(&self, glyph_id: GlyphId) -> u16 {
         self.outline_points_impl(glyph_id).unwrap_or(0)
     }
 
+    #[cfg(feature = "variable-fonts")]
     fn outline_points_impl(&self, glyph_id: GlyphId) -> Option<u16> {
         let data = self.get(glyph_id)?;
         let mut s = Stream::new(data);

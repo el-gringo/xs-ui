@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use xs::{Context, Element, Render, WHITE, div};
+use xs::{AlignItems, Application, Element, FocusHandle, JustifyContent, NavigationNode, RED, Render, TRANSPARENT, WHITE, div};
 
 use crate::theme::GRAY3;
 
@@ -11,7 +11,10 @@ pub struct Card {
 
 impl Card {
     pub fn new() -> Self {
-        Self { id: "card", thumbnail: "" }
+        Self {
+            id: "card",
+            thumbnail: "",
+        }
     }
 
     pub fn id(mut self, id: &'static str) -> Self {
@@ -26,25 +29,24 @@ impl Card {
 }
 
 impl Render for Card {
-    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
-        // let nav_node =
-        //     ctx.use_state::<FocusHandle>(|ctx| ctx.nav.create_handle(NavigationNode::new(self.id)));
+    fn render(&self, app: &mut Application) -> Box<dyn Element> {
+        let nav_node =
+            app.ctx.use_state::<FocusHandle>(|ctx| ctx.nav.create_handle(NavigationNode::new(self.id)));
         div()
             .column()
             .width(320.)
             .height(240.)
             .background_color(WHITE)
-            .justify_content(xs::MainAxisAlignment::Start)
-            .align_items(xs::CrossAxisAlignment::Center)
-            //.border(if nav_node.has_focus() { RED } else { TRANSPARENT }, 4.)
+            .justify_content(JustifyContent::FlexStart)
+            .align_items(AlignItems::Center)
+            .border(if nav_node.has_focus() { RED } else { TRANSPARENT }, 4.)
             .child(
                 div()
                     .width(280.)
                     .height(157.)
                     .margin_top(8.)
                     .background_color(GRAY3)
-                    .background_image(self.thumbnail)
-                    .into()
+                    .into(),
             )
             .into()
     }
@@ -54,10 +56,9 @@ impl Render for Card {
     }
 }
 
-
-impl Into<Box<dyn Render>> for Card {
-    fn into(self) -> Box<dyn Render> {
-        Box::new(self)
+impl From<Card> for Box<dyn Render> {
+    fn from(val: Card) -> Self {
+        Box::new(val)
     }
 }
 

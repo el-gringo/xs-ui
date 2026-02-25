@@ -7,5 +7,5 @@ pub trait Render {
         "render"
     }
     fn tag(&self) -> TypeId;
-    fn render(&self, ctx: &mut Application) -> Box<dyn Element>;
+    fn render(&self, app: &mut Application) -> Box<dyn Element>;
 }

@@ -6,4 +6,5 @@ edition.workspace = true
 
 [dependencies]
 xs-layout.workspace = true
+xs-math.workspace = true
 xs-platform-event.workspace = true

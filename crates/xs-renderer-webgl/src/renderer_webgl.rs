@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use xs_core::{Renderer, TextSystem};
 use xs_layout::colors::TRANSPARENT;
-use xs_layout::{BoxConstraints, Image, Layout, LayoutTree};
+use xs_layout::{BoxConstraints, Image, Layout, LayoutTree, View};
 use xs_math::{Rectangle, Vector2};
 
 use crate::glsl::StandardShader;
@@ -39,7 +39,7 @@ impl RendererWebGl {
 impl Renderer for RendererWebGl {
     fn init(&mut self) {}
 
-    fn draw_frame(&mut self, widget_tree: Box<dyn Layout>) {
+    fn draw_frame(&mut self, widget_tree: &View) {
         webgl::clear(TRANSPARENT);
 
         let mut tree = LayoutTree::new();
@@ -53,7 +53,7 @@ impl Renderer for RendererWebGl {
         let root_lbox = xs_layout::LayoutBox::from_child(root_sbox, (0.0, 0.0));
         let root_id = tree.insert(root_lbox);
         tree.set_root(Some(root_id));
-        for (_, child, offset) in tree.iter() {
+        for (_, _, _, _, child, offset) in tree.iter() {
             let min = offset + Vector2::new(child.bounds.x, child.bounds.y) + child.margin.min();
             let max = Vector2::new(child.bounds.width, child.bounds.height) - child.margin.max();
             if let Some(material) = &child.material {

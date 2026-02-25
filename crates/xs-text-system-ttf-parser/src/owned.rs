@@ -1,4 +1,6 @@
-use crate::{Face, FaceParsingError, Tag, preparse::{FaceSubtables, PreParsedSubtables}};
+use crate::{Face, FaceParsingError, preparse::{FaceSubtables, PreParsedSubtables}};
+#[cfg(feature = "variable-fonts")]
+use crate::Tag;
 #[cfg(not(feature = "std"))]
 use alloc::{boxed::Box, vec::Vec};
 use core::{fmt, marker::PhantomPinned, mem, pin::Pin, slice};
@@ -88,6 +90,7 @@ impl crate::convert::AsFaceRef for &OwnedFace {
 }
 
 impl crate::convert::FaceMut for OwnedFace {
+    #[cfg(feature = "variable-fonts")]
     fn set_variation(&mut self, axis: Tag, value: f32) -> Option<()> {
         unsafe {
             let mut_ref = Pin::as_mut(&mut self.0);
@@ -101,6 +104,7 @@ impl crate::convert::FaceMut for OwnedFace {
 }
 impl crate::convert::FaceMut for &mut OwnedFace {
     #[inline]
+    #[cfg(feature = "variable-fonts")]
     fn set_variation(&mut self, axis: Tag, value: f32) -> Option<()> {
         (*self).set_variation(axis, value)
     }

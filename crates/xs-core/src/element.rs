@@ -2,7 +2,7 @@ use std::{any::TypeId, rc::Rc};
 
 use xs_layout::{DummyContainer, View};
 
-use crate::{Application, render::Render};
+use crate::{render::Render, Application};
 
 pub trait Element {
     fn id(&self) -> &'static str {
@@ -14,11 +14,10 @@ pub trait Element {
     fn paint(&self, ctx: &mut Application, views: &[View]) -> View;
 }
 
-
 pub struct RootElement;
 impl Element for RootElement {
     fn paint(&self, _ctx: &mut Application, _views: &[View]) -> View {
-        Box::new(DummyContainer {})
+        Rc::new(DummyContainer {})
     }
 }
 

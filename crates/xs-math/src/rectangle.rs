@@ -36,6 +36,11 @@ impl Rectangle {
         Self { x: 0.0, y: 0.0, width: max.x, height: max.y }
     }
 
+    #[must_use]
+    pub fn pos(self) -> Vector2 {
+        Vector2::new(self.x, self.y)
+    }
+
     /// Get the width and height of the rectangle.
     #[must_use]
     pub fn size(self) -> Vector2 {

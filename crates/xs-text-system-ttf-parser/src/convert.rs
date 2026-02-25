@@ -1,4 +1,7 @@
-use crate::{Face, Tag};
+use crate::Face;
+
+#[cfg(feature = "variable-fonts")]
+use crate::Tag;
 
 /// Used to perform a cheap conversion to a [`Face`](struct.Face.html) reference.
 pub trait AsFaceRef {
@@ -25,16 +28,19 @@ pub trait FaceMut {
     /// Sets a variation axis coordinate.
     ///
     /// See [`ttf_parser::Face::set_variation`].
+    #[cfg(feature = "variable-fonts")]
     fn set_variation(&mut self, axis: Tag, value: f32) -> Option<()>;
 }
 impl FaceMut for Face<'_> {
     #[inline]
+    #[cfg(feature = "variable-fonts")]
     fn set_variation(&mut self, axis: Tag, value: f32) -> Option<()> {
-        Face::set_variation(self, axis, value)
+        Face::set_variation(self.as_face_ref(), axis, value)
     }
 }
 impl FaceMut for &mut Face<'_> {
     #[inline]
+    #[cfg(feature = "variable-fonts")]
     fn set_variation(&mut self, axis: Tag, value: f32) -> Option<()> {
         Face::set_variation(self, axis, value)
     }

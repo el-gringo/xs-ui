@@ -1,10 +1,10 @@
 use std::any::TypeId;
 
-use xs::{Context, BLUE, Element, FocusHandle, GREEN, NavigationNode, RED, Render, div};
+use xs::{AlignItems, Application, BLUE, Element, FocusHandle, GREEN, NavigationNode, RED, Render, div};
 
 use crate::{
     button::{Button, button},
-    theme::{GRAY2, GRAY3},
+    theme::{GRAY2, GRAY4},
 };
 
 pub struct Sidebar {
@@ -30,30 +30,35 @@ impl Sidebar {
 }
 
 impl Render for Sidebar {
-    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
-        // let _ = ctx.use_state::<FocusHandle>(|ctx| {
-        //     let node = NavigationNode::new("sidebar").vertical();
-        //     ctx.nav.create_handle(node)
-        // });
+    fn render(&self, app: &mut Application) -> Box<dyn Element> {
+        let _ = app.ctx.use_state::<FocusHandle>(|ctx| {
+            let node = NavigationNode::new("sidebar").vertical();
+            ctx.nav.create_handle(node)
+        });
 
         div()
             .id("sidebar")
-            .width(300.)
             .column()
-            .align_items(xs::CrossAxisAlignment::Center)
-            .background_color(GRAY2)
+            .width(300.)
+            .justify_content(xs::JustifyContent::FlexStart)
             .child(
                 div()
                     .id("sidebar-header")
-                    .width(300.)
                     .height(50.)
-                    .background_color(GRAY3)
-                    .margin_bottom(32.)
+                    .background_color(GRAY4)
                     .into(),
             )
-            .child(Box::new(button(RED)))
-            .child(Box::new(button(GREEN)))
-            .child(Box::new(button(BLUE)))
+            .child(
+                div()
+                    .id("sidebar-body")
+                    .column()
+                    .background_color(GRAY2)
+                    .align_items(AlignItems::Center)
+                    .child(Box::new(button(RED)))
+                    .child(Box::new(button(GREEN)))
+                    .child(Box::new(button(BLUE)))
+                    .into()
+            )
             .into()
     }
 
@@ -62,9 +67,9 @@ impl Render for Sidebar {
     }
 }
 
-impl Into<Box<dyn Render>> for Sidebar {
-    fn into(self) -> Box<dyn Render> {
-        Box::new(self)
+impl From<Sidebar> for Box<dyn Render> {
+    fn from(val: Sidebar) -> Self {
+        Box::new(val)
     }
 }
 

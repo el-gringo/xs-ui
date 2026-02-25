@@ -1,6 +1,8 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{Context, Element, FocusHandle, NavigationNode, Render, WHITE, div};
+use xs::{Application, Element, FocusHandle, NavigationNode, Render, div};
+
+use crate::theme::{GRAY1, GRAY4};
 
 pub struct Body {
     pub children: Vec<Rc<Box<dyn Render>>>,
@@ -21,15 +23,28 @@ impl Body {
 }
 
 impl Render for Body {
-    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
-        // let _ = ctx.use_state::<FocusHandle>(|ctx| {
-        //     ctx.nav
-        //         .create_handle(NavigationNode::new("body").horizontal())
-        // });
+    fn render(&self, app: &mut Application) -> Box<dyn Element> {
+        let _ = app.ctx.use_state::<FocusHandle>(|ctx| {
+            ctx.nav
+                .create_handle(NavigationNode::new("body").horizontal())
+        });
         div()
             .id("body")
             .column()
-            .children(self.children.clone())
+            .grow(1.)
+            .background_color(GRAY1)
+            .child(
+                div()
+                    .height(50.)
+                    .background_color(GRAY4)
+                    .into()
+            )
+            .child(
+                div()
+                    .grow(1.)
+                    .children(self.children.clone())
+                    .into()
+            )
             .into()
     }
 
@@ -38,9 +53,9 @@ impl Render for Body {
     }
 }
 
-impl Into<Box<dyn Render>> for Body {
-    fn into(self) -> Box<dyn Render> {
-        Box::new(self)
+impl From<Body> for Box<dyn Render> {
+    fn from(val: Body) -> Self {
+        Box::new(val)
     }
 }
 

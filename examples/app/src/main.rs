@@ -3,17 +3,22 @@
 mod body;
 mod button;
 mod card;
+mod grid;
 mod sidebar;
 mod theme;
 
 use std::any::TypeId;
 
 use xs::{
-    Application, BLUE, Context, Element, GREEN, RED, Render, Runnable,
-    div,
+    AlignItems, Application, Element, FocusHandle, NavigationNode, ORANGE, Render, div, run
 };
 
-use crate::{body::body, button::button, card::card, sidebar::sidebar};
+use crate::{
+    body::body,
+    card::card,
+    sidebar::sidebar,
+    theme::GRAY4,
+};
 
 static IMAGE1: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/812ca374-a473-4cb8-ae0b-eebdd8a7ccfe.jpg";
 static IMAGE2: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/440cf8a3-1389-4475-9b65-6e1dba693235.jpg";
@@ -21,32 +26,45 @@ static IMAGE3: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails
 
 struct MyApp;
 impl Render for MyApp {
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        // let _ = ctx.use_state::<FocusHandle>(|ctx| {
-        //     ctx.nav
-        //         .create_handle(NavigationNode::new("app").horizontal())
-        // });
+    fn render(&self, app: &mut Application) -> Box<dyn Element> {
+        let _ = app.ctx.use_state::<FocusHandle>(|ctx| {
+            ctx.nav
+                .create_handle(NavigationNode::new("app").horizontal())
+        });
         div()
             .id("app")
             .row()
+            .width(app.width as f32)
+            .height(app.height as f32)
+            .justify_content(xs::JustifyContent::FlexStart)
+            .align_items(AlignItems::FlexStart)
+            //.background_color(YELLOW)
             .child(
                 sidebar()
-                    .buttons([button(RED), button(GREEN), button(BLUE)].into())
+                    //.buttons([button(RED), button(GREEN), button(BLUE)].into())
                     .into(),
             )
             .child(
                 body()
                     .children([
-                        // div()
-                        //     .height(50.)
-                        //     .text("PeerTube")
-                        //     .into(),
+                        div().height(50.).background_color(GRAY4).into(),
                         div()
-                            .row()
-                            .padding_top(64.)
-                            .child(card().id("card1").thumbnail(IMAGE1).into())
-                            .child(card().id("card2").thumbnail(IMAGE2).into())
-                            .child(card().id("card3").thumbnail(IMAGE3).into())
+                            .background_color(ORANGE)
+                            .column()
+                            .children([
+                                // div()
+                                //     .height(50.)
+                                //     .text("PeerTube")
+                                //     .into(),
+                                div()
+                                    .row()
+                                    .padding_top(64.)
+                                    .gap(32.)
+                                    .child(card().id("card1").thumbnail(IMAGE1).into())
+                                    .child(card().id("card2").thumbnail(IMAGE2).into())
+                                    .child(card().id("card3").thumbnail(IMAGE3).into())
+                                    .into(),
+                            ])
                             .into(),
                     ])
                     .into(),
@@ -60,10 +78,12 @@ impl Render for MyApp {
 }
 
 pub fn main() {
-    Application::new()
-        .id("app")
-        .title("App")
-        .width(1440)
-        .height(810)
-        .run(Box::new(MyApp {}));
+    run(
+        Application::new()
+            .id("app")
+            .title("App")
+            .width(1440)
+            .height(810),
+        Box::new(MyApp {}),
+    );
 }

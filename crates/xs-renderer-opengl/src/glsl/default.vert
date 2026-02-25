@@ -1,7 +1,11 @@
+precision mediump float;
+
 // Position of the vertex
 attribute vec2 a_position;
+
 // Pixel dimensions of the canvas
 uniform vec2 u_viewport;
+
 varying vec2 v_position;
 
 void main() {
