@@ -1,97 +1,67 @@
 use std::{
-    cell::UnsafeCell,
     error::Error,
     io::{Read, Write},
     net::TcpStream,
-    sync::{Arc, Mutex}
+    sync::{Arc, Mutex},
 };
-#[cfg(feature = "openssl")]
-use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
-
-struct UnsafeMutator<T> {
-    value: UnsafeCell<T>,
-}
-
-impl<T> UnsafeMutator<T> {
-    fn new(value: T) -> UnsafeMutator<T> {
-        return UnsafeMutator {
-            value: UnsafeCell::new(value),
-        };
-    }
-
-    fn mut_value(&self) -> &mut T {
-        return unsafe { &mut *self.value.get() };
-    }
-}
-
-unsafe impl<T> Sync for UnsafeMutator<T> {}
+use xs_tls::TlsStream;
 
 struct ReadWrapper<R>
-    where
-        R: Read,
+where
+    R: Read,
 {
-    inner: Arc<UnsafeMutator<R>>,
+    inner: Arc<Mutex<R>>,
 }
 
 impl<R: Read> Read for ReadWrapper<R> {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
-        return self.inner.mut_value().read(buf);
+        self.inner.lock().unwrap().read(buf)
     }
 }
 
 struct WriteWrapper<W>
-    where
-        W: Write,
+where
+    W: Write,
 {
-    inner: Arc<UnsafeMutator<W>>,
+    inner: Arc<Mutex<W>>,
 }
 
 impl<W: Write> Write for WriteWrapper<W> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
-        return self.inner.mut_value().write(buf);
+        self.inner.lock().unwrap().write(buf)
     }
 
     fn flush(&mut self) -> Result<(), std::io::Error> {
-        return self.inner.mut_value().flush();
+        self.inner.lock().unwrap().flush()
     }
 }
 
-#[cfg(feature = "openssl")]
-fn bind_secure(tcp_stream: TcpStream) -> Result<Socket, Box<dyn Error>> {
-    let mut tls_connector_builder = SslConnector::builder(SslMethod::tls()).unwrap();
-    tls_connector_builder.set_verify(SslVerifyMode::NONE); // Disable certificate verification
-    let tls_connector = tls_connector_builder.build();
+fn bind_secure(host: &str, port: u16) -> Result<Socket, Box<dyn Error>> {
+    let tls_stream = Arc::new(Mutex::new(TlsStream::new(host, port)?));
 
-    let tls_stream = match tls_connector.connect(host, tcp_stream) {
-        Ok(x) => x,
-        Err(e) => return Err(Box::new(e)),
-    };
-    let mutator = Arc::new(UnsafeMutator::new(tls_stream));
     let input_stream = Arc::new(Mutex::new(ReadWrapper {
-        inner: mutator.clone(),
+        inner: tls_stream.clone(),
     }));
-    let output_stream = Arc::new(Mutex::new(WriteWrapper { inner: mutator }));
+    let output_stream = Arc::new(Mutex::new(WriteWrapper {
+        inner: tls_stream.clone(),
+    }));
 
-    let socket = Socket {
+    Ok(Socket {
         output_stream,
         input_stream,
-    };
-    return Ok(socket);
+    })
 }
 
 fn bind_unsecure(tcp_stream: TcpStream) -> Result<Socket, Box<dyn Error>> {
-    let mutator = Arc::new(UnsafeMutator::new(tcp_stream));
+    let stream = Arc::new(Mutex::new(tcp_stream));
     let input_stream = Arc::new(Mutex::new(ReadWrapper {
-        inner: mutator.clone(),
+        inner: stream.clone(),
     }));
-    let output_stream = Arc::new(Mutex::new(WriteWrapper {
-        inner: mutator
-    }));
-    let socket = Socket {
+    let output_stream = Arc::new(Mutex::new(WriteWrapper { inner: stream }));
+    Ok(Socket {
         output_stream,
         input_stream,
-    };
-    return Ok(socket);
+    })
 }
 
 pub struct Socket {
@@ -101,16 +71,11 @@ pub struct Socket {
 
 impl Socket {
     pub fn bind(host: &str, port: u16, secure: bool) -> Result<Socket, Box<dyn Error>> {
-        let tcp_stream = match TcpStream::connect((host, port)) {
-            Ok(x) => x,
-            Err(e) => return Err(Box::new(e)),
-        };
-        match secure {
-            #[cfg(feature = "openssl")]
-            true => bind_secure(tcp_stream),
-            #[cfg(not(feature = "openssl"))]
-            true => bind_unsecure(tcp_stream),
-            false => bind_unsecure(tcp_stream)
+        if secure {
+            bind_secure(host, port)
+        } else {
+            let tcp_stream = TcpStream::connect((host, port))?;
+            bind_unsecure(tcp_stream)
         }
     }
 }

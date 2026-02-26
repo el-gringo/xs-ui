@@ -1,12 +1,12 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
-pub type HttpHeaders = HashMap<String, String>;
+pub type HttpHeaders = BTreeMap<String, String>;
 
 #[derive(Debug)]
 pub struct HttpResponse {
     pub status_code: u16,
     pub headers: HttpHeaders,
-    pub body: Vec<u8>
+    pub body: Vec<u8>,
 }
 
 impl Into<Vec<u8>> for HttpResponse {
@@ -54,7 +54,7 @@ impl HttpResponse {
         Self {
             status_code,
             headers,
-            body
+            body,
         }
     }
 }

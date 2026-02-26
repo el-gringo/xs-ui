@@ -1,15 +1,13 @@
-#[cfg(target_arch = "wasm32")]
-pub mod wasm;
+// #[cfg(target_arch = "wasm32")]
+//pub mod wasm;
 pub mod client;
 
-
-pub mod request;
 pub mod digest;
-pub mod utils;
-pub mod server;
+pub mod request;
 pub mod response;
+pub mod server;
 pub mod socket;
-
+pub mod utils;
 
 #[cfg(target_arch = "wasm32")]
 pub use wasm::HttpClient;

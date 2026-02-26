@@ -1,13 +1,14 @@
 xs_platform_linux::declare_module! {
     LibCrypto,
     "libcrypto.so",
+    "libcrypto.so.3",
     "libcrypto.so.1",
-    "libcrypto.so.1.1"
     ...
     ...
 
     pub fn OPENSSL_init_crypto(u64, *const ()) -> i32,
-    pub fn OPENSSL_free(*mut u8),
+
+    pub fn OSSL_PROVIDER_load(*const (), *const i8) -> *mut (),
 
     pub fn EVP_CIPHER_CTX_new() -> *mut EVP_CIPHER_CTX,
     pub fn EVP_CIPHER_CTX_free(*mut EVP_CIPHER_CTX),
@@ -148,19 +149,8 @@ xs_platform_linux::declare_module! {
         *mut X509_STORE_CTX,
         *mut X509_STORE,
         *mut X509,
-        *mut (),
+        *const (),
     ) -> i32,
-
-    pub fn SSL_CTX_set_verify(*mut SSL_CTX, i32, *const ()),
-    pub fn SSL_CTX_set_verify_depth(*mut SSL_CTX, i32),
-    pub fn SSL_CTX_load_verify_locations(
-        *mut SSL_CTX,
-        *const i8,
-        *const i8,
-    ) -> i32,
-
-    pub fn SSL_get_verify_result(*mut SSL) -> i32,
-    pub fn SSL_get_peer_certificate(*mut SSL) -> *mut X509,
 
     pub fn ERR_peek_error() -> u32,
     pub fn ERR_error_string_n(u32, *mut i8, usize),
@@ -208,9 +198,3 @@ pub struct EVP_CIPHER(pub *mut ());
 
 #[derive(Clone, Default)]
 pub struct EVP_MD(pub *mut ());
-
-#[derive(Clone, Default)]
-pub struct SSL_CTX(pub *mut ());
-
-#[derive(Clone, Default)]
-pub struct SSL(pub *mut ());

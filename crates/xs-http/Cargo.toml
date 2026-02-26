@@ -4,10 +4,19 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+
+[[example]]
+name = "http-server"
+path = "examples/http_server.rs"
+
+[[example]]
+name = "https-client"
+path = "examples/https_client.rs"
+
+
 [features]
 default = []
-openssl = [ "dep:openssl" ]
 
 [dependencies]
 xs-url = { workspace = true }
-openssl = { version = "0.10", optional = true }
+xs-tls = { workspace = true }

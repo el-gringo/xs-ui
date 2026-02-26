@@ -7,16 +7,15 @@ use xs_url::url::Url;
 use crate::response::{HttpHeaders, HttpResponse};
 use crate::socket::Socket;
 
-
 #[derive(Debug)]
 enum HttpResponseErrorKind {
     InvalidStatusLine,
-    InvalidStatusCode
+    InvalidStatusCode,
 }
 
 #[derive(Debug)]
 struct HttpResponseError {
-    kind: HttpResponseErrorKind
+    kind: HttpResponseErrorKind,
 }
 
 impl std::fmt::Display for HttpResponseError {
@@ -32,7 +31,6 @@ impl HttpResponseError {
 }
 
 impl Error for HttpResponseError {
-
     fn description(&self) -> &str {
         match self.kind {
             HttpResponseErrorKind::InvalidStatusLine => "invalid status line",
@@ -60,38 +58,36 @@ fn prepare_headers(method: String, url: Url, headers: HttpHeaders) -> Vec<String
 }
 
 fn parse_response_status(status_line: String) -> Result<(u16, String), HttpResponseError> {
-    let mut split: Vec<&str> = status_line
-        .splitn(3," ")
-        .map(|s| s.trim())
-        .collect();
+    let mut split: Vec<&str> = status_line.splitn(3, " ").map(|s| s.trim()).collect();
     if split.len() == 2 {
         split.push("");
     }
     if split.len() != 3 {
-        return Err(
-            HttpResponseError::new(HttpResponseErrorKind::InvalidStatusLine)
-        );
+        return Err(HttpResponseError::new(
+            HttpResponseErrorKind::InvalidStatusLine,
+        ));
     }
     match split[1].parse() {
         Ok(code) => Ok((code, split[2].to_string())),
-        Err(_) => Err(
-            HttpResponseError::new(HttpResponseErrorKind::InvalidStatusCode)
-        )
+        Err(_) => Err(HttpResponseError::new(
+            HttpResponseErrorKind::InvalidStatusCode,
+        )),
     }
 }
 
 pub struct HttpClient {
     url: Url,
     headers: HttpHeaders,
-    socket: Option<Arc<Socket>>
+    socket: Option<Arc<Socket>>,
 }
 
 impl HttpClient {
-    pub fn new(url: Url) -> Self {
+    pub fn new(url: impl Into<Url>) -> Self {
+        let url = url.into();
         Self {
             url,
             headers: HttpHeaders::new(),
-            socket: None
+            socket: None,
         }
     }
 
@@ -110,29 +106,44 @@ impl HttpClient {
         self
     }
 
-    pub fn get(self)  -> HttpResponse { self.send("GET".into(), None) }
-    pub fn post(self, body: Option<&[u8]>)  -> HttpResponse { self.send("POST".into(), body) }
-    pub fn put(self, body: Option<&[u8]>)  -> HttpResponse { self.send("PUT".into(), body) }
-    pub fn patch(self, body: Option<&[u8]>)  -> HttpResponse { self.send("PATCH".into(), body) }
-    pub fn delete(self, body: Option<&[u8]>)  -> HttpResponse { self.send("DELETE".into(), body) }
+    pub fn get(self) -> HttpResponse {
+        self.send("GET".into(), None)
+    }
+    pub fn post(self, body: Option<&[u8]>) -> HttpResponse {
+        self.send("POST".into(), body)
+    }
+    pub fn put(self, body: Option<&[u8]>) -> HttpResponse {
+        self.send("PUT".into(), body)
+    }
+    pub fn patch(self, body: Option<&[u8]>) -> HttpResponse {
+        self.send("PATCH".into(), body)
+    }
+    pub fn delete(self, body: Option<&[u8]>) -> HttpResponse {
+        self.send("DELETE".into(), body)
+    }
 
     fn create_socket(&mut self) -> Socket {
-        let port = self.url.port.unwrap();
+        let port = self
+            .url
+            .port
+            .unwrap_or(if self.url.secure { 443 } else { 80 });
         let host = self.url.host.as_str();
         Socket::bind(host, port, self.url.secure).unwrap()
     }
 
     fn send(mut self, method: &str, body: Option<&[u8]>) -> HttpResponse {
         let url = self.url.to_owned();
-        let raw_headers= self.headers.to_owned();
+        let raw_headers = self.headers.to_owned();
         let headers = prepare_headers(method.into(), url, raw_headers.clone());
         let socket = match self.socket.clone() {
             Some(s) => s.clone(),
-            None => Arc::new(self.create_socket())
+            None => Arc::new(self.create_socket()),
         };
         let binding = socket.clone();
         let mut output_stream = binding.output_stream.lock().unwrap();
-        output_stream.write_all(headers.join("\r\n").as_bytes()).unwrap();
+        output_stream
+            .write_all(headers.join("\r\n").as_bytes())
+            .unwrap();
         if let Some(body) = body {
             output_stream.write_all(body).unwrap();
         }
@@ -163,8 +174,8 @@ impl HttpClient {
                 let mut body: Vec<u8> = vec![0; size];
                 reader.read_exact(&mut body).unwrap();
                 body
-            },
-            _ => Vec::new()
+            }
+            _ => Vec::new(),
         };
         HttpResponse::new(status_code, headers, body)
     }
@@ -172,28 +183,34 @@ impl HttpClient {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        client::{HttpClient, prepare_headers},
+        response::HttpHeaders,
+    };
     use std::io::Write;
     use xs_url::url::Url;
-    use crate::{client::{HttpClient, prepare_headers}, response::HttpHeaders};
 
     const TEST_HOST: &str = "127.0.0.1";
     const TEST_PORT: u16 = 63215;
 
     fn listen() {
         let address = std::net::SocketAddr::new(TEST_HOST.parse().unwrap(), TEST_PORT);
-        let listener = std::net::TcpListener::bind(address).expect(
-            &format!("unable to bind port {:?} {}", TEST_HOST, TEST_PORT)
-        );
+        let listener = std::net::TcpListener::bind(address).expect(&format!(
+            "unable to bind port {:?} {}",
+            TEST_HOST, TEST_PORT
+        ));
         std::thread::spawn(move || {
-            let (mut tcp_stream, _) = listener.accept()
-                .expect("unable to accept connections");
-            tcp_stream.write(
-                "HTTP/1.1 200\r\n
+            let (mut tcp_stream, _) = listener.accept().expect("unable to accept connections");
+            tcp_stream
+                .write(
+                    "HTTP/1.1 200\r\n
                 content-length: 10\r\n
                 \r\n
                 \r\n
-                it works !".as_bytes()
-            ).expect("unable to write tcp_stream");
+                it works !"
+                        .as_bytes(),
+                )
+                .expect("unable to write tcp_stream");
         });
     }
 
@@ -216,7 +233,7 @@ mod tests {
     #[test]
     fn it_works() {
         listen();
-        let http = HttpClient::new(format!("http://{}:{}/", TEST_HOST, TEST_PORT).into());
+        let http = HttpClient::new(format!("http://{}:{}/", TEST_HOST, TEST_PORT));
         let response = http.get();
         assert_eq!(response.status_code, 200);
     }
