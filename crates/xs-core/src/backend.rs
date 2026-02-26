@@ -7,6 +7,7 @@ pub trait Backend {
         renderer: &mut Box<dyn Renderer>,
         root: Box<dyn Render>,
     );
+    fn performance_now(&self) -> u128;
     fn load_image(&mut self, src: &'static str, texture_index: u32);
     fn new_image(&mut self, array: Vec<u8>, width: u32) -> u32;
 }
@@ -22,6 +23,10 @@ impl Backend for BackendDummy {
     }
     fn load_image(&mut self, _src: &'static str, _texture_index: u32) {}
     fn new_image(&mut self, _array: Vec<u8>, _width: u32) -> u32 {
+        0
+    }
+
+    fn performance_now(&self) -> u128 {
         0
     }
 }

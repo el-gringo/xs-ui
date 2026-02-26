@@ -13,7 +13,7 @@ use xs_platform_event::{Event, KeyEvent};
 struct BackendBrowserInner {
     renderer: Box<dyn Renderer>,
     app_context: AppContext,
-    root: Rc<Box<dyn Render>>,
+    root: Rc<Box<dyn Render>>
 }
 
 impl BackendBrowserInner {
@@ -38,10 +38,12 @@ impl BackendBrowserInner {
     }
 }
 
-pub struct BackendBrowser;
+pub struct BackendBrowser {
+    elapsed: u128
+};
 impl BackendBrowser {
     pub fn new() -> Self {
-        Self
+        Self { elapsed: 0 }
     }
 
     pub fn get_time(self) -> f64 {
@@ -105,6 +107,10 @@ impl Backend for BackendBrowser {
             let len = array.len().try_into().unwrap();
             bindings::new_image(ptr, len, width)
         }
+    }
+
+    fn performance_now(&self) -> u128 {
+        self.elapsed
     }
 }
 

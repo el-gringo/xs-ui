@@ -1,4 +1,4 @@
-use std::{ptr::null_mut, rc::Rc};
+use std::{ptr::null_mut, rc::Rc, time::Instant};
 
 use xs_backend_wayland_client::{
     WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
@@ -38,11 +38,13 @@ pub fn create_surface(ctx: &mut WaylandContext) -> *mut wl_surface {
     }
 }
 
-pub struct BackendWayland;
+pub struct BackendWayland {
+    elapsed: u128
+};
 
 impl BackendWayland {
     pub fn new() -> Self {
-        Self
+        Self { elapsed: 0 }
     }
 }
 
@@ -73,8 +75,10 @@ impl Backend for BackendWayland {
         set_title(&mut ctx, app_title.into());
         renderer.init();
         let root = Rc::new(root);
+        let start = Instant::now();
         while ctx.dispatch_pending() != -1 && ctx.app.ctx.running {
             ctx.app.ctx.dispatch();
+            self.elapsed = start.elapsed().as_millis();
             let widget_tree = renderer.render(ctx.app, root.clone());
             renderer.draw_frame(&widget_tree);
             ctx.app.ctx.nav.tree.borrow().debug(0, 0);
@@ -89,5 +93,9 @@ impl Backend for BackendWayland {
 
     fn new_image(&mut self, _array: Vec<u8>, _width: u32) -> u32 {
         todo!()
+    }
+
+    fn performance_now(&self) -> u128 {
+        self.elapsed
     }
 }

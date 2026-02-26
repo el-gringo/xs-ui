@@ -1,7 +1,4 @@
-use crate::{
-    Application, FocusHandle, NavigationNode, core::NodeId,
-    navigation::NavigationNodeId,
-};
+use crate::{Application, FocusHandle, NavigationNode, core::NodeId, navigation::NavigationNodeId};
 use std::any::Any;
 
 pub struct Context<'a> {
@@ -40,5 +37,9 @@ impl<'a> Context<'a> {
         let handle = self.app.ctx.nav.create_handle(self.nav_id, node);
         self.nav_id = handle.id;
         handle
+    }
+
+    pub fn performance_now(&self) -> u128 {
+        self.app.ctx.backend.performance_now()
     }
 }
