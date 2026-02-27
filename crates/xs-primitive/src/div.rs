@@ -2,7 +2,7 @@ use std::{any::TypeId, rc::Rc};
 
 use xs_core::{Application, Context, Element, Render};
 use xs_layout::{
-    AlignItems, BorderSide, Borders, BoxConstraints, Color, EdgeInsets, FlexDirection,
+    AlignItems, BorderSide, Borders, BoxConstraints, Color, EdgeInsets, FlexDirection, FlexWrap,
     JustifyContent, Layout, LayoutTree, Material, Positioned, SizedLayoutBox, Style, StyleDisplay,
     StylePosition, View,
 };
@@ -239,6 +239,11 @@ impl Div {
 
     pub fn gap(mut self, gap: f32) -> Self {
         self.style.gap = gap;
+        self
+    }
+
+    pub fn wrap(mut self) -> Self {
+        self.style.flex_wrap = FlexWrap::Wrap;
         self
     }
 

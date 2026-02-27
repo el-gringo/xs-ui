@@ -88,11 +88,10 @@ impl Layout for Style {
         let is_wrap = matches!(self.flex_wrap, FlexWrap::Wrap | FlexWrap::WrapReverse);
         let is_reverse = self.is_reverse();
         let gap = if main_is_x {
-            self.columns_gap
+            self.columns_gap.max(self.gap)
         } else {
-            self.row_gap
-        }
-        .max(self.gap);
+            self.row_gap.max(self.gap)
+        };
 
         let w = self.width.unwrap_or(constraints.max.x);
         let h = self.height.unwrap_or(constraints.max.y);
@@ -191,13 +190,32 @@ impl Layout for Style {
         let container_cross = if main_is_x { inner.y } else { inner.x };
 
         let mut main_pos = padding_min.x + padding_min.y + justify_base;
+        let mut cross_pos = if main_is_x {
+            padding_min.y
+        } else {
+            padding_min.x
+        };
 
-        for line in &lines {
+        for (line_idx, line) in lines.iter().enumerate() {
             let line_main: f32 = line.iter().map(|i| i.main(main_is_x)).sum();
+            let line_cross: f32 = line
+                .iter()
+                .map(|i| i.cross(main_is_x))
+                .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+                .unwrap_or(0.0);
             let start_offset = justify_offset(container_main, line_main, self.justify_content);
 
+            let line_cross_start = cross_pos;
+
+            // For wrapped lines, reset main position to start of container (not accumulated)
+            let line_main_start = if line_idx == 0 {
+                padding_min.x + padding_min.y + justify_base
+            } else {
+                padding_min.x + padding_min.y
+            };
+
             let (line_ids, _new_cursor) = line.iter().fold(
-                (Vec::new(), main_pos + start_offset),
+                (Vec::new(), line_main_start + start_offset),
                 |(mut ids, cursor), item| {
                     let (margin_main_start, margin_main_end) = item.main_margin(main_is_x);
                     let (margin_cross_start, margin_cross_end) = item.cross_margin(main_is_x);
@@ -211,10 +229,10 @@ impl Layout for Style {
                     let px = if main_is_x {
                         cursor + margin_main_start
                     } else {
-                        padding_min.x + cross_offset + margin_cross_start
+                        cross_pos + cross_offset + margin_cross_start
                     };
                     let py = if main_is_x {
-                        padding_min.y + cross_offset + margin_cross_start
+                        line_cross_start + cross_offset + margin_cross_start
                     } else {
                         cursor + margin_main_start
                     };
@@ -234,6 +252,7 @@ impl Layout for Style {
             );
             child_ids.extend(line_ids);
             main_pos += line_main + gap;
+            cross_pos += line_cross + gap;
         }
 
         if is_reverse {
@@ -389,6 +408,131 @@ mod tests {
             &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
         );
         assert!(tree.boxes.len() > 2);
+    }
+
+    #[test]
+    fn flex_wrap_items_on_multiple_lines() {
+        let mut flex = Style::row();
+        flex.flex_wrap = FlexWrap::Wrap;
+        flex.width = Some(100.0);
+        flex.height = Some(200.0);
+
+        // Three items of 60px each - should wrap to 2 lines (2 + 1)
+        flex.children.push(Rc::new(child(60.0, 50.0)));
+        flex.children.push(Rc::new(child(60.0, 50.0)));
+        flex.children.push(Rc::new(child(60.0, 50.0)));
+
+        let mut tree = LayoutTree::new();
+        let result = flex.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+
+        // First item on line 0 (x=0, y=0)
+        let c1 = tree.get(result.children[0]).unwrap();
+        assert_eq!(c1.bounds.x, 0.0, "first item x should be 0");
+        assert_eq!(c1.bounds.y, 0.0, "first item y should be 0");
+
+        // Second item wraps to line 1 (x=0, y=50)
+        let c2 = tree.get(result.children[1]).unwrap();
+        assert_eq!(c2.bounds.x, 0.0, "second item x should be 0 (new line)");
+        assert_eq!(
+            c2.bounds.y, 50.0,
+            "second item y should be 50 (on second line)"
+        );
+
+        // Third item wraps to line 2 (x=0, y=100)
+        let c3 = tree.get(result.children[2]).unwrap();
+        assert_eq!(c3.bounds.x, 0.0, "third item x should be 0 (new line)");
+        assert!(
+            c3.bounds.y > c1.bounds.y,
+            "third item should be on second line (y: {} > {})",
+            c3.bounds.y,
+            c1.bounds.y
+        );
+    }
+
+    #[test]
+    fn flex_wrap_with_gap() {
+        let mut flex = Style::row();
+        flex.flex_wrap = FlexWrap::Wrap;
+        flex.width = Some(130.0);
+        flex.height = Some(200.0);
+        flex.gap = 10.0;
+
+        // Two items of 60px each + 10px gap = 130px - should fit exactly
+        flex.children.push(Rc::new(child(60.0, 50.0)));
+        flex.children.push(Rc::new(child(60.0, 50.0)));
+
+        let mut tree = LayoutTree::new();
+        let result = flex.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+
+        // Both items should be on same line
+        let c1 = tree.get(result.children[0]).unwrap();
+        let c2 = tree.get(result.children[1]).unwrap();
+
+        // c2 should be 70px to the right of c1 (60 + 10 gap)
+        assert!(
+            (c2.bounds.x - c1.bounds.x - 70.0).abs() < 1.0,
+            "gap between items should be 10px"
+        );
+    }
+
+    #[test]
+    fn flex_no_wrap_keeps_on_one_line() {
+        let mut flex = Style::row();
+        flex.flex_wrap = FlexWrap::NoWrap;
+        flex.width = Some(100.0);
+        flex.height = Some(200.0);
+
+        // Two items that would normally wrap should stay on one line
+        flex.children.push(Rc::new(child(60.0, 50.0)));
+        flex.children.push(Rc::new(child(60.0, 50.0)));
+
+        let mut tree = LayoutTree::new();
+        let result = flex.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+
+        // Both items should be on same line (same y)
+        let c1 = tree.get(result.children[0]).unwrap();
+        let c2 = tree.get(result.children[1]).unwrap();
+
+        assert_eq!(
+            c1.bounds.y, c2.bounds.y,
+            "items should be on same line when no wrap"
+        );
+    }
+
+    #[test]
+    fn flex_wrap_column_layout() {
+        let mut flex = Style::column();
+        flex.flex_wrap = FlexWrap::Wrap;
+        flex.width = Some(200.0);
+        flex.height = Some(100.0);
+
+        // Two items stacked vertically should wrap to new column
+        flex.children.push(Rc::new(child(50.0, 60.0)));
+        flex.children.push(Rc::new(child(50.0, 60.0)));
+
+        let mut tree = LayoutTree::new();
+        let result = flex.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+
+        // Items should be on different columns (different x) since they wrapped
+        let c1 = tree.get(result.children[0]).unwrap();
+        let c2 = tree.get(result.children[1]).unwrap();
+
+        assert_ne!(
+            c1.bounds.x, c2.bounds.x,
+            "items should be on different columns after wrap"
+        );
     }
 
     #[test]
