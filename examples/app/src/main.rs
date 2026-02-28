@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+mod api;
 mod body;
 mod button;
 mod card;
@@ -14,23 +15,21 @@ use xs::{
     run,
 };
 
-use crate::{body::body, card::card, sidebar::sidebar, theme::GRAY4};
-
-static IMAGE1: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/812ca374-a473-4cb8-ae0b-eebdd8a7ccfe.jpg";
-static IMAGE2: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/440cf8a3-1389-4475-9b65-6e1dba693235.jpg";
-static IMAGE3: &str = "https://video.monsieurbidouille.fr/lazy-static/thumbnails/4a8eb065-deca-47c7-a574-048a63e6b668.jpg";
+use crate::{body::body, card::card, grid::grid, sidebar::sidebar, theme::GRAY4};
 
 struct MyApp;
 impl Render for MyApp {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let _ = ctx.use_state::<FocusHandle>(|ctx| {
-            ctx.focus_handle(NavigationNode::new("app").horizontal())
+        let (_, videos) = ctx.use_state::<(FocusHandle, Vec<api::peertube::Video>)>(|ctx| {
+            let focus_handle = ctx.focus_handle(NavigationNode::new("app").horizontal());
+            let videos = api::peertube::PeerTubeClient::get_videos();
+            (focus_handle, videos)
         });
         div()
             .id("app")
             .row()
-            .width(ctx.app.width as f32)
-            .height(ctx.app.height as f32)
+            // .width(ctx.app.width as f32)
+            // .height(ctx.app.height as f32)
             .justify_content(xs::JustifyContent::FlexStart)
             .align_items(AlignItems::FlexStart)
             //.background_color(YELLOW)
@@ -55,9 +54,22 @@ impl Render for MyApp {
                                     .row()
                                     .padding_top(64.)
                                     .gap(32.)
-                                    .child(card().id("card1").thumbnail(IMAGE1).into())
-                                    .child(card().id("card2").thumbnail(IMAGE2).into())
-                                    .child(card().id("card3").thumbnail(IMAGE3).into())
+                                    .child(
+                                        grid()
+                                            .items(videos.to_vec())
+                                            .columns(3)
+                                            .cell_width(320.)
+                                            .cell_height(240.)
+                                            .gap(16.)
+                                            .cell_renderer(|_index, video| {
+                                                card()
+                                                    .thumbnail(
+                                                        video.thumbnail_url().unwrap_or_default(),
+                                                    )
+                                                    .into()
+                                            })
+                                            .into(),
+                                    )
                                     .into(),
                             ])
                             .into(),

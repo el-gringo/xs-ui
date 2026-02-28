@@ -191,7 +191,6 @@ impl LayoutTree {
     pub fn iter(&self) -> LayoutTreeIterator<'_> {
         LayoutTreeIterator {
             tree: self,
-            depth: 0,
             parents: match self.root {
                 Some(root) => VecDeque::from([root]),
                 None => VecDeque::new(),
@@ -232,8 +231,7 @@ pub struct LayoutTreeIterator<'a> {
     tree: &'a LayoutTree,
     parents: VecDeque<LayoutBoxId>,
     offsets: VecDeque<Vector2>,
-    remaining: VecDeque<(LayoutBoxId, usize)>,
-    depth: usize,
+    remaining: VecDeque<(LayoutBoxId, usize)>
 }
 
 impl<'a> Iterator for LayoutTreeIterator<'a> {

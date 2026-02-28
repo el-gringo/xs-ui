@@ -1,0 +1,75 @@
+use std::sync::mpsc::channel;
+
+use nanoserde::DeJson;
+
+use crate::api::rest_api::{body_string, RestApi};
+
+const PEERTUBE_BASE_URL: &str = "https://video.monsieurbidouille.fr";
+const PEERTUBE_API_URL: &str = "https://video.monsieurbidouille.fr/api/v1";
+
+#[derive(Default, DeJson, Clone, Debug)]
+pub struct Video {
+    pub uuid: String,
+    pub name: String,
+    #[nserde(rename = "thumbnailPath")]
+    pub thumbnail_path: Option<String>,
+}
+
+impl Video {
+    pub fn thumbnail_url(&self) -> Option<String> {
+        self.thumbnail_path
+            .as_ref()
+            .map(|path| PEERTUBE_BASE_URL.to_owned() + path)
+    }
+}
+
+#[derive(DeJson)]
+struct VideoListResponse {
+    data: Vec<Video>,
+}
+
+pub struct PeerTubeClient {
+    api: RestApi,
+}
+
+impl PeerTubeClient {
+    pub fn new() -> Self {
+        Self {
+            api: RestApi::new(PEERTUBE_API_URL),
+        }
+    }
+
+    pub fn get_videos() -> Vec<Video> {
+        let api = RestApi::new(PEERTUBE_API_URL);
+        let response = api.get("/videos");
+        let json_str = body_string(&response);
+
+        if let Ok(video_list) = VideoListResponse::deserialize_json(&json_str) {
+            video_list.data
+        } else {
+            Vec::new()
+        }
+    }
+
+    pub fn get_videos_async(&self, videos: &mut Vec<Video>) {
+        let (tx, rx) = channel();
+        std::thread::spawn(move || {
+            let api = RestApi::new(PEERTUBE_API_URL);
+            let response = api.get("/videos");
+            let json_str = body_string(&response);
+
+            if let Ok(VideoListResponse { data }) = VideoListResponse::deserialize_json(&json_str) {
+                let _ = tx.send(data);
+            };
+        });
+        if let Ok(data) = rx.try_recv() {
+            videos.extend(data);
+        }
+    }
+}
+
+impl Default for PeerTubeClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}

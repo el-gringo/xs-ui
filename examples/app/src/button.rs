@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use xs::{Color, Context, Element, FocusHandle, GRAY, NavigationNode, Render, WHITE, div};
+use xs::{div, Color, Context, Element, FocusHandle, NavigationNode, Render, GRAY, WHITE};
 
 pub struct Button {
     color: Color,
@@ -14,8 +14,8 @@ impl Button {
 
 impl Render for Button {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let nav_node = ctx
-            .use_state::<FocusHandle>(|ctx| ctx.focus_handle(NavigationNode::new("button")));
+        let nav_node =
+            ctx.use_state::<FocusHandle>(|ctx| ctx.focus_handle(NavigationNode::new("button")));
         div()
             .id("button")
             .width(200.)

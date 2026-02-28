@@ -1,16 +1,16 @@
-use crate::{Application, FocusHandle, NavigationNode, core::NodeId, navigation::NavigationNodeId};
+use crate::{AppContext, FocusHandle, NavigationNode, core::NodeId, navigation::NavigationNodeId};
 use std::any::Any;
 
 pub struct Context<'a> {
-    pub app: &'a mut Application,
+    pub app_context: &'a mut AppContext,
     pub node_id: NodeId,
     pub nav_id: NavigationNodeId,
 }
 
 impl<'a> Context<'a> {
-    pub fn new(app: &'a mut Application, node_id: NodeId, nav_id: NavigationNodeId) -> Self {
+    pub fn new(app_context: &'a mut AppContext, node_id: NodeId, nav_id: NavigationNodeId) -> Self {
         Self {
-            app,
+            app_context,
             node_id,
             nav_id,
         }
@@ -20,12 +20,11 @@ impl<'a> Context<'a> {
     where
         S: Any,
     {
-        if self.app.ctx.nodes.get(&self.node_id).is_none() {
+        if self.app_context.nodes.get(&self.node_id).is_none() {
             let state = Box::new(init(self));
-            self.app.ctx.nodes.insert(self.node_id, state);
+            self.app_context.nodes.insert(self.node_id, state);
         }
-        self.app
-            .ctx
+        self.app_context
             .nodes
             .get_mut(&self.node_id)
             .unwrap()
@@ -34,12 +33,8 @@ impl<'a> Context<'a> {
     }
 
     pub fn focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
-        let handle = self.app.ctx.nav.create_handle(self.nav_id, node);
+        let handle = self.app_context.nav.create_handle(self.nav_id, node);
         self.nav_id = handle.id;
         handle
-    }
-
-    pub fn performance_now(&self) -> u128 {
-        self.app.ctx.backend.performance_now()
     }
 }

@@ -1,11 +1,8 @@
-use crate::AppContext;
-
 pub struct Application {
     pub id: &'static str,
     pub title: &'static str,
     pub width: i32,
     pub height: i32,
-    pub ctx: AppContext,
 }
 
 impl Application {
@@ -15,7 +12,6 @@ impl Application {
             title: "App",
             width: 1440,
             height: 810,
-            ctx: AppContext::new(),
         }
     }
 

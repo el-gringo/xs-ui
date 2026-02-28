@@ -1,35 +1,17 @@
-use xs_core::{Application, Backend, BackendDummy, Render, Renderer, RendererDummy, TextSystem};
+use xs_core::{AppContext, Application, Backend, Render, Renderer, TextSystem};
 
-pub struct Runtime {
-    app: Application,
-    backend: Box<dyn Backend>,
-    renderer: Box<dyn Renderer>,
-}
+pub fn run(mut app: Application, root: Box<dyn Render>) {
+    let mut text_system = Box::new(xs_text_system::TextSystem::new());
+    let font_family = "IBMPlexSans Regular";
+    let data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
+    text_system.load_font(font_family, data);
 
-impl Runtime {
-    pub fn new(app: Application) -> Self {
-        Self {
-            app,
-            backend: Box::new(BackendDummy),
-            renderer: Box::new(RendererDummy),
-        }
-    }
-
-    pub fn run(&mut self, root: Box<dyn Render>) {
-        let mut text_system = Box::new(xs_text_system::TextSystem::new());
-        let font_family = "IBMPlexSans Regular";
-        let data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
-        text_system.load_font(font_family, data);
-        self.backend = Box::new(xs_backend::Backend::new());
-        self.renderer = Box::new(xs_renderer::Renderer::new(
-            self.app.width,
-            self.app.height,
-            text_system,
-        ));
-        self.backend.run(&mut self.app, &mut self.renderer, root);
-    }
-}
-
-pub fn run(app: Application, root: Box<dyn Render>) {
-    Runtime::new(app).run(root);
+    let mut app_context = AppContext::new();
+    let mut backend = Box::new(xs_backend::Backend::new());
+    let mut renderer = Box::new(xs_renderer::Renderer::new(
+        app.width,
+        app.height,
+        text_system
+    )) as Box<dyn Renderer>;
+    backend.run(&mut app, &mut app_context, &mut renderer, root);
 }

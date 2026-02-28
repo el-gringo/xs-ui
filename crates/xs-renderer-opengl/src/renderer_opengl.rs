@@ -1,8 +1,13 @@
 use std::collections::HashMap;
 
 use xs_core::{Renderer, TextSystem};
-use xs_gl_sys::{glClear, glFlush, GL_COLOR_BUFFER_BIT};
-use xs_layout::{BoxConstraints, Image, LayoutBox, LayoutTree, View};
+use xs_gl_sys::{
+    GL_CLAMP_TO_EDGE, GL_COLOR_BUFFER_BIT, GL_LINEAR, GL_RGBA, GL_TEXTURE_2D,
+    GL_TEXTURE_MIN_FILTER, GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_TEXTURE0, GL_UNSIGNED_BYTE,
+    glActiveTexture, glBindTexture, glClear, glFlush, glGenTextures, glGenerateMipmap,
+    glTexImage2D, glTexParameteri,
+};
+use xs_layout::{BoxConstraints, LayoutBox, LayoutTree, View};
 use xs_math::Vector2;
 
 use crate::mesh::Mesh;
@@ -14,23 +19,25 @@ use crate::shader::{
 const VERTEX_SHADER: &str = include_str!("glsl/default.vert");
 const FRAGMENT_SHADER: &str = include_str!("glsl/default.frag");
 
+fn is_power_of_2(value: i32) -> bool {
+    (value & (value - 1)) == 0
+}
+
 pub struct RendererOpenGl {
     width: i32,
     height: i32,
     shaders: HashMap<String, ShaderGlsl>,
-    textures: HashMap<Image, usize>,
-    text_system: Box<dyn TextSystem>,
+    #[allow(unused)]
+    text_system: Box<dyn TextSystem + Send>,
 }
 
 impl RendererOpenGl {
-    pub fn new(width: i32, height: i32, text_system: Box<dyn TextSystem>) -> Self {
+    pub fn new(width: i32, height: i32, text_system: Box<dyn TextSystem + Send>) -> Self {
         let shaders = Default::default();
-        let textures = Default::default();
         Self {
             width,
             height,
             shaders,
-            textures,
             text_system,
         }
     }
@@ -44,7 +51,7 @@ impl Renderer for RendererOpenGl {
             ("u_rect_min".to_string(), (Float2, 1)),
             ("u_rect_max".to_string(), (Float2, 1)),
             ("u_texture_enabled".to_string(), (Float2, 1)),
-            ("u_texture".to_string(), (Int1, 1))
+            ("u_texture".to_string(), (Int1, 1)),
         ];
         for index in 0..4 {
             let prefix = format!("u_borders[{}]", index);
@@ -83,7 +90,6 @@ impl Renderer for RendererOpenGl {
             let root_lbox = LayoutBox::from_child(root_sbox, (0.0, 0.0));
             let root_id = tree.insert(root_lbox.clone());
             tree.set_root(Some(root_id));
-            tree.debug();
             for (_, _, _, _, child, offset) in tree.iter() {
                 let origin = Vector2::new(child.bounds.x, child.bounds.y);
                 let size = Vector2::new(child.bounds.width, child.bounds.height);
@@ -91,8 +97,7 @@ impl Renderer for RendererOpenGl {
                 let max = offset + origin + size - child.margin.max();
                 if let Some(material) = &child.material {
                     let vertices = &[
-                        min.x, min.y, 0.0, min.x, max.y, 0.0,
-                        max.x, min.y, 0.0, min.x, max.y, 0.0,
+                        min.x, min.y, 0.0, min.x, max.y, 0.0, max.x, min.y, 0.0, min.x, max.y, 0.0,
                         max.x, min.y, 0.0, max.x, max.y, 0.0,
                     ];
                     let mut mesh = Mesh::new(vertices);
@@ -130,12 +135,17 @@ impl Renderer for RendererOpenGl {
                             shader.set_uniform_1i(&name, 0);
                         }
                     }
-                    if let Some(image) = &material.image {
+                    if let Some(image) = material.image.clone() {
+                        unsafe {
+                            glActiveTexture(GL_TEXTURE0 + image.texture);
+                            glBindTexture(GL_TEXTURE_2D, image.texture);
+                        }
                         shader.set_uniform_1i("u_texture_enabled", 1);
-                        shader.set_uniform_1i("u_texture", image.texture_index as i32);
+                        shader.set_uniform_1i("u_texture", image.texture as i32);
                     } else {
                         shader.set_uniform_1i("u_texture_enabled", 0);
                     }
+
                     shader.apply_attributes();
                     mesh.end();
                 }
@@ -143,6 +153,36 @@ impl Renderer for RendererOpenGl {
             unsafe {
                 glFlush();
             }
+        }
+    }
+
+    fn load_texture(&self, rgba: Vec<u8>, width: u32, height: u32) -> u32 {
+        unsafe {
+            let mut texture: u32 = 0;
+            let bytes = rgba.as_slice();
+            glGenTextures(1, &mut texture);
+            glActiveTexture(GL_TEXTURE0 + texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR as _);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RGBA as _,
+                width as _,
+                height as _,
+                0,
+                GL_RGBA,
+                GL_UNSIGNED_BYTE,
+                bytes.as_ptr() as *const _,
+            );
+            if is_power_of_2(width as _) && is_power_of_2(height as _) {
+                glGenerateMipmap(GL_TEXTURE_2D);
+            } else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S as _, GL_CLAMP_TO_EDGE as _);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T as _, GL_CLAMP_TO_EDGE as _);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR as _);
+            }
+            texture
         }
     }
 }

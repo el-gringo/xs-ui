@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
-use xs_layout::{Layout, View};
+use xs_layout::View;
 
-use crate::{Application, Context, Element, Render, core::NodeId, navigation::NavigationNodeId};
+use crate::{AppContext, Context, Element, Render, core::NodeId, navigation::NavigationNodeId};
 
 type RcWidget = Rc<Box<dyn Render>>;
 
@@ -12,7 +12,7 @@ struct StackItem {
     depth: usize,
     index: usize,
     parent_index: Option<usize>,
-    nav_id: NavigationNodeId
+    nav_id: NavigationNodeId,
 }
 
 pub trait Renderer {
@@ -20,20 +20,21 @@ pub trait Renderer {
     fn screen_width(&self) -> i32;
     fn screen_height(&self) -> i32;
     fn draw_frame(&mut self, widget_tree: &View);
-    fn render(&mut self, app: &mut Application, widget: RcWidget) -> Rc<dyn Layout> {
+    fn load_texture(&self, rgba: Vec<u8>, width: u32, height: u32) -> u32;
+    fn render(&mut self, app_context: &mut AppContext, widget: RcWidget) -> View {
         let mut stack: Vec<StackItem> = vec![StackItem {
             widget: widget.clone(),
             depth: 0,
             index: 0,
             parent_index: None,
-            nav_id: app.ctx.current_nav_node_id
+            nav_id: app_context.current_nav_node_id,
         }];
 
         // Store (parent_index, element) for each rendered element
         let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Vec::new();
         while let Some(item) = stack.pop() {
             let node_id: NodeId = (item.widget.tag(), item.depth, item.index);
-            let mut ctx = Context::new(app, node_id, item.nav_id);
+            let mut ctx = Context::new(app_context, node_id, item.nav_id);
             let element = item.widget.render(&mut ctx);
 
             // Get children before moving element
@@ -49,7 +50,7 @@ pub trait Renderer {
                     depth: item.depth + 1,
                     index: child_index,
                     parent_index: Some(current_index),
-                    nav_id: ctx.nav_id
+                    nav_id: ctx.nav_id,
                 });
             }
         }
@@ -81,11 +82,11 @@ pub trait Renderer {
             // Reverse to get correct order (first child first)
             children_views.reverse();
 
-            let view = element.paint(app, &children_views);
+            let view = element.paint(app_context, &children_views);
             views[i] = Some(view);
         }
 
-        app.ctx.nav.update();
+        app_context.nav.update();
         // The root is the first element (index 0)
         views[0].as_ref().unwrap().clone()
     }
@@ -103,7 +104,9 @@ impl Renderer for RendererDummy {
         0
     }
 
-    fn draw_frame(&mut self, _widget_tree: &View) {
-        println!("RendererDummy::draw_frame");
+    fn draw_frame(&mut self, _widget_tree: &View) {}
+
+    fn load_texture(&self, _rgba: Vec<u8>, _width: u32, _height: u32) -> u32 {
+        0
     }
 }

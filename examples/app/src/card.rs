@@ -1,37 +1,41 @@
 use std::any::TypeId;
 
-use xs::{AlignItems, Context, Element, FocusHandle, JustifyContent, NavigationNode, RED, Render, TRANSPARENT, WHITE, div};
+use xs::{
+    AlignItems, Context, Element, FocusHandle, JustifyContent, NavigationNode, RED, Render,
+    TRANSPARENT, WHITE, div,
+};
 
 use crate::theme::GRAY3;
 
 pub struct Card {
-    id: &'static str,
-    thumbnail: &'static str,
+    id: Option<&'static str>,
+    thumbnail: String,
 }
 
 impl Card {
     pub fn new() -> Self {
         Self {
-            id: "card",
-            thumbnail: "",
+            id: None,
+            thumbnail: String::new(),
         }
     }
 
     pub fn id(mut self, id: &'static str) -> Self {
-        self.id = id;
+        self.id = Some(id);
         self
     }
 
-    pub fn thumbnail(mut self, thumbnail: &'static str) -> Self {
-        self.thumbnail = thumbnail;
+    pub fn thumbnail(mut self, thumbnail: impl Into<String>) -> Self {
+        self.thumbnail = thumbnail.into();
         self
     }
 }
 
 impl Render for Card {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+        let id = self.id.unwrap_or("card");
         let nav_node =
-            ctx.use_state::<FocusHandle>(|ctx| ctx.focus_handle(NavigationNode::new(self.id)));
+            ctx.use_state::<FocusHandle>(|ctx| ctx.focus_handle(NavigationNode::new(id)));
         div()
             .column()
             .width(320.)
@@ -39,19 +43,27 @@ impl Render for Card {
             .background_color(WHITE)
             .justify_content(JustifyContent::FlexStart)
             .align_items(AlignItems::Center)
-            .border(if nav_node.has_focus() { RED } else { TRANSPARENT }, 4.)
+            .border(
+                if nav_node.has_focus() {
+                    RED
+                } else {
+                    TRANSPARENT
+                },
+                4.,
+            )
             .child(
                 div()
                     .width(280.)
                     .height(157.)
                     .margin_top(8.)
                     .background_color(GRAY3)
+                    .background_image(self.thumbnail.clone())
                     .into(),
             )
             .into()
     }
 
-    fn tag(&self) -> std::any::TypeId {
+    fn tag(&self) -> TypeId {
         TypeId::of::<Self>()
     }
 }

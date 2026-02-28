@@ -22,7 +22,7 @@ impl BackendBrowserInner {
     pub fn handle_event(&mut self, event: Event) {
         match event {
             Event::ImageLoaded(src_ptr, ptr, width, height, texture_index) => {
-                if let Some(image) = self.app_context.ressources.get_mut(&src_ptr) {
+                if let Some(image) = self.app_context.textures.get_mut(&src_ptr) {
                     log(&format!("Event::ImageLoaded: {texture_index}"));
                     let ptr: i32 = ptr.try_into().unwrap();
                     image.replace(Image::new(ptr, width, height, texture_index));

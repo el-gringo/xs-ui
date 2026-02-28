@@ -1,42 +1,37 @@
 use std::{
     any::{Any, TypeId},
-    collections::HashMap
+    collections::HashMap,
 };
 
 use xs_layout::Image;
 use xs_platform_event::KeyEvent;
 
-use crate::{
-    Backend, BackendDummy, FocusManager, Renderer, RendererDummy,
-    TextSystem, core::NodeId, navigation::NavigationNodeId, text_system::TextSystemDummy,
-};
+use crate::{FocusManager, Message, core::NodeId, navigation::NavigationNodeId};
 
 pub struct AppContext {
     pub running: bool,
-    pub backend: Box<dyn Backend>,
-    pub renderer: Box<dyn Renderer>,
-    pub text_system: Box<dyn TextSystem>,
+    //pub app: &'a mut Application,
     pub key_down: Option<KeyEvent>,
     pub nav: FocusManager,
     pub nodes: HashMap<NodeId, Box<dyn Any>>,
     pub current_node_id: NodeId,
     pub current_nav_node_id: NavigationNodeId,
-    pub ressources: HashMap<u32, Option<Image>>,
+    pub textures: HashMap<String, Option<Image>>,
+    pub messages: Vec<Message>,
 }
 
 impl AppContext {
     pub fn new() -> Self {
         AppContext {
+            //app,
             running: true,
-            backend: Box::new(BackendDummy),
-            renderer: Box::new(RendererDummy),
-            text_system: Box::new(TextSystemDummy),
             key_down: None,
             nav: FocusManager::new(),
             current_node_id: (TypeId::of::<NodeId>(), 0, 0),
             current_nav_node_id: 0,
-            nodes: HashMap::new(),
-            ressources: HashMap::new(),
+            nodes: Default::default(),
+            textures: Default::default(),
+            messages: Default::default(),
         }
     }
 

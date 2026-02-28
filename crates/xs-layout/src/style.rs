@@ -33,7 +33,7 @@ impl Default for StylePosition {
 #[derive(Clone, Default)]
 pub struct Style {
     pub background_color: Color,
-    pub background_image: Option<&'static str>,
+    pub background_image: Option<String>,
 
     pub border: Borders,
     pub border_top: Option<BorderSide>,

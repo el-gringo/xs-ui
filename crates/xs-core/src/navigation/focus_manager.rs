@@ -67,10 +67,6 @@ impl FocusManager {
     }
 
     pub fn process_key(&mut self, key_code: KeyCode) {
-        self.tree
-            .borrow()
-            .debug_node("previous focus", self.active_element_id);
-        self.tree.borrow().debug(0, 0);
         {
             let tree = self.tree.borrow();
             let mut propagate = true;

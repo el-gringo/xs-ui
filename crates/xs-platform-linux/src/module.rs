@@ -25,11 +25,6 @@ impl Module {
     /// Load a shared library with custom flags.
     fn load_with_flags(path: &str, flags: ::std::os::raw::c_int) -> Result<Self, ()> {
         let path = CString::new(path).unwrap();
-        eprintln!(
-            "Loading module: {} with flags: {}",
-            path.to_string_lossy(),
-            flags
-        );
 
         // Open the shared library with the specified flags
         let module = unsafe { dlopen(path.as_ptr(), flags) };
@@ -37,7 +32,6 @@ impl Module {
             eprintln!("Failed to load module: {}", path.to_string_lossy());
             Err(())
         } else {
-            eprintln!("Loaded module: {}", path.to_string_lossy());
             Ok(Module(unsafe { NonNull::new_unchecked(module) }))
         }
     }

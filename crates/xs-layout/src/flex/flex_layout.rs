@@ -189,7 +189,6 @@ impl Layout for Style {
         let justify_base = justify_offset(container_main, total_main, self.justify_content);
         let container_cross = if main_is_x { inner.y } else { inner.x };
 
-        let mut main_pos = padding_min.x + padding_min.y + justify_base;
         let mut cross_pos = if main_is_x {
             padding_min.y
         } else {
@@ -251,7 +250,6 @@ impl Layout for Style {
                 },
             );
             child_ids.extend(line_ids);
-            main_pos += line_main + gap;
             cross_pos += line_cross + gap;
         }
 

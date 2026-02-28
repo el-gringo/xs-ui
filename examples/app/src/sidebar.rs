@@ -1,6 +1,8 @@
 use std::any::TypeId;
 
-use xs::{AlignItems, BLUE, Context, Element, FocusHandle, GREEN, NavigationNode, RED, Render, div};
+use xs::{
+    AlignItems, BLUE, Context, Element, FocusHandle, GREEN, NavigationNode, RED, Render, div,
+};
 
 use crate::{
     button::{Button, button},
@@ -57,7 +59,7 @@ impl Render for Sidebar {
                     .child(Box::new(button(RED)))
                     .child(Box::new(button(GREEN)))
                     .child(Box::new(button(BLUE)))
-                    .into()
+                    .into(),
             )
             .into()
     }

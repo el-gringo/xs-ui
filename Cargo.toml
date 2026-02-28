@@ -33,6 +33,11 @@ xs-gl-sys = { path = "crates/xs-gl-sys" }
 xs-js-sys = { path = "crates/xs-js-sys" }
 xs-layout = { path = "crates/xs-layout" }
 xs-http = { path = "crates/xs-http" }
+# xs-inflate = { path = "crates/xs-inflate" }
+# xs-image = { path = "crates/xs-image" }
+# xs-image-core = { path = "crates/xs-image-core" }
+# xs-image-jpeg = { path = "crates/xs-image-jpeg" }
+# xs-image-png = { path = "crates/xs-image-png" }
 # xs-macro = { path = "crates/xs-macro" }
 # xs-macro-tests = { path = "crates/xs-macro/tests" }
 xs-math = { path = "crates/xs-math" }
@@ -43,6 +48,7 @@ xs-renderer = { path = "crates/xs-renderer" }
 xs-renderer-core = { path = "crates/xs-renderer-core" }
 xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
 xs-renderer-webgl = { path = "crates/xs-renderer-webgl" }
+xs-serde = { path = "crates/xs-serde" }
 xs-text-system = { path = "crates/xs-text-system" }
 xs-text-system-glyph = { path = "crates/xs-text-system-glyph" }
 xs-text-system-rasterizer = { path = "crates/xs-text-system-rasterizer" }
@@ -50,6 +56,16 @@ xs-text-system-ttf-parser = { path = "crates/xs-text-system-ttf-parser" }
 xs-tls = { path = "crates/xs-tls" }
 xs-url = { path = "crates/xs-url" }
 xs-websocket = { path = "crates/xs-websocket" }
+
+# External dependencies
+ab_glyph = { version = "0.2", default-features = false, features = [ " " ] }
+nanoserde = { version = "0.2", default-features = false, features = [ "json" ] }
+zune-image = {
+    version = "0.5",
+    default-features = false,
+    features = [ "zune-jpeg", "jpeg-xl", "zune-png", "webp", "qoi" ]
+}
+
 test_utils = { path = "tools/test_utils" }
 pretty_assertions = { version = "1.4" }
 

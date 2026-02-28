@@ -28,12 +28,6 @@ impl RendererWebGl {
             text_system,
         }
     }
-
-    pub fn load_texture(&mut self, image: &Image, width: i32, height: i32) -> usize {
-        // load_texture(image, image.texture_index as usize, width, height);
-        // texture_index
-        0
-    }
 }
 
 impl Renderer for RendererWebGl {
@@ -69,5 +63,11 @@ impl Renderer for RendererWebGl {
 
     fn screen_height(&self) -> i32 {
         self.height
+    }
+
+    fn load_texture(&self, _rba: Vec<u8>, _width: i32, _height: i32) -> usize {
+        // load_texture(image, image.texture_index as usize, width, height);
+        // texture_index
+        0
     }
 }

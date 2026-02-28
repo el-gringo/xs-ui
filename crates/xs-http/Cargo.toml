@@ -4,15 +4,13 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+# [[example]]
+# name = "http-server"
+# path = "examples/http-server.rs"
 
-[[example]]
-name = "http-server"
-path = "examples/http_server.rs"
-
-[[example]]
-name = "https-client"
-path = "examples/https_client.rs"
-
+# [[example]]
+# name = "https-client"
+# path = "examples/https-client.rs"
 
 [features]
 default = []

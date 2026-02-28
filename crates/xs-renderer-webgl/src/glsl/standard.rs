@@ -42,7 +42,7 @@ impl StandardShader {
         self.set_borders(material.borders);
         if let Some(image) = &material.image {
             webgl::set_uniform1i(self.program, "u_texture_enabled", 1);
-            webgl::set_uniform1i(self.program, "u_texture", image.texture_index as i32);
+            webgl::set_uniform1i(self.program, "u_texture", image.texture as i32);
         } else {
             webgl::set_uniform1i(self.program, "u_texture_enabled", 0);
         }
