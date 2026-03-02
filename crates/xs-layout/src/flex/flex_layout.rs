@@ -1,21 +1,23 @@
 use crate::{
+    flex::flex::Flex,
     tree::{LayoutBox, LayoutTree},
     AlignItems, BoxConstraints, EdgeInsets, FlexWrap, JustifyContent, Layout, LayoutBoxId,
-    Material, SizedLayoutBox, Style,
+    Material, SizedLayoutBox,
 };
 use xs_math::{Rectangle, Vector2};
 
-struct Item {
+struct FlexItem {
     size: Vector2,
     flex_grow: f32,
     min_main: f32,
     max_main: f32,
+    margin: EdgeInsets,
     children: Vec<LayoutBoxId>,
     material: Option<Material>,
-    margin: EdgeInsets,
+    text_material: Option<Material>,
 }
 
-impl Item {
+impl FlexItem {
     fn main(&self, is_row: bool) -> f32 {
         if is_row {
             self.size.x
@@ -78,30 +80,31 @@ fn align_offset(
     }
 }
 
-impl Layout for Style {
+impl Layout for Flex {
     fn flex_grow(&self) -> f32 {
-        self.flex_grow
+        self.style.flex_grow
     }
 
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
+        let style = &self.style;
         let main_is_x = self.is_row();
-        let is_wrap = matches!(self.flex_wrap, FlexWrap::Wrap | FlexWrap::WrapReverse);
+        let is_wrap = matches!(style.flex_wrap, FlexWrap::Wrap | FlexWrap::WrapReverse);
         let is_reverse = self.is_reverse();
         let gap = if main_is_x {
-            self.columns_gap.max(self.gap)
+            style.columns_gap.max(style.gap)
         } else {
-            self.row_gap.max(self.gap)
+            style.row_gap.max(style.gap)
         };
 
-        let w = self.width.unwrap_or(constraints.max.x);
-        let h = self.height.unwrap_or(constraints.max.y);
-        let pw = self.padding.left + self.padding.right + self.border.total_width();
-        let ph = self.padding.top + self.padding.bottom + self.border.total_height();
+        let w = style.width.unwrap_or(constraints.max.x);
+        let h = style.height.unwrap_or(constraints.max.y);
+        let pw = style.padding.left + style.padding.right + style.border.total_width();
+        let ph = style.padding.top + style.padding.bottom + style.border.total_height();
         let inner = Vector2::new((w - pw).max(0.0), (h - ph).max(0.0));
         let container_main = if main_is_x { inner.x } else { inner.y };
         let inner_constraints = BoxConstraints::from_max(inner);
 
-        let mut items: Vec<Item> = self
+        let mut items: Vec<FlexItem> = self
             .children
             .iter()
             .map(|child| {
@@ -115,13 +118,14 @@ impl Layout for Style {
                     inner_constraints.clone()
                 };
                 let layout = child.layout(tree, &child_constraints);
-                Item {
+                FlexItem {
                     size: layout.size,
                     flex_grow: child.flex_grow(),
                     min_main: child.min_main(),
                     max_main: child.max_main(),
                     children: layout.children,
                     material: layout.material,
+                    text_material: layout.text_material,
                     margin: child.margin(),
                 }
             })
@@ -131,7 +135,7 @@ impl Layout for Style {
             items.reverse();
         }
 
-        let mut lines: Vec<Vec<Item>> = if is_wrap {
+        let mut lines: Vec<Vec<FlexItem>> = if is_wrap {
             let mut lines = Vec::new();
             let mut current = Vec::new();
             let mut current_main = 0.0f32;
@@ -185,8 +189,8 @@ impl Layout for Style {
         }
 
         let mut child_ids = Vec::new();
-        let padding_min = self.padding.min();
-        let justify_base = justify_offset(container_main, total_main, self.justify_content);
+        let padding_min = style.padding.min();
+        let justify_base = justify_offset(container_main, total_main, style.justify_content);
         let container_cross = if main_is_x { inner.y } else { inner.x };
 
         let mut cross_pos = if main_is_x {
@@ -202,7 +206,7 @@ impl Layout for Style {
                 .map(|i| i.cross(main_is_x))
                 .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                 .unwrap_or(0.0);
-            let start_offset = justify_offset(container_main, line_main, self.justify_content);
+            let start_offset = justify_offset(container_main, line_main, style.justify_content);
 
             let line_cross_start = cross_pos;
 
@@ -222,7 +226,7 @@ impl Layout for Style {
                         container_cross,
                         item.cross(main_is_x),
                         (margin_cross_start, margin_cross_end),
-                        self.align_items,
+                        style.align_items,
                     );
 
                     let px = if main_is_x {
@@ -241,6 +245,7 @@ impl Layout for Style {
                         margin: item.margin,
                         children: item.children.clone(),
                         material: item.material.clone(),
+                        text_material: item.text_material.clone(),
                     });
                     ids.push(box_id);
                     (
@@ -257,78 +262,103 @@ impl Layout for Style {
             child_ids.reverse();
         }
 
-        let final_w = self
+        let final_w = style
             .width
             .unwrap_or(w)
-            .max(self.min_width.unwrap_or(0.0))
-            .min(self.max_width.unwrap_or(f32::INFINITY));
-        let final_h = self
+            .max(style.min_width.unwrap_or(0.0))
+            .min(style.max_width.unwrap_or(f32::INFINITY));
+        let final_h = style
             .height
             .unwrap_or(h)
-            .max(self.min_height.unwrap_or(0.0))
-            .min(self.max_height.unwrap_or(f32::INFINITY));
+            .max(style.min_height.unwrap_or(0.0))
+            .min(style.max_height.unwrap_or(f32::INFINITY));
 
         tree.insert(LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, final_w, final_h),
-            margin: self.margin,
+            margin: style.margin,
             children: child_ids.clone(),
             material: self.material.clone(),
+            text_material: self.text_material.clone(),
         });
 
         SizedLayoutBox {
-            margin: self.margin,
+            margin: style.margin,
             size: Vector2::new(final_w, final_h),
             children: child_ids,
-            material: self.material.clone().or_else(|| {
-                Some(Material {
-                    borders: self.border,
-                    fill: self.background_color,
-                    image: None,
-                })
-            }),
+            material: self.material.clone(),
+            text_material: self.text_material.clone(),
         }
     }
     fn margin(&self) -> EdgeInsets {
-        self.margin
+        self.style.margin
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Borders, Color};
+    use crate::{Borders, Color, FlexDirection, Style, View};
     use std::rc::Rc;
 
-    fn child(w: f32, h: f32) -> Style {
-        Style {
-            width: Some(w),
-            height: Some(h),
-            material: Some(Material {
-                borders: Borders::none(),
-                fill: Color::rgba(1.0, 0.0, 0.0, 1.0),
-                image: None,
-            }),
-            ..Default::default()
+    fn flex(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
+        Flex {
+            style: Style {
+                width,
+                height,
+                ..Default::default()
+            },
+            material: None,
+            text_material: None,
+            children,
         }
     }
 
-    fn child_with_margin(w: f32, h: f32, margin: EdgeInsets) -> Style {
-        Style {
-            width: Some(w),
-            height: Some(h),
-            margin,
-            material: Some(Material {
-                borders: Borders::none(),
-                fill: Color::rgba(1.0, 0.0, 0.0, 1.0),
-                image: None,
-            }),
-            ..Default::default()
-        }
+    fn child(w: f32, h: f32) -> View {
+        let mut flex = flex(Some(w), Some(h), vec![]);
+        flex.material = Some(Material {
+            borders: Borders::none(),
+            fill: Color::rgba(1.0, 0.0, 0.0, 1.0),
+            image: None,
+        });
+        Rc::new(flex)
+    }
+
+    fn child_with_margin(w: f32, h: f32, margin: EdgeInsets) -> Flex {
+        let mut flex = flex(Some(w), Some(h), vec![]);
+        flex.style.margin = margin;
+        flex.material = Some(Material {
+            borders: Borders::none(),
+            fill: Color::rgba(1.0, 0.0, 0.0, 1.0),
+            image: None,
+        });
+        flex
+    }
+
+    fn row(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
+        let mut flex = flex(width, height, children);
+        flex.style.flex_direction = FlexDirection::Row;
+        flex
+    }
+
+    fn column(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
+        let mut flex = flex(width, height, children);
+        flex.style.flex_direction = FlexDirection::Column;
+        flex
+    }
+
+    fn card(width: Option<f32>, height: Option<f32>) -> Flex {
+        let mut flex = flex(width, height, Vec::new());
+        flex.material = Some(Material {
+            borders: Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
+            fill: Color::rgba(1.0, 1.0, 1.0, 1.0),
+            image: None,
+        });
+        flex
     }
 
     #[test]
     fn empty_flex_fills_parent() {
-        let flex = Style::row();
+        let flex = row(Some(100.), Some(100.), Vec::new());
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -340,10 +370,7 @@ mod tests {
 
     #[test]
     fn row_with_explicit_size() {
-        let mut flex = Style::row();
-        flex.width = Some(200.0);
-        flex.height = Some(100.0);
-        flex.children.push(Rc::new(child(50.0, 50.0)));
+        let flex = row(Some(200.), Some(100.), vec![child(50.0, 50.0)]);
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -355,10 +382,7 @@ mod tests {
 
     #[test]
     fn column_with_explicit_size() {
-        let mut flex = Style::column();
-        flex.width = Some(100.0);
-        flex.height = Some(200.0);
-        flex.children.push(Rc::new(child(50.0, 50.0)));
+        let flex = column(Some(100.), Some(200.), vec![child(50.0, 50.0)]);
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -370,11 +394,11 @@ mod tests {
 
     #[test]
     fn column_children_positioned_vertically() {
-        let mut flex = Style::column();
-        flex.width = Some(100.0);
-        flex.height = Some(200.0);
-        flex.children.push(Rc::new(child(50.0, 50.0)));
-        flex.children.push(Rc::new(child(50.0, 50.0)));
+        let flex = column(
+            Some(200.),
+            Some(100.),
+            vec![child(50.0, 50.0), child(50.0, 50.0)],
+        );
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -394,12 +418,12 @@ mod tests {
 
     #[test]
     fn flex_wrap_creates_new_line() {
-        let mut flex = Style::row();
-        flex.flex_wrap = FlexWrap::Wrap;
-        flex.width = Some(100.0);
-        flex.height = Some(200.0);
-        flex.children.push(Rc::new(child(60.0, 50.0)));
-        flex.children.push(Rc::new(child(60.0, 50.0)));
+        let mut flex = row(
+            Some(200.),
+            Some(100.),
+            vec![child(60.0, 50.0), child(60.0, 50.0)],
+        );
+        flex.style.flex_wrap = FlexWrap::Wrap;
         let mut tree = LayoutTree::new();
         let _ = flex.layout(
             &mut tree,
@@ -410,15 +434,12 @@ mod tests {
 
     #[test]
     fn flex_wrap_items_on_multiple_lines() {
-        let mut flex = Style::row();
-        flex.flex_wrap = FlexWrap::Wrap;
-        flex.width = Some(100.0);
-        flex.height = Some(200.0);
-
-        // Three items of 60px each - should wrap to 2 lines (2 + 1)
-        flex.children.push(Rc::new(child(60.0, 50.0)));
-        flex.children.push(Rc::new(child(60.0, 50.0)));
-        flex.children.push(Rc::new(child(60.0, 50.0)));
+        let mut flex = row(
+            Some(100.),
+            Some(200.),
+            vec![child(60.0, 50.0), child(60.0, 50.0), child(60.0, 50.0)],
+        );
+        flex.style.flex_wrap = FlexWrap::Wrap;
 
         let mut tree = LayoutTree::new();
         let result = flex.layout(
@@ -452,15 +473,13 @@ mod tests {
 
     #[test]
     fn flex_wrap_with_gap() {
-        let mut flex = Style::row();
-        flex.flex_wrap = FlexWrap::Wrap;
-        flex.width = Some(130.0);
-        flex.height = Some(200.0);
-        flex.gap = 10.0;
-
-        // Two items of 60px each + 10px gap = 130px - should fit exactly
-        flex.children.push(Rc::new(child(60.0, 50.0)));
-        flex.children.push(Rc::new(child(60.0, 50.0)));
+        let mut flex = row(
+            Some(130.),
+            Some(200.),
+            vec![child(60.0, 50.0), child(60.0, 50.0)],
+        );
+        flex.style.flex_wrap = FlexWrap::Wrap;
+        flex.style.gap = 10.0;
 
         let mut tree = LayoutTree::new();
         let result = flex.layout(
@@ -481,14 +500,12 @@ mod tests {
 
     #[test]
     fn flex_no_wrap_keeps_on_one_line() {
-        let mut flex = Style::row();
-        flex.flex_wrap = FlexWrap::NoWrap;
-        flex.width = Some(100.0);
-        flex.height = Some(200.0);
-
-        // Two items that would normally wrap should stay on one line
-        flex.children.push(Rc::new(child(60.0, 50.0)));
-        flex.children.push(Rc::new(child(60.0, 50.0)));
+        let mut flex = row(
+            Some(100.),
+            Some(200.),
+            vec![child(60.0, 50.0), child(60.0, 50.0)],
+        );
+        flex.style.flex_wrap = FlexWrap::NoWrap;
 
         let mut tree = LayoutTree::new();
         let result = flex.layout(
@@ -508,14 +525,12 @@ mod tests {
 
     #[test]
     fn flex_wrap_column_layout() {
-        let mut flex = Style::column();
-        flex.flex_wrap = FlexWrap::Wrap;
-        flex.width = Some(200.0);
-        flex.height = Some(100.0);
-
-        // Two items stacked vertically should wrap to new column
-        flex.children.push(Rc::new(child(50.0, 60.0)));
-        flex.children.push(Rc::new(child(50.0, 60.0)));
+        let mut flex = column(
+            Some(200.),
+            Some(100.),
+            vec![child(50.0, 60.0), child(50.0, 60.0)],
+        );
+        flex.style.flex_wrap = FlexWrap::Wrap;
 
         let mut tree = LayoutTree::new();
         let result = flex.layout(
@@ -535,10 +550,12 @@ mod tests {
 
     #[test]
     fn child_has_material_from_layout() {
-        let mut flex = Style::row();
-        flex.width = Some(100.0);
-        flex.height = Some(50.0);
-        flex.children.push(Rc::new(child(50.0, 30.0)));
+        let flex = row(
+            Some(100.),
+            Some(50.),
+            vec![child(60.0, 50.0), child(50.0, 30.0)],
+        );
+
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -550,18 +567,12 @@ mod tests {
 
     #[test]
     fn nested_flex_layout() {
-        let mut outer = Style::column();
-        outer.width = Some(200.0);
-        outer.height = Some(200.0);
-
-        let mut inner = Style::row();
-        inner.width = Some(100.0);
-        inner.height = Some(50.0);
-        inner.children.push(Rc::new(child(30.0, 20.0)));
-        inner.children.push(Rc::new(child(30.0, 20.0)));
-
-        outer.children.push(Rc::new(inner));
-        outer.children.push(Rc::new(child(50.0, 30.0)));
+        let inner = row(Some(100.), Some(50.), vec![child(50.0, 30.0)]);
+        let outer = column(
+            Some(200.),
+            Some(200.),
+            vec![Rc::new(inner), child(30.0, 20.0)],
+        );
 
         let mut tree = LayoutTree::new();
         let result = outer.layout(
@@ -582,19 +593,17 @@ mod tests {
 
     #[test]
     fn nested_flex_child_count() {
-        let mut outer = Style::row();
-        outer.width = Some(200.0);
-        outer.height = Some(100.0);
+        let inner = column(
+            Some(80.),
+            Some(80.),
+            vec![child(20.0, 20.0), child(20.0, 20.0), child(20.0, 20.0)],
+        );
 
-        let mut inner = Style::column();
-        inner.width = Some(80.0);
-        inner.height = Some(80.0);
-        inner.children.push(Rc::new(child(20.0, 20.0)));
-        inner.children.push(Rc::new(child(20.0, 20.0)));
-        inner.children.push(Rc::new(child(20.0, 20.0)));
-
-        outer.children.push(Rc::new(inner));
-        outer.children.push(Rc::new(child(40.0, 40.0)));
+        let outer = row(
+            Some(200.),
+            Some(100.),
+            vec![Rc::new(inner), child(40.0, 40.0)],
+        );
 
         let mut tree = LayoutTree::new();
         let result = outer.layout(
@@ -618,12 +627,12 @@ mod tests {
 
     #[test]
     fn justify_content_center_row() {
-        let mut flex = Style::row();
-        flex.width = Some(200.0);
-        flex.height = Some(100.0);
-        flex.justify_content = JustifyContent::Center;
-        flex.children.push(Rc::new(child(50.0, 50.0)));
-        flex.children.push(Rc::new(child(50.0, 50.0)));
+        let mut flex = row(
+            Some(200.),
+            Some(100.),
+            vec![child(50.0, 50.0), child(50.0, 50.0)],
+        );
+        flex.style.justify_content = JustifyContent::Center;
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -643,12 +652,12 @@ mod tests {
 
     #[test]
     fn justify_content_flex_end_row() {
-        let mut flex = Style::row();
-        flex.width = Some(200.0);
-        flex.height = Some(100.0);
-        flex.justify_content = JustifyContent::FlexEnd;
-        flex.children.push(Rc::new(child(50.0, 50.0)));
-        flex.children.push(Rc::new(child(50.0, 50.0)));
+        let mut flex = row(
+            Some(200.),
+            Some(100.),
+            vec![child(50.0, 50.0), child(50.0, 50.0)],
+        );
+        flex.style.justify_content = JustifyContent::FlexEnd;
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -668,12 +677,12 @@ mod tests {
 
     #[test]
     fn justify_content_flex_end_column() {
-        let mut flex = Style::column();
-        flex.width = Some(100.0);
-        flex.height = Some(200.0);
-        flex.justify_content = JustifyContent::FlexEnd;
-        flex.children.push(Rc::new(child(50.0, 50.0)));
-        flex.children.push(Rc::new(child(50.0, 50.0)));
+        let mut flex = column(
+            Some(100.),
+            Some(200.),
+            vec![child(50.0, 50.0), child(50.0, 50.0)],
+        );
+        flex.style.justify_content = JustifyContent::FlexEnd;
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -693,12 +702,12 @@ mod tests {
 
     #[test]
     fn align_items_center_row() {
-        let mut flex = Style::row();
-        flex.width = Some(200.0);
-        flex.height = Some(100.0);
-        flex.align_items = AlignItems::Center;
-        flex.children.push(Rc::new(child(50.0, 30.0)));
-        flex.children.push(Rc::new(child(50.0, 40.0)));
+        let mut flex = row(
+            Some(200.),
+            Some(100.),
+            vec![child(50.0, 30.0), child(50.0, 40.0)],
+        );
+        flex.style.align_items = AlignItems::Center;
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -718,12 +727,12 @@ mod tests {
 
     #[test]
     fn align_items_flex_end_row() {
-        let mut flex = Style::row();
-        flex.width = Some(200.0);
-        flex.height = Some(100.0);
-        flex.align_items = AlignItems::FlexEnd;
-        flex.children.push(Rc::new(child(50.0, 30.0)));
-        flex.children.push(Rc::new(child(50.0, 40.0)));
+        let mut flex = row(
+            Some(200.),
+            Some(100.),
+            vec![child(50.0, 30.0), child(50.0, 40.0)],
+        );
+        flex.style.align_items = AlignItems::FlexEnd;
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -743,12 +752,12 @@ mod tests {
 
     #[test]
     fn align_items_center_column() {
-        let mut flex = Style::column();
-        flex.width = Some(100.0);
-        flex.height = Some(200.0);
-        flex.align_items = AlignItems::Center;
-        flex.children.push(Rc::new(child(30.0, 50.0)));
-        flex.children.push(Rc::new(child(40.0, 50.0)));
+        let mut flex = column(
+            Some(100.),
+            Some(200.),
+            vec![child(30.0, 50.0), child(40.0, 50.0)],
+        );
+        flex.style.align_items = AlignItems::Center;
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -768,12 +777,12 @@ mod tests {
 
     #[test]
     fn align_items_flex_end_column() {
-        let mut flex = Style::column();
-        flex.width = Some(100.0);
-        flex.height = Some(200.0);
-        flex.align_items = AlignItems::FlexEnd;
-        flex.children.push(Rc::new(child(30.0, 50.0)));
-        flex.children.push(Rc::new(child(40.0, 50.0)));
+        let mut flex = column(
+            Some(100.),
+            Some(200.),
+            vec![child(30.0, 50.0), child(40.0, 50.0)],
+        );
+        flex.style.align_items = AlignItems::FlexEnd;
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -793,13 +802,12 @@ mod tests {
 
     #[test]
     fn column_with_centered_items() {
-        let mut column = Style::column();
-        column.width = Some(300.0);
-        column.height = Some(300.0);
-        column.align_items = AlignItems::Center;
-        column.children.push(Rc::new(child(150.0, 50.0)));
-        column.children.push(Rc::new(child(150.0, 50.0)));
-        column.children.push(Rc::new(child(150.0, 50.0)));
+        let mut column = column(
+            Some(300.),
+            Some(300.),
+            vec![child(150.0, 50.0), child(150.0, 50.0), child(150.0, 50.0)],
+        );
+        column.style.align_items = AlignItems::Center;
         let mut tree = LayoutTree::new();
         let result = column.layout(
             &mut tree,
@@ -824,29 +832,32 @@ mod tests {
 
     #[test]
     fn row_with_margin_on_children() {
-        let mut flex = Style::row();
-        flex.width = Some(200.0);
-        flex.height = Some(100.0);
-        flex.children.push(Rc::new(child_with_margin(
-            50.0,
-            50.0,
-            EdgeInsets {
-                top: 0.0,
-                bottom: 0.0,
-                left: 10.0,
-                right: 0.0,
-            },
-        )));
-        flex.children.push(Rc::new(child_with_margin(
-            50.0,
-            50.0,
-            EdgeInsets {
-                top: 0.0,
-                bottom: 0.0,
-                left: 0.0,
-                right: 10.0,
-            },
-        )));
+        let flex = row(
+            Some(200.),
+            Some(100.),
+            vec![
+                Rc::new(child_with_margin(
+                    50.0,
+                    50.0,
+                    EdgeInsets {
+                        top: 0.0,
+                        bottom: 0.0,
+                        left: 10.0,
+                        right: 0.0,
+                    },
+                )),
+                Rc::new(child_with_margin(
+                    50.0,
+                    50.0,
+                    EdgeInsets {
+                        top: 0.0,
+                        bottom: 0.0,
+                        left: 0.0,
+                        right: 10.0,
+                    },
+                )),
+            ],
+        );
         let mut tree = LayoutTree::new();
         let result = flex.layout(
             &mut tree,
@@ -868,133 +879,75 @@ mod tests {
 
     #[test]
     fn real_world_app_layout() {
-        let mut sidebar = Style::column();
-        sidebar.width = Some(250.0);
-        sidebar.material = Some(Material {
-            borders: Borders::none(),
-            fill: Color::rgba(0.85, 0.85, 0.85, 1.0),
-            image: None,
-        });
-
-        let mut sidebar_header = Style::row();
-        sidebar_header.height = Some(60.0);
+        let mut sidebar_header = row(None, Some(60.0), vec![]);
         sidebar_header.material = Some(Material {
             borders: Borders::none(),
             fill: Color::rgba(0.9, 0.9, 0.9, 1.0),
             image: None,
         });
 
-        let mut sidebar_body = Style::column();
-        sidebar_body.gap = 8.0;
-        sidebar_body.padding = EdgeInsets::all(16.0);
-        sidebar_body.justify_content = JustifyContent::Center;
+        let mut btn = row(Some(218.0), Some(40.0), vec![]);
+        btn.material = Some(Material {
+            borders: Borders::all(Color::rgba(0.5, 0.5, 0.5, 1.0), 1.0),
+            fill: Color::rgba(0.8, 0.8, 0.8, 1.0),
+            image: None,
+        });
+        let mut sidebar_body = column(
+            None,
+            None,
+            vec![
+                Rc::new(btn.clone()),
+                Rc::new(btn.clone()),
+                Rc::new(btn.clone()),
+            ],
+        );
+        sidebar_body.style.gap = 8.0;
+        sidebar_body.style.padding = EdgeInsets::all(16.0);
+        sidebar_body.style.justify_content = JustifyContent::Center;
 
-        let btn1 = Style {
-            width: Some(218.0),
-            height: Some(40.0),
-            material: Some(Material {
-                borders: Borders::all(Color::rgba(0.5, 0.5, 0.5, 1.0), 1.0),
-                fill: Color::rgba(0.8, 0.8, 0.8, 1.0),
-                image: None,
-            }),
-            ..Default::default()
-        };
-        let btn2 = Style {
-            width: Some(218.0),
-            height: Some(40.0),
-            material: Some(Material {
-                borders: Borders::all(Color::rgba(0.5, 0.5, 0.5, 1.0), 1.0),
-                fill: Color::rgba(0.8, 0.8, 0.8, 1.0),
-                image: None,
-            }),
-            ..Default::default()
-        };
-        let btn3 = Style {
-            width: Some(218.0),
-            height: Some(40.0),
-            material: Some(Material {
-                borders: Borders::all(Color::rgba(0.5, 0.5, 0.5, 1.0), 1.0),
-                fill: Color::rgba(0.8, 0.8, 0.8, 1.0),
-                image: None,
-            }),
-            ..Default::default()
-        };
+        let mut sidebar = column(
+            Some(250.),
+            None,
+            vec![Rc::new(sidebar_header), Rc::new(sidebar_body)],
+        );
+        sidebar.material = Some(Material {
+            borders: Borders::none(),
+            fill: Color::rgba(0.85, 0.85, 0.85, 1.0),
+            image: None,
+        });
 
-        sidebar_body.children.push(Rc::new(btn1));
-        sidebar_body.children.push(Rc::new(btn2));
-        sidebar_body.children.push(Rc::new(btn3));
-
-        sidebar.children.push(Rc::new(sidebar_header));
-        sidebar.children.push(Rc::new(sidebar_body));
-
-        let mut app_body = Style::column();
-        app_body.flex_grow = 1.0;
-
-        let mut app_header = Style::row();
-        app_header.height = Some(60.0);
+        let mut app_header = row(None, Some(60.0), vec![]);
         app_header.material = Some(Material {
             borders: Borders::none(),
             fill: Color::rgba(0.95, 0.95, 0.95, 1.0),
             image: None,
         });
 
-        let mut cards_grid = Style::row();
-        cards_grid.gap = 16.0;
-        cards_grid.padding = EdgeInsets::all(24.0);
-        cards_grid.flex_wrap = FlexWrap::Wrap;
+        let mut card = column(Some(280.0), Some(200.0), vec![]);
+        card.material = Some(Material {
+            borders: Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
+            fill: Color::rgba(1.0, 1.0, 1.0, 1.0),
+            image: None,
+        });
 
-        let card1 = Style {
-            width: Some(280.0),
-            height: Some(200.0),
-            material: Some(Material {
-                borders: Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
-                fill: Color::rgba(1.0, 1.0, 1.0, 1.0),
-                image: None,
-            }),
-            ..Default::default()
-        };
-        let card2 = Style {
-            width: Some(280.0),
-            height: Some(200.0),
-            material: Some(Material {
-                borders: Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
-                fill: Color::rgba(1.0, 1.0, 1.0, 1.0),
-                image: None,
-            }),
-            ..Default::default()
-        };
-        let card3 = Style {
-            width: Some(280.0),
-            height: Some(200.0),
-            material: Some(Material {
-                borders: Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
-                fill: Color::rgba(1.0, 1.0, 1.0, 1.0),
-                image: None,
-            }),
-            ..Default::default()
-        };
-        let card4 = Style {
-            width: Some(280.0),
-            height: Some(200.0),
-            material: Some(Material {
-                borders: Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
-                fill: Color::rgba(1.0, 1.0, 1.0, 1.0),
-                image: None,
-            }),
-            ..Default::default()
-        };
+        let mut cards_grid = row(
+            Some(280.0),
+            Some(200.0),
+            vec![
+                Rc::new(card.clone()),
+                Rc::new(card.clone()),
+                Rc::new(card.clone()),
+                Rc::new(card.clone()),
+            ],
+        );
+        cards_grid.style.gap = 16.0;
+        cards_grid.style.padding = EdgeInsets::all(24.0);
+        cards_grid.style.flex_wrap = FlexWrap::Wrap;
 
-        cards_grid.children.push(Rc::new(card1));
-        cards_grid.children.push(Rc::new(card2));
-        cards_grid.children.push(Rc::new(card3));
-        cards_grid.children.push(Rc::new(card4));
+        let mut app_body = column(None, None, vec![Rc::new(app_header), Rc::new(cards_grid)]);
+        app_body.style.flex_grow = 1.0;
 
-        app_body.children.push(Rc::new(app_header));
-        app_body.children.push(Rc::new(cards_grid));
-
-        let mut main_row = Style::row();
-        main_row.children.push(Rc::new(sidebar));
-        main_row.children.push(Rc::new(app_body));
+        let main_row = row(None, None, vec![Rc::new(sidebar), Rc::new(app_body)]);
 
         let mut tree = LayoutTree::new();
         let result = main_row.layout(
@@ -1059,6 +1012,13 @@ mod tests {
 
         let cards_grid_box = tree.get(app_body_box.children[1]).unwrap();
         assert_eq!(cards_grid_box.children.len(), 4, "grid should have 4 cards");
+
+        let app_header_box = tree.get(app_body_box.children[0]).unwrap();
+        assert_eq!(
+            app_header_box.bounds.height, 60.0,
+            "app_header height should be 60"
+        );
+
         let card1_box = tree.get(cards_grid_box.children[0]).unwrap();
         assert!(card1_box.material.is_some(), "card should have material");
         assert!(
@@ -1069,9 +1029,7 @@ mod tests {
 
     #[test]
     fn flex_without_explicit_size_fills_parent() {
-        let mut flex = Style::row();
-        flex.children.push(Rc::new(child(50.0, 50.0)));
-        flex.children.push(Rc::new(child(50.0, 50.0)));
+        let flex = row(None, None, vec![child(50.0, 50.0), child(50.0, 50.0)]);
 
         let mut tree = LayoutTree::new();
         let result = flex.layout(

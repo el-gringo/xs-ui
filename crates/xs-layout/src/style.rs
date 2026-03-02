@@ -1,9 +1,77 @@
 use crate::{
-    AlignContent, AlignItems, BorderSide, Borders, BoxConstraints, Color, EdgeInsets,
-    FlexDirection, FlexWrap, JustifyContent, Layout, LayoutTree, Material, SizedLayoutBox,
-    View,
+    AlignContent, AlignItems, BorderSide, Borders, Color, EdgeInsets, FlexDirection, FlexWrap,
+    JustifyContent, colors::BLACK,
 };
-use std::rc::Rc;
+
+#[derive(Clone, Debug)]
+pub enum FontStyle {
+    Normal,
+    Italic,
+    Oblique,
+}
+
+impl Default for FontStyle {
+    fn default() -> Self {
+        FontStyle::Normal
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TextPropertiesInner {
+    pub color: Color,
+    pub font_family: String,
+    pub font_size: f32,
+    pub font_weight: u32,
+    pub font_style: FontStyle,
+}
+
+impl Default for TextPropertiesInner {
+    fn default() -> Self {
+        Self {
+            color: BLACK,
+            font_family: String::from("sans-serif"),
+            font_size: 16.,
+            font_weight: 400,
+            font_style: Default::default(),
+        }
+    }
+}
+
+#[derive(Clone, Default, Debug)]
+pub struct TextProperties(pub Option<TextPropertiesInner>);
+
+impl TextProperties {
+    pub fn color(&mut self, color: Color) {
+        self.update_field(|prop| prop.color = color);
+    }
+
+    pub fn font_family(&mut self, font_family: String) {
+        self.update_field(|prop| prop.font_family = font_family);
+    }
+
+    pub fn font_size(&mut self, font_size: f32) {
+        self.update_field(|prop| prop.font_size = font_size);
+    }
+
+    pub fn font_weight(&mut self, font_weight: u32) {
+        self.update_field(|prop| prop.font_weight = font_weight);
+    }
+
+    pub fn unwrap_or_default(&self) -> TextPropertiesInner {
+        self.0.clone().unwrap_or_default()
+    }
+
+    fn update_field(&mut self, callback: impl FnOnce(&mut TextPropertiesInner)) {
+        match self.0.as_mut() {
+            Some(mut v) => callback(&mut v),
+            None => {
+                let v = Default::default();
+                self.0.replace(v);
+                self.update_field(callback);
+            }
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub enum StyleDisplay {
@@ -67,6 +135,7 @@ pub struct Style {
 
     pub display: StyleDisplay,
 
+    // Flex properties
     pub flex_direction: FlexDirection,
     pub flex_wrap: FlexWrap,
     pub align_content: AlignContent,
@@ -81,145 +150,6 @@ pub struct Style {
     pub flex_grow: f32,
     pub flex_shrink: f32,
 
-    pub children: Vec<View>,
-    pub material: Option<Material>,
-}
-
-impl Style {
-    pub fn to_material(&self) -> Material {
-        Material {
-            borders: self.border,
-            fill: self.background_color,
-            image: None,
-        }
-    }
-
-    pub fn to_view(self) -> View
-    where
-        Self: 'static,
-    {
-        struct StyleWrapper(Style);
-
-        impl Layout for StyleWrapper {
-            fn layout(
-                &self,
-                tree: &mut LayoutTree,
-                constraints: &BoxConstraints,
-            ) -> SizedLayoutBox {
-                self.0.layout(tree, constraints)
-            }
-
-            fn flex_grow(&self) -> f32 {
-                self.0.flex_grow()
-            }
-            fn flex_shrink(&self) -> f32 {
-                self.0.flex_shrink()
-            }
-            fn flex_basis(&self) -> f32 {
-                self.0.flex_basis()
-            }
-            fn align_self(&self) -> AlignItems {
-                self.0.align_self()
-            }
-            fn min_main(&self) -> f32 {
-                self.0.min_main()
-            }
-            fn max_main(&self) -> f32 {
-                self.0.max_main()
-            }
-            fn min_cross(&self) -> f32 {
-                self.0.min_cross()
-            }
-            fn max_cross(&self) -> f32 {
-                self.0.max_cross()
-            }
-            fn margin(&self) -> EdgeInsets {
-                self.0.margin()
-            }
-        }
-
-        Rc::new(StyleWrapper(self)) as View
-    }
-
-    pub fn row() -> Style {
-        Style {
-            flex_direction: FlexDirection::Row,
-            ..Default::default()
-        }
-    }
-
-    pub fn column() -> Style {
-        Style {
-            flex_direction: FlexDirection::Column,
-            ..Default::default()
-        }
-    }
-
-    pub fn is_row(&self) -> bool {
-        matches!(
-            self.flex_direction,
-            FlexDirection::Row | FlexDirection::RowReverse
-        )
-    }
-
-    pub fn is_reverse(&self) -> bool {
-        matches!(
-            self.flex_direction,
-            FlexDirection::ColumnReverse | FlexDirection::RowReverse
-        )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::Borders;
-    use xs_math::Vector2;
-
-    #[test]
-    fn style_as_view() {
-        let style = Style {
-            width: Some(100.0),
-            height: Some(50.0),
-            background_color: Color::rgba(1.0, 0.0, 0.0, 1.0),
-            border: Borders::none(),
-            background_image: None,
-            children: vec![],
-            material: None,
-            ..Default::default()
-        };
-
-        let view = style.to_view();
-        let mut tree = LayoutTree::new();
-        let result = view.layout(
-            &mut tree,
-            &BoxConstraints::from_max(Vector2::new(200.0, 100.0)),
-        );
-
-        assert_eq!(result.size.x, 100.0);
-        assert_eq!(result.size.y, 50.0);
-        assert!(result.material.is_some());
-    }
-
-    #[test]
-    fn style_fills_parent_when_no_size() {
-        let style = Style {
-            background_color: Color::rgba(1.0, 0.0, 0.0, 1.0),
-            border: Borders::none(),
-            background_image: None,
-            children: vec![],
-            material: None,
-            ..Default::default()
-        };
-
-        let view = style.to_view();
-        let mut tree = LayoutTree::new();
-        let result = view.layout(
-            &mut tree,
-            &BoxConstraints::from_max(Vector2::new(200.0, 100.0)),
-        );
-
-        assert_eq!(result.size.x, 200.0);
-        assert_eq!(result.size.y, 100.0);
-    }
+    // Text properties
+    pub text_properties: TextProperties,
 }

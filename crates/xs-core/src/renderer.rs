@@ -20,7 +20,7 @@ pub trait Renderer {
     fn screen_width(&self) -> i32;
     fn screen_height(&self) -> i32;
     fn draw_frame(&mut self, widget_tree: &View);
-    fn load_texture(&self, rgba: Vec<u8>, width: u32, height: u32) -> u32;
+    fn load_texture(&self, bytes: &[u8], width: u32, height: u32, alpha: bool) -> u32;
     fn render(&mut self, app_context: &mut AppContext, widget: RcWidget) -> View {
         let mut stack: Vec<StackItem> = vec![StackItem {
             widget: widget.clone(),
@@ -106,7 +106,7 @@ impl Renderer for RendererDummy {
 
     fn draw_frame(&mut self, _widget_tree: &View) {}
 
-    fn load_texture(&self, _rgba: Vec<u8>, _width: u32, _height: u32) -> u32 {
+    fn load_texture(&self, _bytes: &[u8], _width: u32, _height: u32, _alpha: bool) -> u32 {
         0
     }
 }

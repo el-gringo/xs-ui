@@ -20,4 +20,5 @@ pub use navigation::{FocusHandle, FocusManager, NavigationNode};
 pub use message::Message;
 pub use render::Render;
 pub use renderer::{Renderer, RendererDummy};
-pub use text_system::TextSystem;
+pub use text_system::{TextSystem, TextSystemDummy};
+pub use xs_layout::TextProperties;

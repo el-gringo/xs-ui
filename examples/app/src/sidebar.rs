@@ -46,8 +46,11 @@ impl Render for Sidebar {
             .child(
                 div()
                     .id("sidebar-header")
+                    .row()
                     .height(50.)
                     .background_color(GRAY4)
+                    .justify_content(xs::JustifyContent::Center)
+                    .child(div().text("PeerTube").color(RED).font_size(30.).into())
                     .into(),
             )
             .child(

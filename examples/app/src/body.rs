@@ -1,6 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{div, Context, Element, FocusHandle, NavigationNode, Render};
+use xs::{Context, Element, FocusHandle, NavigationNode, Render, div};
 
 use crate::theme::{GRAY1, GRAY4};
 
@@ -32,7 +32,12 @@ impl Render for Body {
             .column()
             .grow(1.)
             .background_color(GRAY1)
-            .child(div().height(50.).background_color(GRAY4).into())
+            .child(
+                div()
+                    .height(50.)
+                    .background_color(GRAY4)
+                    .into(),
+            )
             .child(div().grow(1.).children(self.children.clone()).into())
             .into()
     }

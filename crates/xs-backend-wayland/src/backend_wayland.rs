@@ -9,9 +9,11 @@ use zune_image::codecs::qoi::zune_core::{colorspace::ColorSpace, options::Decode
 use xs_backend_wayland_client::{
     WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
 };
-use xs_core::{AppContext, Application, Backend, BackendMessage, Message, Render, Renderer};
+use xs_core::{
+    AppContext, Application, Backend, BackendMessage, Message, Render, Renderer, TextSystem,
+};
 use xs_http::HttpClient;
-use xs_layout::Image;
+use xs_layout::{Image, TextProperties};
 
 use crate::{
     config::WaylandConfig,
@@ -48,11 +50,15 @@ pub fn create_surface(ctx: &mut WaylandContext) -> *mut wl_surface {
 
 pub struct BackendWayland {
     elapsed: u128,
+    text_system: Box<dyn TextSystem>,
 }
 
 impl BackendWayland {
-    pub fn new() -> Self {
-        Self { elapsed: 0 }
+    pub fn new(text_system: Box<dyn TextSystem>) -> Self {
+        Self {
+            elapsed: 0,
+            text_system,
+        }
     }
 }
 
@@ -109,13 +115,18 @@ impl Backend for BackendWayland {
                 Message::LoadImage(src) => {
                     self.load_image(src, tx.clone());
                 }
+                Message::Text(text, text_properties) => {
+                    eprintln!("Message::Text: {}", text);
+                    self.text(text, text_properties, tx.clone());
+                }
             }
         }
         if let Ok(message) = rx.try_recv() {
             match message {
-                BackendMessage::ImageLoaded(src, rgba, width, height) => {
-                    let texture = renderer.load_texture(rgba.clone(), width, height);
-                    let image = Image::new(width, height, texture, rgba);
+                BackendMessage::ImageLoaded(src, bytes, width, height, alpha) => {
+                    let texture = renderer.load_texture(&bytes, width, height, alpha);
+                    eprintln!("BackendMessage::ImageLoaded: {} {} {}x{} {}", src, bytes.len(), width, height, texture);
+                    let image = Image::new(width, height, texture, bytes, alpha);
                     app_context.textures.insert(src, Some(image));
                 }
             }
@@ -136,8 +147,8 @@ impl Backend for BackendWayland {
                     let width = width as u32;
                     let height = height as u32;
                     let _ = image.convert_color(ColorSpace::RGBA);
-                    let rgba = image.flatten_to_u8().get(0).unwrap().clone();
-                    let _ = tx.send(BackendMessage::ImageLoaded(src, rgba, width, height));
+                    let bytes = image.flatten_to_u8().get(0).unwrap().clone();
+                    let _ = tx.send(BackendMessage::ImageLoaded(src, bytes, width, height, false));
                 }
                 Err(error) => {
                     eprintln!("Backend::load_image error: {:?}", error);
@@ -148,6 +159,15 @@ impl Backend for BackendWayland {
 
     fn new_image(&mut self, _rgba: Vec<u8>, _width: u32, _height: u32) -> u32 {
         0
+    }
+
+    fn text(&mut self, text: String, text_properties: TextProperties, tx: Sender<BackendMessage>) {
+        if let Ok((bytes, width, height)) =
+            self.text_system
+                .render_text(&text, &text_properties)
+        {
+            let _ = tx.send(BackendMessage::ImageLoaded(text, bytes, width, height, true));
+        }
     }
 
     fn performance_now(&self) -> u128 {

@@ -1,3 +1,8 @@
+use xs_layout::TextProperties;
+
 pub enum Message {
-    LoadImage(String)
+    /// src url
+    LoadImage(String),
+    /// text, text-properties
+    Text(String, TextProperties)
 }

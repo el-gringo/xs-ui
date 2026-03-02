@@ -66,7 +66,7 @@ pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
             assert!(max_length >= 1);
             let error_message =
                 std::string::String::from_utf8_lossy(&error_message[0..max_length as usize - 1]);
-            println!("failed to link program: {:?}", error_message);
+            panic!("failed to link program: {:?}", error_message);
         }
         program
     }
@@ -90,12 +90,11 @@ pub fn compile_shader(shader_type: GLenum, source: &str) -> GLuint {
                     &mut max_length as *mut _,
                     error_message.as_mut_ptr() as *mut _,
                 );
-                println!("failed to compile shader: {:?}", error_message);
+                panic!("failed to compile shader: {:?}", error_message);
             }
             return shader;
         }
-        println!("compile_shader failed");
-        0
+        panic!("compile_shader failed");
     }
 }
 
@@ -179,7 +178,7 @@ impl ShaderGlsl {
     }
     */
 
-    pub fn set_uniform_1f(&mut self, name: &str, v0: f32) {
+    pub fn set_uniform_1f(&self, name: &str, v0: f32) {
         if let Some(uniform) = self.uniforms.get(name) {
             unsafe {
                 glUniform1f(uniform.location, v0);
@@ -187,7 +186,7 @@ impl ShaderGlsl {
         }
     }
 
-    pub fn set_uniform_2f(&mut self, name: &str, v0: f32, v1: f32) {
+    pub fn set_uniform_2f(&self, name: &str, v0: f32, v1: f32) {
         if let Some(uniform) = self.uniforms.get(name) {
             unsafe {
                 glUniform2f(uniform.location, v0, v1);
@@ -203,7 +202,7 @@ impl ShaderGlsl {
     }
     */
 
-    pub fn set_uniform_4f(&mut self, name: &str, v0: f32, v1: f32, v2: f32, v3: f32) {
+    pub fn set_uniform_4f(&self, name: &str, v0: f32, v1: f32, v2: f32, v3: f32) {
         if let Some(uniform) = self.uniforms.get(name) {
             unsafe {
                 glUniform4f(uniform.location, v0, v1, v2, v3);
@@ -211,7 +210,7 @@ impl ShaderGlsl {
         }
     }
 
-    pub fn set_uniform_1i(&mut self, name: &str, v0: i32) {
+    pub fn set_uniform_1i(&self, name: &str, v0: i32) {
         if let Some(uniform) = self.uniforms.get(name) {
             unsafe {
                 glUniform1i(uniform.location, v0);
@@ -239,7 +238,7 @@ impl ShaderGlsl {
     }
     */
 
-    pub fn apply_attributes(&mut self) {
+    pub fn apply_attributes(&self) {
         for (_name, attribute) in self.attributes.iter() {
             unsafe {
                 glEnableVertexAttribArray(attribute.location as _);
@@ -255,7 +254,7 @@ impl ShaderGlsl {
         }
     }
 
-    pub fn use_program(&mut self) {
+    pub fn use_program(&self) {
         unsafe {
             glUseProgram(self.program);
         }

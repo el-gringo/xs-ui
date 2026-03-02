@@ -2,57 +2,8 @@ use std::{any::TypeId, rc::Rc};
 
 use xs_core::{AppContext, Context, Element, Message, Render};
 use xs_layout::{
-    AlignItems, BorderSide, Borders, BoxConstraints, Color, EdgeInsets, FlexDirection, FlexWrap,
-    Image, JustifyContent, Layout, LayoutTree, Material, Positioned, SizedLayoutBox, Style,
-    StyleDisplay, StylePosition, View,
+    AlignItems, BorderSide, Borders, Color, EdgeInsets, Flex, FlexDirection, FlexWrap, Image, JustifyContent, Material, Positioned, Style, StyleDisplay, StylePosition, View
 };
-
-pub struct DivLayout(pub Style, pub Vec<View>, pub Option<Material>);
-
-impl Layout for DivLayout {
-    fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
-        let mut style = self.0.clone();
-        style.children = self.1.clone();
-        style.material = self.2.clone();
-        style.layout(tree, constraints)
-    }
-
-    fn flex_grow(&self) -> f32 {
-        self.0.flex_grow
-    }
-
-    fn flex_shrink(&self) -> f32 {
-        self.0.flex_shrink
-    }
-
-    fn flex_basis(&self) -> f32 {
-        self.0.flex_basis
-    }
-
-    fn align_self(&self) -> AlignItems {
-        self.0.align_self
-    }
-
-    fn min_main(&self) -> f32 {
-        self.0.min_width.unwrap_or(0.0)
-    }
-
-    fn max_main(&self) -> f32 {
-        self.0.max_width.unwrap_or(f32::INFINITY)
-    }
-
-    fn min_cross(&self) -> f32 {
-        self.0.min_height.unwrap_or(0.0)
-    }
-
-    fn max_cross(&self) -> f32 {
-        self.0.max_height.unwrap_or(f32::INFINITY)
-    }
-
-    fn margin(&self) -> EdgeInsets {
-        self.0.margin
-    }
-}
 
 #[derive(Default, Clone)]
 pub struct Div {
@@ -253,6 +204,35 @@ impl Div {
     }
 
     //
+    // TEXT
+    //
+
+    pub fn color(mut self, color: Color) -> Self {
+        self.style.text_properties.color(color);
+        self
+    }
+
+    pub fn text(mut self, text: &'static str) -> Self {
+        self.text = text;
+        self
+    }
+
+    pub fn font_family(mut self, font_family: &'static str) -> Self {
+        self.style.text_properties.font_family(font_family.to_string());
+        self
+    }
+
+    pub fn font_size(mut self, font_size: f32) -> Self {
+        self.style.text_properties.font_size(font_size);
+        self
+    }
+
+    pub fn font_weight(mut self, font_weight: u32) -> Self {
+        self.style.text_properties.font_weight(font_weight);
+        self
+    }
+
+    //
     // OTHER
     //
     pub fn child(mut self, child: Box<dyn Render>) -> Self {
@@ -262,11 +242,6 @@ impl Div {
 
     pub fn children(mut self, children: impl IntoIterator<Item = Rc<Box<dyn Render>>>) -> Self {
         self.children.extend(children);
-        self
-    }
-
-    pub fn text(mut self, text: &'static str) -> Self {
-        self.text = text;
         self
     }
 }
@@ -324,21 +299,52 @@ impl Element for Div {
             image,
         };
 
+        let text_material = if self.text.len() > 0 {
+            let image = app_context
+                .textures
+                .entry(self.text.to_string())
+                .or_insert_with(|| {
+                    eprintln!("self.style.text_properties: {:?}", self.style.text_properties);
+                    app_context.messages.push(Message::Text(
+                        self.text.to_string(),
+                        self.style.text_properties.clone()
+                    ));
+                    None
+                })
+                .clone();
+            Some(Material {
+                borders: Borders::none(),
+                fill: self.style.text_properties.unwrap_or_default().color,
+                image
+            })
+        } else {
+            None
+        };
+
         match self.style.position {
             StylePosition::Absolute => {
                 let mut style = self.style.clone();
                 style.position = StylePosition::Static;
-                style.children = children.to_vec();
-                style.material = Some(material.clone());
+                let material = Some(material);
                 Rc::new(Positioned {
                     position: (style.left.unwrap_or(0.), style.top.unwrap_or(0.)).into(),
-                    child: Rc::new(DivLayout(style, vec![], Some(material.clone()))),
+                    child: Rc::new(Flex {
+                        style,
+                        material,
+                        text_material,
+                        children: children.to_vec(),
+                    }),
                 })
             }
             StylePosition::Static => {
-                let mut style = self.style.clone();
-                style.material = Some(material.clone());
-                Rc::new(DivLayout(style, children.to_vec(), Some(material.clone())))
+                let style = self.style.clone();
+                let material = Some(material);
+                Rc::new(Flex {
+                    style,
+                    material,
+                    text_material,
+                    children: children.to_vec(),
+                })
             }
         }
     }

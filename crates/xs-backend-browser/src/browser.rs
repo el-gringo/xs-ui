@@ -109,6 +109,10 @@ impl Backend for BackendBrowser {
         }
     }
 
+    fn text(&mut self, text: &'static str) {
+        todo!()
+    }
+
     fn performance_now(&self) -> u128 {
         self.elapsed
     }

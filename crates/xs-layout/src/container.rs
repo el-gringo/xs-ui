@@ -23,6 +23,7 @@ impl Layout for DummyContainer {
             size: constraints.max,
             children: Vec::new(),
             material: None,
+            text_material: None,
         }
     }
 }
@@ -118,6 +119,7 @@ impl Container {
                 borders: self.borders,
                 image: self.image.clone(),
             }),
+            text_material: None,
             margin: self.margin,
         }
     }
@@ -136,6 +138,7 @@ impl Container {
                 borders: self.borders,
                 image: self.image.clone(),
             }),
+            text_material: None,
             margin: self.margin,
         }
     }

@@ -20,4 +20,5 @@ xs-platform-linux.workspace = true
 xs-primitive.workspace = true
 xs-renderer-core.workspace = true
 
+[target.x86_64-unknown-linux-gnu.dependencies]
 zune-image.workspace = true

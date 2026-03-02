@@ -63,7 +63,13 @@ nanoserde = { version = "0.2", default-features = false, features = [ "json" ] }
 zune-image = {
     version = "0.5",
     default-features = false,
-    features = [ "zune-jpeg", "jpeg-xl", "zune-png", "webp", "qoi" ]
+    features = [
+        "jpeg",
+        "jpeg-xl",
+        "png",
+        "webp",
+        "qoi"
+    ]
 }
 
 test_utils = { path = "tools/test_utils" }

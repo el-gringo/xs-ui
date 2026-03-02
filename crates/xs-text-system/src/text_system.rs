@@ -1,5 +1,6 @@
 use std::{collections::HashMap, usize};
 
+use xs_core::TextProperties;
 pub use xs_text_system_glyph::{Font, FontRef, PxScale, ScaleFont, point};
 
 use crate::layout_paragraph::layout_paragraph;
@@ -25,17 +26,18 @@ impl xs_core::TextSystem for TextSystem {
     fn render_text(
         &self,
         text: &str,
-        font_family: &str,
-        font_size: f32,
+        text_properties: &TextProperties
     ) -> Result<(Vec<u8>, u32, u32), &'static str> {
-        let font = self.fonts.get(font_family).unwrap();
+        eprintln!("text_properties: {:?}", text_properties);
+        let text_properties = text_properties.unwrap_or_default();
+        let font = self.fonts.get(text_properties.font_family.as_str()).unwrap();
 
         // The font size to use
-        let scale = PxScale::from(font_size);
+        let scale = PxScale::from(text_properties.font_size);
         let scaled_font = font.into_scaled(scale);
 
         let mut glyphs = Vec::new();
-        layout_paragraph(&scaled_font, point(20.0, 20.0), 9999.0, text, &mut glyphs);
+        layout_paragraph(&scaled_font, point(0.0, 0.0), 9999.0, text, &mut glyphs);
 
         // to work out the exact size needed for the drawn glyphs we need to outline
         // them and use their `px_bounds` which hold the coords of their render bounds.
@@ -61,7 +63,7 @@ impl xs_core::TextSystem for TextSystem {
             let height = all_px_bounds.height() as u32;
 
             // create a new rgba image using the combined px bound width and height
-            let mut pixels = vec![0; (width * height * 4) as usize];
+            let mut pixels = vec![0; (width * height) as usize];
 
             // Loop through the glyphs in the text, positing each one on a line
             for glyph in outlined {
@@ -76,10 +78,7 @@ impl xs_core::TextSystem for TextSystem {
                 glyph.draw(|x, y, v| {
                     // save the coverage alpha
                     let pos = (img_left + x + (img_top + y) * width) as usize;
-                    pixels[pos] = 255;
-                    pixels[pos + 1] = 255;
-                    pixels[pos + 2] = 255;
-                    pixels[pos + 3] = (v * 255.) as u8;
+                    pixels[pos] = (v * 255.) as u8;
                 });
             }
             return Ok((pixels, width, height));

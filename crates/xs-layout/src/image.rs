@@ -3,16 +3,18 @@ pub struct Image {
     pub width: u32,
     pub height: u32,
     pub texture: u32,
-    pub rgba: Vec<u8>
+    pub bytes: Vec<u8>,
+    pub alpha: bool
 }
 
 impl Image {
-    pub fn new(width: u32, height: u32, texture_index: u32, rgba: Vec<u8>) -> Self {
+    pub fn new(width: u32, height: u32, texture: u32, bytes: Vec<u8>, alpha: bool) -> Self {
         Self {
             width,
             height,
-            texture: texture_index,
-            rgba
+            texture,
+            bytes,
+            alpha
         }
     }
 }
