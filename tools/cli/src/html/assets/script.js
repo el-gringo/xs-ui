@@ -173,43 +173,50 @@ const encodeString =
         };
       };
 
-function passStringToWasm0(arg, malloc, realloc) {
-  if (realloc === undefined) {
-    const buf = cachedTextEncoder.encode(arg);
-    const ptr = malloc(buf.length);
-    getUint8Memory0()
-      .subarray(ptr, ptr + buf.length)
-      .set(buf);
-    WASM_VECTOR_LEN = buf.length;
-    return ptr;
-  }
 
-  let len = arg.length;
-  let ptr = malloc(len);
-
-  const mem = getUint8Memory0();
-
-  let offset = 0;
-
-  for (; offset < len; offset++) {
-    const code = arg.charCodeAt(offset);
-    if (code > 0x7f) break;
-    mem[ptr + offset] = code;
-  }
-
-  if (offset !== len) {
-    if (offset !== 0) {
-      arg = arg.slice(offset);
+let cachedUint8ArrayMemory0 = null;
+function getUint8ArrayMemory0() {
+    if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
+        cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
     }
-    ptr = realloc(ptr, len, (len = offset + arg.length * 3));
-    const view = getUint8Memory0().subarray(ptr + offset, ptr + len);
-    const ret = encodeString(arg, view);
+    return cachedUint8ArrayMemory0;
+}
 
-    offset += ret.written;
-  }
+function passStringToWasm0(arg, malloc, realloc) {
+    if (realloc === undefined) {
+        const buf = cachedTextEncoder.encode(arg);
+        const ptr = malloc(buf.length, 1) >>> 0;
+        getUint8ArrayMemory0().subarray(ptr, ptr + buf.length).set(buf);
+        WASM_VECTOR_LEN = buf.length;
+        return ptr;
+    }
 
-  WASM_VECTOR_LEN = offset;
-  return ptr;
+    let len = arg.length;
+    let ptr = malloc(len, 1) >>> 0;
+
+    const mem = getUint8ArrayMemory0();
+
+    let offset = 0;
+
+    for (; offset < len; offset++) {
+        const code = arg.charCodeAt(offset);
+        if (code > 0x7F) break;
+        mem[ptr + offset] = code;
+    }
+    if (offset !== len) {
+        if (offset !== 0) {
+            arg = arg.slice(offset);
+        }
+        ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
+        const view = getUint8ArrayMemory0().subarray(ptr + offset, ptr + len);
+        const ret = cachedTextEncoder.encodeInto(arg, view);
+
+        offset += ret.written;
+        ptr = realloc(ptr, len, offset, 1) >>> 0;
+    }
+
+    WASM_VECTOR_LEN = offset;
+    return ptr;
 }
 
 function isLikeNone(x) {
@@ -581,7 +588,7 @@ const FRAME_INTERVAL = 1000 / FPS;
 function request_animation_frame(closure, vcall) {
   return requestAnimationFrame(() => {
     const frame_start = performance.now();;
-    wasm.callback(closure, vcall)
+    wasm.callback(closure, vcall);
     const frame_duration = performance.now() - frame_start;
     if (frame_duration > max_render_time) {
       max_render_time = frame_duration;
@@ -667,6 +674,16 @@ const env = {
     };
     image.crossOrigin = true;
     image.src = src;
+  },
+  fetch(ptr, len, closure, vcall) {
+      const url = getStringFromWasm0(ptr, len);
+      fetch(url)
+          .then((response) => response.text())
+          .then((body) => {
+              const ptr = passStringToWasm0(body, wasm.__xs_malloc, wasm.__xs_realloc);
+              const len = WASM_VECTOR_LEN;
+              wasm.fetch_callback(ptr, len, closure, vcall);
+          });
   },
   glViewport: function (x, y, width, height) {
     gl.viewport(x, y, width, height);

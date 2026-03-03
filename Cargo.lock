@@ -582,6 +582,7 @@ dependencies = [
 name = "xs-http"
 version = "0.1.0"
 dependencies = [
+ "xs-js-sys",
  "xs-tls",
  "xs-url",
 ]

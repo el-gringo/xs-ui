@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::io::{BufRead, BufReader, Read};
 use std::sync::Arc;
+use std::thread::JoinHandle;
 
 use xs_url::url::Url;
 
@@ -75,6 +76,36 @@ fn parse_response_status(status_line: String) -> Result<(u16, String), HttpRespo
     }
 }
 
+fn read_response(socket: Arc<Socket>) -> HttpResponse {
+    let mut input_stream = socket.input_stream.lock().unwrap();
+    let mut reader = BufReader::new(&mut *input_stream);
+    let mut done = false;
+    let mut status_line = String::new();
+    let mut headers = HttpHeaders::new();
+    let mut len = reader.read_line(&mut status_line).unwrap();
+    let (status_code, _) = parse_response_status(status_line.clone()).unwrap();
+    while len > 0 && !done {
+        let mut line = String::new();
+        len = reader.read_line(&mut line).unwrap();
+        if line.trim() == "" {
+            done = true;
+        } else {
+            let (key, value) = parse_header_line(line);
+            headers.insert(key.to_lowercase(), value);
+        }
+    }
+    let body = match headers.get("content-length") {
+        Some(length_str) => {
+            let size: usize = length_str.parse().unwrap();
+            let mut body: Vec<u8> = vec![0; size];
+            reader.read_exact(&mut body).unwrap();
+            body
+        }
+        _ => Vec::new(),
+    };
+    HttpResponse::new(status_code, headers, body)
+}
+
 pub struct HttpClient {
     url: Url,
     headers: HttpHeaders,
@@ -84,9 +115,11 @@ pub struct HttpClient {
 impl HttpClient {
     pub fn new(url: impl Into<Url>) -> Self {
         let url = url.into();
+        let mut headers = HttpHeaders::new();
+        headers.insert("User-Agent".into(), "XS-Http".into());
         Self {
             url,
-            headers: HttpHeaders::new(),
+            headers,
             socket: None,
         }
     }
@@ -147,37 +180,35 @@ impl HttpClient {
         if let Some(body) = body {
             output_stream.write_all(body).unwrap();
         }
-        self.read_response(socket)
+        read_response(socket)
     }
 
-    fn read_response(&mut self, socket: Arc<Socket>) -> HttpResponse {
-        let mut input_stream = socket.input_stream.lock().unwrap();
-        let mut reader = BufReader::new(&mut *input_stream);
-        let mut done = false;
-        let mut status_line = String::new();
-        let mut headers = HttpHeaders::new();
-        let mut len = reader.read_line(&mut status_line).unwrap();
-        let (status_code, _) = parse_response_status(status_line.clone()).unwrap();
-        while len > 0 && !done {
-            let mut line = String::new();
-            len = reader.read_line(&mut line).unwrap();
-            if line.trim() == "" {
-                done = true;
-            } else {
-                let (key, value) = parse_header_line(line);
-                headers.insert(key.to_lowercase(), value);
-            }
-        }
-        let body = match headers.get("content-length") {
-            Some(length_str) => {
-                let size: usize = length_str.parse().unwrap();
-                let mut body: Vec<u8> = vec![0; size];
-                reader.read_exact(&mut body).unwrap();
-                body
-            }
-            _ => Vec::new(),
+    pub fn send_async(
+        &mut self,
+        method: &str,
+        body: Option<&[u8]>,
+        on_response: impl FnOnce(HttpResponse) + Send + 'static,
+    ) -> JoinHandle<()>   {
+        //let (tx, rx) = channel();
+        let url = self.url.to_owned();
+        let raw_headers = self.headers.to_owned();
+        let headers = prepare_headers(method.into(), url, raw_headers.clone());
+        let socket = match self.socket.clone() {
+            Some(s) => s.clone(),
+            None => Arc::new(self.create_socket()),
         };
-        HttpResponse::new(status_code, headers, body)
+        let binding = socket.clone();
+        let mut output_stream = binding.output_stream.lock().unwrap();
+        output_stream
+            .write_all(headers.join("\r\n").as_bytes())
+            .unwrap();
+        if let Some(body) = body {
+            output_stream.write_all(body).unwrap();
+        }
+        std::thread::spawn(|| {
+            let response = read_response(socket);
+            on_response(response);
+        })
     }
 }
 

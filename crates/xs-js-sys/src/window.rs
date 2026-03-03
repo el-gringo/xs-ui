@@ -16,10 +16,19 @@ pub fn log(message: &str) {
     }
 }
 
-pub fn request_animation_frame(closure: &Closure<impl FnMut()>) -> u32
+pub fn request_animation_frame(closure: &mut Closure<impl FnMut(u32) + 'static, u32>) -> u32
 {
     unsafe {
         let (ptr, len) = closure.to_js();
         js::request_animation_frame(ptr, len)
+    }
+}
+
+
+#[unsafe(no_mangle)]
+pub extern "C" fn request_animation_frame_callback(now: u64, closure: *mut (), vcall: usize) {
+    unsafe {
+        let vcall: fn(u64, *mut ()) = std::mem::transmute(vcall);
+        vcall(now, closure);
     }
 }

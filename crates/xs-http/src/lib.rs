@@ -1,11 +1,14 @@
-// #[cfg(target_arch = "wasm32")]
-//pub mod wasm;
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
+#[cfg(target_os = "linux")]
 pub mod client;
 
 pub mod digest;
 pub mod request;
 pub mod response;
+#[cfg(target_os = "linux")]
 pub mod server;
+#[cfg(target_os = "linux")]
 pub mod socket;
 pub mod utils;
 

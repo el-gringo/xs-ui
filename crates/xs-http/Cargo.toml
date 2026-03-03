@@ -4,17 +4,26 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
-# [[example]]
-# name = "http-server"
-# path = "examples/http-server.rs"
+[[example]]
+name = "http-server"
+path = "examples/http-server.rs"
 
-# [[example]]
-# name = "https-client"
-# path = "examples/https-client.rs"
+[[example]]
+name = "https-client"
+path = "examples/https-client.rs"
+
+[[example]]
+name = "https-client-async"
+path = "examples/https-client-async.rs"
 
 [features]
 default = []
 
 [dependencies]
-xs-url = { workspace = true }
-xs-tls = { workspace = true }
+xs-url.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+xs-tls.workspace = true
+
+[target.wasm32-unknown-unknown.dependencies]
+xs-js-sys.workspace = true

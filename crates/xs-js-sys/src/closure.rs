@@ -1,35 +1,25 @@
-use std::marker::PhantomData;
+use std::{any::Any, marker::PhantomData};
 
-use crate::log;
-
-
-pub struct Closure<T>(T);
-impl<T> Closure<T>
+pub struct Closure<T, E>(T, PhantomData<E>);
+impl<T, E> Closure<T, E>
 where
-    T: FnMut() + Sized,
+    T: FnMut(E) + 'static,
+    E: Any
 {
     pub fn new(closure: T) -> Self {
-        Self(closure)
+        Self(closure, PhantomData)
     }
 
-    pub fn call(&self) {
+    pub fn to_js(&mut self) -> (*mut (), usize) {
         unsafe {
-            let vcall: fn(*mut ()) = |ptr| (*(ptr as *mut T))();
-            vcall((&self.0) as *const T as *mut ());
-        }
-    }
-
-    pub fn to_js(&self) -> (*mut (), usize) {
-        unsafe {
-            let vcall: fn(*mut ()) = |ptr| (*(ptr as *mut T))();
-            ((&self.0) as *const T as *mut (), vcall as usize)
+            let vcall: fn(E, *mut ()) = |e, ptr| (*(ptr as *mut T))(e);
+            ((&mut self.0) as *mut T as *mut (), vcall as usize)
         }
     }
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn callback(closure: *mut (), vcall: usize) {
-    log("callback");
     let vcall: fn(*mut ()) = unsafe { std::mem::transmute(vcall) };
     vcall(closure);
 }

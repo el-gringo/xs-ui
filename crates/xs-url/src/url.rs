@@ -5,9 +5,9 @@ pub struct Url {
      */
     pub scheme: Option<String>,
     /**
-     A string containing the domain (that is the hostname) followed by (if a port was specified) a
-     * ':' and the port of the URL.
-     */
+    A string containing the domain (that is the hostname) followed by (if a port was specified) a
+    * ':' and the port of the URL.
+    */
     pub host: String,
     /**
      * A string containing the domain of the URL.
@@ -25,13 +25,13 @@ pub struct Url {
     /**
      * A boolean to set the connection as secured.
      */
-    pub secure: bool
+    pub secure: bool,
 }
 
 #[derive(Debug)]
 pub enum UrlParseError {
     InvalidScheme,
-    InvalidHost
+    InvalidHost,
 }
 
 impl Url {
@@ -44,40 +44,41 @@ impl Url {
         let (hostname, rest) = Url::hostname(rest).unwrap();
         let (host, port) = Url::port(scheme, &hostname);
         let pathname = ("/".to_owned() + rest).to_string();
-        let secure= match scheme { Some("https") | Some("wss") => true, _ => false };
+        let secure = match scheme {
+            Some("https") | Some("wss") => true,
+            _ => false,
+        };
         Ok(Url {
             scheme: scheme.map(|s| s.to_string()),
             host,
             hostname,
             port,
             pathname,
-            secure
+            secure,
         })
     }
 
     pub fn scheme(input: &str) -> Result<(Option<&str>, &str), UrlParseError> {
         match input.split_once("://") {
             Some((scheme, rest)) => Ok((Some(scheme), rest)),
-            _ => Err(UrlParseError::InvalidScheme)
+            _ => Err(UrlParseError::InvalidScheme),
         }
     }
 
     pub fn hostname(input: &str) -> Result<(String, &str), UrlParseError> {
         match input.split_once("/") {
             Some((hostname, rest)) => Ok((hostname.to_string(), rest)),
-            _ => Err(UrlParseError::InvalidHost)
+            _ => Err(UrlParseError::InvalidHost),
         }
     }
 
     pub fn port<'a>(scheme: Option<&str>, hostname: &String) -> (String, Option<u16>) {
         match hostname.split_once(":") {
-            Some((host, port)) => {
-                match port.parse() {
-                    Ok(port) => (host.to_string(), Some(port)),
-                    _ => (host.to_string(), None)
-                }
-            }
-            _ => (hostname.to_owned(), Url::default_port(scheme))
+            Some((host, port)) => match port.parse() {
+                Ok(port) => (host.to_string(), Some(port)),
+                _ => (host.to_string(), None),
+            },
+            _ => (hostname.to_owned(), Url::default_port(scheme)),
         }
     }
 
@@ -100,6 +101,12 @@ impl From<&str> for Url {
 impl From<String> for Url {
     fn from(str: String) -> Self {
         Url::parse(str.as_str()).unwrap()
+    }
+}
+
+impl From<Url> for String {
+    fn from(url: Url) -> Self {
+        url.scheme.unwrap_or("http".to_string()) + "://" + &url.host + &url.pathname
     }
 }
 

@@ -4,4 +4,9 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[[example]]
+name = "simple-fetch"
+path = "examples/simple-fetch.rs"
+crate-type = ["bin"]
+
 [dependencies]
