@@ -6,4 +6,4 @@ pub use xs_layout::{
     colors::*,
     *
 };
-pub use xs_primitive::{div, Div};
+pub use xs_primitive::{div, Div, text};

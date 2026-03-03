@@ -66,7 +66,7 @@ pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
             assert!(max_length >= 1);
             let error_message =
                 std::string::String::from_utf8_lossy(&error_message[0..max_length as usize - 1]);
-            panic!("failed to link program: {:?}", error_message);
+            panic!("failed to link program: {:?}", error_message.to_string());
         }
         program
     }
@@ -90,7 +90,9 @@ pub fn compile_shader(shader_type: GLenum, source: &str) -> GLuint {
                     &mut max_length as *mut _,
                     error_message.as_mut_ptr() as *mut _,
                 );
-                panic!("failed to compile shader: {:?}", error_message);
+                let error_message =
+                    std::string::String::from_utf8_lossy(&error_message[0..max_length as usize - 1]);
+                panic!("failed to compile shader: {:?}", error_message.to_string());
             }
             return shader;
         }

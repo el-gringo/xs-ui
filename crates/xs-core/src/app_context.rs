@@ -17,7 +17,7 @@ pub struct AppContext {
     pub current_node_id: NodeId,
     pub current_nav_node_id: NavigationNodeId,
     pub textures: HashMap<String, Option<Image>>,
-    pub messages: Vec<Message>,
+    pub messages: Vec<Message>
 }
 
 impl AppContext {
@@ -31,7 +31,7 @@ impl AppContext {
             current_nav_node_id: 0,
             nodes: Default::default(),
             textures: Default::default(),
-            messages: Default::default(),
+            messages: Default::default()
         }
     }
 

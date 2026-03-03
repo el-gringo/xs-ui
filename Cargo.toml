@@ -58,7 +58,7 @@ xs-url = { path = "crates/xs-url" }
 xs-websocket = { path = "crates/xs-websocket" }
 
 # External dependencies
-ab_glyph = { version = "0.2", default-features = false, features = [ " " ] }
+ab_glyph = { path = "vendors/ab_glyph" }
 nanoserde = { version = "0.2", default-features = false, features = [ "json" ] }
 zune-image = {
     version = "0.5",

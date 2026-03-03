@@ -32,13 +32,14 @@ impl Default for TextPropertiesInner {
             font_family: String::from("sans-serif"),
             font_size: 16.,
             font_weight: 400,
-            font_style: Default::default(),
+            font_style: FontStyle::Normal
         }
     }
 }
 
 #[derive(Clone, Default, Debug)]
 pub struct TextProperties(pub Option<TextPropertiesInner>);
+
 
 impl TextProperties {
     pub fn color(&mut self, color: Color) {
@@ -59,6 +60,14 @@ impl TextProperties {
 
     pub fn unwrap_or_default(&self) -> TextPropertiesInner {
         self.0.clone().unwrap_or_default()
+    }
+
+    pub fn is_some(&self) -> bool {
+        self.0.is_some()
+    }
+
+    pub fn replace(&mut self, new_text_properties: TextProperties) {
+        self.0 = new_text_properties.0.clone();
     }
 
     fn update_field(&mut self, callback: impl FnOnce(&mut TextPropertiesInner)) {

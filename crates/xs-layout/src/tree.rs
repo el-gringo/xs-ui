@@ -221,8 +221,12 @@ impl LayoutTree {
                 offset,
                 child.clone().bounds,
                 if let Some(m) = material {
-                    let color = m.fill;
-                    format!("{:?}", color)
+                    match m {
+                        Material::Quad(_, color, _) |
+                        Material::Text(color, _) => {
+                            format!("{:?}", color)
+                        }
+                    }
                 } else {
                     String::from("")
                 }

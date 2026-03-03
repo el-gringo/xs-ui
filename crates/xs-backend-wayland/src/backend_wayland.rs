@@ -116,7 +116,6 @@ impl Backend for BackendWayland {
                     self.load_image(src, tx.clone());
                 }
                 Message::Text(text, text_properties) => {
-                    eprintln!("Message::Text: {}", text);
                     self.text(text, text_properties, tx.clone());
                 }
             }
@@ -125,7 +124,6 @@ impl Backend for BackendWayland {
             match message {
                 BackendMessage::ImageLoaded(src, bytes, width, height, alpha) => {
                     let texture = renderer.load_texture(&bytes, width, height, alpha);
-                    eprintln!("BackendMessage::ImageLoaded: {} {} {}x{} {}", src, bytes.len(), width, height, texture);
                     let image = Image::new(width, height, texture, bytes, alpha);
                     app_context.textures.insert(src, Some(image));
                 }

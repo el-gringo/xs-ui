@@ -3,7 +3,8 @@ use std::{fs::File, io::Write};
 use xs_core::{TextProperties, TextSystem};
 
 //const TEXT: &str = "This is ab_glyph rendered into a png!";
-const TEXT: &str = "PeerTube";
+const TEXT: &str = r"Un text avec plusieurs mots
+et un retour à la ligne";
 
 fn main() {
     let mut text_system = xs_text_system::TextSystem::new();
@@ -12,7 +13,8 @@ fn main() {
     let data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
     text_system.load_font(font_family, data);
 
-    let text_properties = Default::default();
+    let mut text_properties = TextProperties::default();
+    text_properties.font_size(45.);
     if let Ok((data, width, height)) = text_system.render_text(TEXT, &text_properties) {
         // Save the image to a png file
         let mut o = File::create("text.pgm").unwrap();

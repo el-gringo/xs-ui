@@ -200,14 +200,11 @@ impl Layout for Flex {
         };
 
         for (line_idx, line) in lines.iter().enumerate() {
-            let line_main: f32 = line.iter().map(|i| i.main(main_is_x)).sum();
             let line_cross: f32 = line
                 .iter()
                 .map(|i| i.cross(main_is_x))
                 .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                 .unwrap_or(0.0);
-            let start_offset = justify_offset(container_main, line_main, style.justify_content);
-
             let line_cross_start = cross_pos;
 
             // For wrapped lines, reset main position to start of container (not accumulated)
@@ -217,43 +214,46 @@ impl Layout for Flex {
                 padding_min.x + padding_min.y
             };
 
-            let (line_ids, _new_cursor) = line.iter().fold(
-                (Vec::new(), line_main_start + start_offset),
-                |(mut ids, cursor), item| {
-                    let (margin_main_start, margin_main_end) = item.main_margin(main_is_x);
-                    let (margin_cross_start, margin_cross_end) = item.cross_margin(main_is_x);
-                    let cross_offset = align_offset(
-                        container_cross,
-                        item.cross(main_is_x),
-                        (margin_cross_start, margin_cross_end),
-                        style.align_items,
-                    );
+            let (line_ids, _new_cursor) =
+                line.iter()
+                    .fold((Vec::new(), line_main_start), |(mut ids, cursor), item| {
+                        let (margin_main_start, margin_main_end) = item.main_margin(main_is_x);
+                        let (margin_cross_start, margin_cross_end) = item.cross_margin(main_is_x);
+                        let cross_offset = align_offset(
+                            container_cross,
+                            item.cross(main_is_x),
+                            (margin_cross_start, margin_cross_end),
+                            style.align_items,
+                        );
 
-                    let px = if main_is_x {
-                        cursor + margin_main_start
-                    } else {
-                        cross_pos + cross_offset + margin_cross_start
-                    };
-                    let py = if main_is_x {
-                        line_cross_start + cross_offset + margin_cross_start
-                    } else {
-                        cursor + margin_main_start
-                    };
+                        let px = if main_is_x {
+                            cursor + margin_main_start
+                        } else {
+                            cross_pos + cross_offset + margin_cross_start
+                        };
+                        let py = if main_is_x {
+                            line_cross_start + cross_offset + margin_cross_start
+                        } else {
+                            cursor + margin_main_start
+                        };
 
-                    let box_id = tree.insert(LayoutBox {
-                        bounds: Rectangle::new(px, py, item.size.x, item.size.y),
-                        margin: item.margin,
-                        children: item.children.clone(),
-                        material: item.material.clone(),
-                        text_material: item.text_material.clone(),
+                        let box_id = tree.insert(LayoutBox {
+                            bounds: Rectangle::new(px, py, item.size.x, item.size.y),
+                            margin: item.margin,
+                            children: item.children.clone(),
+                            material: item.material.clone(),
+                            text_material: item.text_material.clone(),
+                        });
+                        ids.push(box_id);
+                        (
+                            ids,
+                            cursor
+                                + item.main(main_is_x)
+                                + margin_main_start
+                                + margin_main_end
+                                + gap,
+                        )
                     });
-                    ids.push(box_id);
-                    (
-                        ids,
-                        cursor + item.main(main_is_x) + margin_main_start + margin_main_end + gap,
-                    )
-                },
-            );
             child_ids.extend(line_ids);
             cross_pos += line_cross + gap;
         }
@@ -315,22 +315,22 @@ mod tests {
 
     fn child(w: f32, h: f32) -> View {
         let mut flex = flex(Some(w), Some(h), vec![]);
-        flex.material = Some(Material {
-            borders: Borders::none(),
-            fill: Color::rgba(1.0, 0.0, 0.0, 1.0),
-            image: None,
-        });
+        flex.material = Some(Material::Quad(
+            Borders::none(),
+            Color::rgba(1.0, 0.0, 0.0, 1.0),
+            None,
+        ));
         Rc::new(flex)
     }
 
     fn child_with_margin(w: f32, h: f32, margin: EdgeInsets) -> Flex {
         let mut flex = flex(Some(w), Some(h), vec![]);
         flex.style.margin = margin;
-        flex.material = Some(Material {
-            borders: Borders::none(),
-            fill: Color::rgba(1.0, 0.0, 0.0, 1.0),
-            image: None,
-        });
+        flex.material = Some(Material::Quad(
+            Borders::none(),
+            Color::rgba(1.0, 0.0, 0.0, 1.0),
+            None,
+        ));
         flex
     }
 
@@ -348,11 +348,11 @@ mod tests {
 
     fn card(width: Option<f32>, height: Option<f32>) -> Flex {
         let mut flex = flex(width, height, Vec::new());
-        flex.material = Some(Material {
-            borders: Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
-            fill: Color::rgba(1.0, 1.0, 1.0, 1.0),
-            image: None,
-        });
+        flex.material = Some(Material::Quad(
+            Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
+            Color::rgba(1.0, 1.0, 1.0, 1.0),
+            None,
+        ));
         flex
     }
 
@@ -640,11 +640,11 @@ mod tests {
         );
         let c1 = tree.get(result.children[0]).unwrap();
         let c2 = tree.get(result.children[1]).unwrap();
-        assert_eq!(c1.bounds.x, 100.0);
+        assert_eq!(c1.bounds.x, 50.0);
         assert_eq!(c1.bounds.y, 0.0);
         assert_eq!(c1.bounds.width, 50.0);
         assert_eq!(c1.bounds.height, 50.0);
-        assert_eq!(c2.bounds.x, 150.0);
+        assert_eq!(c2.bounds.x, 100.0);
         assert_eq!(c2.bounds.y, 0.0);
         assert_eq!(c2.bounds.width, 50.0);
         assert_eq!(c2.bounds.height, 50.0);
@@ -665,11 +665,11 @@ mod tests {
         );
         let c1 = tree.get(result.children[0]).unwrap();
         let c2 = tree.get(result.children[1]).unwrap();
-        assert_eq!(c1.bounds.x, 200.0);
+        assert_eq!(c1.bounds.x, 100.0);
         assert_eq!(c1.bounds.y, 0.0);
         assert_eq!(c1.bounds.width, 50.0);
         assert_eq!(c1.bounds.height, 50.0);
-        assert_eq!(c2.bounds.x, 250.0);
+        assert_eq!(c2.bounds.x, 150.0);
         assert_eq!(c2.bounds.y, 0.0);
         assert_eq!(c2.bounds.width, 50.0);
         assert_eq!(c2.bounds.height, 50.0);
@@ -691,11 +691,11 @@ mod tests {
         let c1 = tree.get(result.children[0]).unwrap();
         let c2 = tree.get(result.children[1]).unwrap();
         assert_eq!(c1.bounds.x, 0.0);
-        assert_eq!(c1.bounds.y, 200.0);
+        assert_eq!(c1.bounds.y, 100.0);
         assert_eq!(c1.bounds.width, 50.0);
         assert_eq!(c1.bounds.height, 50.0);
         assert_eq!(c2.bounds.x, 0.0);
-        assert_eq!(c2.bounds.y, 250.0);
+        assert_eq!(c2.bounds.y, 150.0);
         assert_eq!(c2.bounds.width, 50.0);
         assert_eq!(c2.bounds.height, 50.0);
     }
@@ -879,19 +879,21 @@ mod tests {
 
     #[test]
     fn real_world_app_layout() {
-        let mut sidebar_header = row(None, Some(60.0), vec![]);
-        sidebar_header.material = Some(Material {
-            borders: Borders::none(),
-            fill: Color::rgba(0.9, 0.9, 0.9, 1.0),
-            image: None,
-        });
+        let mut sidebar_header = row(None, Some(60.0), vec![child(100., 30.)]);
+        sidebar_header.style.justify_content = JustifyContent::Center;
+        sidebar_header.style.align_items = AlignItems::Center;
+        sidebar_header.material = Some(Material::Quad(
+            Borders::none(),
+            Color::rgba(0.9, 0.9, 0.9, 1.0),
+            None,
+        ));
 
         let mut btn = row(Some(218.0), Some(40.0), vec![]);
-        btn.material = Some(Material {
-            borders: Borders::all(Color::rgba(0.5, 0.5, 0.5, 1.0), 1.0),
-            fill: Color::rgba(0.8, 0.8, 0.8, 1.0),
-            image: None,
-        });
+        btn.material = Some(Material::Quad(
+            Borders::all(Color::rgba(0.5, 0.5, 0.5, 1.0), 1.0),
+            Color::rgba(0.8, 0.8, 0.8, 1.0),
+            None,
+        ));
         let mut sidebar_body = column(
             None,
             None,
@@ -910,25 +912,25 @@ mod tests {
             None,
             vec![Rc::new(sidebar_header), Rc::new(sidebar_body)],
         );
-        sidebar.material = Some(Material {
-            borders: Borders::none(),
-            fill: Color::rgba(0.85, 0.85, 0.85, 1.0),
-            image: None,
-        });
+        sidebar.material = Some(Material::Quad(
+            Borders::none(),
+            Color::rgba(0.85, 0.85, 0.85, 1.0),
+            None,
+        ));
 
         let mut app_header = row(None, Some(60.0), vec![]);
-        app_header.material = Some(Material {
-            borders: Borders::none(),
-            fill: Color::rgba(0.95, 0.95, 0.95, 1.0),
-            image: None,
-        });
+        app_header.material = Some(Material::Quad(
+            Borders::none(),
+            Color::rgba(0.95, 0.95, 0.95, 1.0),
+            None,
+        ));
 
-        let mut card = column(Some(280.0), Some(200.0), vec![]);
-        card.material = Some(Material {
-            borders: Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
-            fill: Color::rgba(1.0, 1.0, 1.0, 1.0),
-            image: None,
-        });
+        let mut card = card(Some(280.0), Some(200.0));
+        card.material = Some(Material::Quad(
+            Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
+            Color::rgba(1.0, 1.0, 1.0, 1.0),
+            None,
+        ));
 
         let mut cards_grid = row(
             Some(280.0),
@@ -963,14 +965,23 @@ mod tests {
         assert_eq!(sidebar_box.bounds.width, 250.0);
         assert_eq!(sidebar_box.bounds.height, 900.0);
 
+        let sidebar_header_box = tree.get(sidebar_box.children[0]).unwrap();
+        let sidebar_header_inner_box = tree.get(sidebar_header_box.children[0]).unwrap();
+
+        assert_eq!(sidebar_header_inner_box.bounds.x, 75.);
+        assert_eq!(sidebar_header_inner_box.bounds.y, 15.);
+        assert_eq!(sidebar_header_inner_box.bounds.width, 100.);
+        assert_eq!(sidebar_header_inner_box.bounds.height, 30.);
+
         assert!(
             sidebar_box.material.is_some(),
             "sidebar should have material"
         );
-        let sidebar_fill = &sidebar_box.material.as_ref().unwrap().fill;
-        assert_eq!(sidebar_fill.r, 0.85, "sidebar should have gray fill");
-        assert_eq!(sidebar_fill.g, 0.85);
-        assert_eq!(sidebar_fill.b, 0.85);
+        if let Some(Material::Quad(_, fill, _)) = &sidebar_box.material {
+            assert_eq!(fill.r, 0.85, "sidebar should have gray fill");
+            assert_eq!(fill.g, 0.85);
+            assert_eq!(fill.b, 0.85);
+        }
 
         assert_eq!(app_body_box.bounds.x, 250.0);
         assert_eq!(app_body_box.bounds.y, 0.0);
@@ -989,17 +1000,17 @@ mod tests {
         let sidebar_body_box = tree.get(sidebar_box.children[1]).unwrap();
         let btn1_box = tree.get(sidebar_body_box.children[0]).unwrap();
         assert!(btn1_box.material.is_some(), "button should have material");
-        assert!(
-            btn1_box.material.as_ref().unwrap().borders.top.is_some(),
-            "button should have border"
-        );
+        if let Some(Material::Quad(borders, _, _)) = &btn1_box.material {
+            assert!(borders.top.is_some(), "button should have border");
+        }
 
         assert_eq!(btn1_box.bounds.width, 218.0, "button1 width should be 218");
         assert_eq!(btn1_box.bounds.height, 40.0, "button1 height should be 40");
 
-        let btn1_material = btn1_box.material.as_ref().unwrap();
-        if let Some(border) = &btn1_material.borders.top {
-            assert_eq!(border.width, 1.0, "button1 top border width should be 1.0");
+        if let Some(Material::Quad(borders, _, _)) = &btn1_box.material {
+            if let Some(border) = &borders.top {
+                assert_eq!(border.width, 1.0, "button1 top border width should be 1.0");
+            }
         }
 
         let btn2_box = tree.get(sidebar_body_box.children[1]).unwrap();
@@ -1021,10 +1032,9 @@ mod tests {
 
         let card1_box = tree.get(cards_grid_box.children[0]).unwrap();
         assert!(card1_box.material.is_some(), "card should have material");
-        assert!(
-            card1_box.material.as_ref().unwrap().borders.top.is_some(),
-            "card should have border"
-        );
+        if let Some(Material::Quad(borders, _, _)) = &card1_box.material {
+            assert!(borders.top.is_some(), "card should have border");
+        }
     }
 
     #[test]

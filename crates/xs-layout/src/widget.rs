@@ -1,7 +1,7 @@
-use xs_math::Vector2;
+use xs_math::{Rectangle, Vector2};
 
 use super::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
-use crate::View;
+use crate::{EdgeInsets, Material, View};
 
 // --------------------------------------------------
 // Positioned
@@ -26,6 +26,32 @@ impl Layout for Positioned {
             children: vec![child_id],
             material: None,
             ..Default::default()
+        }
+    }
+}
+
+
+#[derive(Clone, Debug)]
+pub struct FixedSize {
+    pub width: f32,
+    pub height: f32,
+    pub material: Material
+}
+
+impl Layout for FixedSize {
+    fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
+        let lbox = LayoutBox {
+            bounds: Rectangle::new(constraints.min.x, constraints.min.y, self.width, self.height),
+            ..Default::default()
+        };
+        let child_id = tree.insert(lbox);
+        SizedLayoutBox {
+            size: Vector2::new(self.width, self.height),
+            margin: EdgeInsets::zero(),
+            children: vec![ child_id ],
+            material: Some(self.material.clone()),
+            text_material: None,
+
         }
     }
 }

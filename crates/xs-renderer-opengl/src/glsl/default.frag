@@ -1,7 +1,8 @@
-precision mediump float;
+precision lowp float;
 
 // Current position
 varying vec2 v_position;
+varying lowp vec2 texture_coordinate;
 
 uniform vec2 u_viewport;
 uniform vec4 u_color;
@@ -38,7 +39,7 @@ void main() {
         gl_FragColor = right_border.color;
     } else {
         if (u_texture_enabled) {
-            gl_FragColor = texture2D(u_texture, (v_position - u_rect_min) / (u_rect_max - u_rect_min));
+            gl_FragColor = mix(u_color, texture2D(u_texture, (v_position - u_rect_min) / (u_rect_max - u_rect_min)), 1.);
         } else {
                 gl_FragColor = u_color;
         }

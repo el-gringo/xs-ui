@@ -1,3 +1,5 @@
+use xs_layout::TextProperties;
+
 use crate::{AppContext, FocusHandle, NavigationNode, core::NodeId, navigation::NavigationNodeId};
 use std::any::Any;
 
@@ -5,14 +7,21 @@ pub struct Context<'a> {
     pub app_context: &'a mut AppContext,
     pub node_id: NodeId,
     pub nav_id: NavigationNodeId,
+    pub text_properties: &'a mut TextProperties,
 }
 
 impl<'a> Context<'a> {
-    pub fn new(app_context: &'a mut AppContext, node_id: NodeId, nav_id: NavigationNodeId) -> Self {
+    pub fn new(
+        app_context: &'a mut AppContext,
+        node_id: NodeId,
+        nav_id: NavigationNodeId,
+        text_properties: &'a mut TextProperties,
+    ) -> Self {
         Self {
             app_context,
             node_id,
             nav_id,
+            text_properties
         }
     }
 

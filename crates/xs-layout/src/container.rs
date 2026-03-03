@@ -114,11 +114,7 @@ impl Container {
         SizedLayoutBox {
             size,
             children: vec![id],
-            material: Some(Material {
-                fill: self.color,
-                borders: self.borders,
-                image: self.image.clone(),
-            }),
+            material: Some(Material::Quad(self.borders, self.color, self.image.clone())),
             text_material: None,
             margin: self.margin,
         }
@@ -133,11 +129,7 @@ impl Container {
         SizedLayoutBox {
             size,
             children: vec![],
-            material: Some(Material {
-                fill: self.color,
-                borders: self.borders,
-                image: self.image.clone(),
-            }),
+            material: Some(Material::Quad(self.borders, self.color, self.image.clone())),
             text_material: None,
             margin: self.margin,
         }

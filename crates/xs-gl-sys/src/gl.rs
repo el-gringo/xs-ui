@@ -604,6 +604,7 @@ gl_loader!(
     fn glBlendColor(red: GLclampf, green: GLclampf, blue: GLclampf, alpha: GLclampf) -> (),
     fn glTexParameterf(target: GLenum, pname: GLenum, param: GLfloat) -> (),
     fn glTexParameterfv(target: GLenum, pname: GLenum, params: *const GLfloat) -> (),
+    fn glTexParameteriv(target: GLenum, pname: GLenum, params: *const GLint) -> (),
     fn glGetShaderInfoLog(
         shader: GLuint,
         bufSize: GLsizei,

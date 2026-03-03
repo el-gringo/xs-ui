@@ -28,16 +28,14 @@ impl xs_core::TextSystem for TextSystem {
         text: &str,
         text_properties: &TextProperties
     ) -> Result<(Vec<u8>, u32, u32), &'static str> {
-        eprintln!("text_properties: {:?}", text_properties);
         let text_properties = text_properties.unwrap_or_default();
         let font = self.fonts.get(text_properties.font_family.as_str()).unwrap();
 
         // The font size to use
         let scale = PxScale::from(text_properties.font_size);
         let scaled_font = font.into_scaled(scale);
-
         let mut glyphs = Vec::new();
-        layout_paragraph(&scaled_font, point(0.0, 0.0), 9999.0, text, &mut glyphs);
+        layout_paragraph(&scaled_font, point(0.0, 20.0), 200.0, text, &mut glyphs);
 
         // to work out the exact size needed for the drawn glyphs we need to outline
         // them and use their `px_bounds` which hold the coords of their render bounds.

@@ -2,7 +2,8 @@ use std::{any::TypeId, rc::Rc};
 
 use xs_core::{AppContext, Context, Element, Message, Render};
 use xs_layout::{
-    AlignItems, BorderSide, Borders, Color, EdgeInsets, Flex, FlexDirection, FlexWrap, Image, JustifyContent, Material, Positioned, Style, StyleDisplay, StylePosition, View
+    AlignItems, BorderSide, Borders, Color, EdgeInsets, Flex, FlexDirection, FlexWrap, Image,
+    JustifyContent, Material, Positioned, Style, StyleDisplay, StylePosition, View,
 };
 
 #[derive(Default, Clone)]
@@ -218,7 +219,9 @@ impl Div {
     }
 
     pub fn font_family(mut self, font_family: &'static str) -> Self {
-        self.style.text_properties.font_family(font_family.to_string());
+        self.style
+            .text_properties
+            .font_family(font_family.to_string());
         self
     }
 
@@ -265,7 +268,10 @@ impl Render for Div {
         TypeId::of::<Self>()
     }
 
-    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+        if self.style.text_properties.is_some() {
+            ctx.text_properties.replace(self.style.text_properties.clone());
+        }
         Box::new(self.clone())
     }
 }
@@ -293,34 +299,7 @@ impl Element for Div {
             Option::<Image>::None
         };
 
-        let material = Material {
-            borders: self.style.border,
-            fill: self.style.background_color,
-            image,
-        };
-
-        let text_material = if self.text.len() > 0 {
-            let image = app_context
-                .textures
-                .entry(self.text.to_string())
-                .or_insert_with(|| {
-                    eprintln!("self.style.text_properties: {:?}", self.style.text_properties);
-                    app_context.messages.push(Message::Text(
-                        self.text.to_string(),
-                        self.style.text_properties.clone()
-                    ));
-                    None
-                })
-                .clone();
-            Some(Material {
-                borders: Borders::none(),
-                fill: self.style.text_properties.unwrap_or_default().color,
-                image
-            })
-        } else {
-            None
-        };
-
+        let material = Material::Quad(self.style.border, self.style.background_color, image);
         match self.style.position {
             StylePosition::Absolute => {
                 let mut style = self.style.clone();
@@ -331,7 +310,7 @@ impl Element for Div {
                     child: Rc::new(Flex {
                         style,
                         material,
-                        text_material,
+                        text_material: None,
                         children: children.to_vec(),
                     }),
                 })
@@ -342,7 +321,7 @@ impl Element for Div {
                 Rc::new(Flex {
                     style,
                     material,
-                    text_material,
+                    text_material: None,
                     children: children.to_vec(),
                 })
             }

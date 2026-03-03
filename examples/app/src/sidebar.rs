@@ -1,7 +1,8 @@
 use std::any::TypeId;
 
 use xs::{
-    AlignItems, BLUE, Context, Element, FocusHandle, GREEN, NavigationNode, RED, Render, div,
+    AlignItems, BLUE, Context, Element, FocusHandle, GREEN, JustifyContent, NavigationNode, RED,
+    Render, WHITE, div, text,
 };
 
 use crate::{
@@ -49,8 +50,11 @@ impl Render for Sidebar {
                     .row()
                     .height(50.)
                     .background_color(GRAY4)
-                    .justify_content(xs::JustifyContent::Center)
-                    .child(div().text("PeerTube").color(RED).font_size(30.).into())
+                    .justify_content(JustifyContent::Center)
+                    .align_items(AlignItems::Center)
+                    .color(WHITE)
+                    .font_size(45.)
+                    .child(text("PeerTube").into())
                     .into(),
             )
             .child(

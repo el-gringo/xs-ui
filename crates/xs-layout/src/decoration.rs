@@ -1,27 +1,22 @@
-use crate::{Color, Image};
+use crate::{Color, Image, colors::TRANSPARENT};
 use xs_math::Vector2;
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Material {
-    pub borders: Borders,
-    pub fill: Color,
-    pub image: Option<Image>,
+pub enum Material {
+    Quad(Borders, Color, Option<Image>),
+    Text(Color, Option<Image>)
 }
 
 impl Material {
     #[must_use]
-    pub fn filled(fill: Color) -> Material {
-        Material {
-            borders: Borders::none(),
-            fill,
-            image: None,
-        }
+    pub fn filled(color: Color) -> Material {
+        Material::Quad(Borders::none(), color, None)
     }
 }
 
 impl Default for Material {
     fn default() -> Material {
-        Material::filled(Color::rgba(0.0, 0.0, 0.0, 0.0))
+        Material::filled(TRANSPARENT)
     }
 }
 

@@ -22,7 +22,6 @@ pub fn layout_paragraph<F, SF>(
         if c.is_control() {
             if c == '\n' {
                 caret = point(position.x, caret.y + v_advance);
-                last_glyph = None;
             }
             continue;
         }
@@ -32,14 +31,12 @@ pub fn layout_paragraph<F, SF>(
         }
         glyph.position = caret;
 
-        last_glyph = Some(glyph.clone());
-        caret.x += font.h_advance(glyph.id);
-
         if !c.is_whitespace() && caret.x > position.x + max_width {
             caret = point(position.x, caret.y + v_advance);
             glyph.position = caret;
-            last_glyph = None;
         }
+        last_glyph = Some(glyph.clone());
+        caret.x += font.h_advance(glyph.id);
 
         target.push(glyph);
     }

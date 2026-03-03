@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use xs_layout::View;
+use xs_layout::{TextProperties, View};
 
 use crate::{AppContext, Context, Element, Render, core::NodeId, navigation::NavigationNodeId};
 
@@ -13,6 +13,7 @@ struct StackItem {
     index: usize,
     parent_index: Option<usize>,
     nav_id: NavigationNodeId,
+    text_properties: TextProperties
 }
 
 pub trait Renderer {
@@ -28,13 +29,14 @@ pub trait Renderer {
             index: 0,
             parent_index: None,
             nav_id: app_context.current_nav_node_id,
+            text_properties: TextProperties::default()
         }];
 
         // Store (parent_index, element) for each rendered element
         let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Vec::new();
-        while let Some(item) = stack.pop() {
+        while let Some(mut item) = stack.pop() {
             let node_id: NodeId = (item.widget.tag(), item.depth, item.index);
-            let mut ctx = Context::new(app_context, node_id, item.nav_id);
+            let mut ctx = Context::new(app_context, node_id, item.nav_id, &mut item.text_properties);
             let element = item.widget.render(&mut ctx);
 
             // Get children before moving element
@@ -45,13 +47,16 @@ pub trait Renderer {
 
             // Push children onto stack (in reverse order)
             for (child_index, child) in children.iter().enumerate().rev() {
-                stack.push(StackItem {
+
+                let new_item = StackItem {
                     widget: Rc::clone(child),
                     depth: item.depth + 1,
                     index: child_index,
                     parent_index: Some(current_index),
                     nav_id: ctx.nav_id,
-                });
+                    text_properties: ctx.text_properties.clone()
+                };
+                stack.push(new_item);
             }
         }
 
