@@ -5,7 +5,8 @@ use xs_layout::TextProperties;
 use crate::{AppContext, Application, Render, Renderer};
 
 pub enum BackendMessage {
-    ImageLoaded(String, Vec<u8>, u32, u32, bool),
+    ImageLoaded(String, Vec<u8>, u32, u32),
+    TextRendered(String, TextProperties, Vec<u8>, u32, u32)
 }
 
 pub trait Backend {

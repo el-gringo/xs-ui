@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use xs::{
     AlignItems, Context, Element, FocusHandle, JustifyContent, NavigationNode, RED, Render,
-    TRANSPARENT, WHITE, div,
+    TRANSPARENT, WHITE, div, text,
 };
 
 use crate::theme::GRAY3;
@@ -10,6 +10,7 @@ use crate::theme::GRAY3;
 pub struct Card {
     id: Option<&'static str>,
     thumbnail: String,
+    title: String
 }
 
 impl Card {
@@ -17,6 +18,7 @@ impl Card {
         Self {
             id: None,
             thumbnail: String::new(),
+            title: String::new()
         }
     }
 
@@ -27,6 +29,11 @@ impl Card {
 
     pub fn thumbnail(mut self, thumbnail: impl Into<String>) -> Self {
         self.thumbnail = thumbnail.into();
+        self
+    }
+
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.title = title.into();
         self
     }
 }
@@ -60,6 +67,15 @@ impl Render for Card {
                     .background_image(self.thumbnail.clone())
                     .into(),
             )
+            .child(
+                div()
+                    .width(280.)
+                    .font_size(20.)
+                    .margin_top(16.)
+                    .color(GRAY3)
+                    .child(
+                        text(self.title.clone()).into()
+                    ).into())
             .into()
     }
 

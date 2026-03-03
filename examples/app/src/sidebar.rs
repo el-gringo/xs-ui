@@ -54,7 +54,7 @@ impl Render for Sidebar {
                     .align_items(AlignItems::Center)
                     .color(WHITE)
                     .font_size(45.)
-                    .child(text("PeerTube").into())
+                    .child(text("PeerTube".to_string()).into())
                     .into(),
             )
             .child(

@@ -66,6 +66,7 @@ impl Render for MyApp {
                                                     .thumbnail(
                                                         video.thumbnail_url().unwrap_or_default(),
                                                     )
+                                                    .title(video.name.clone())
                                                     .into()
                                             })
                                             .into(),

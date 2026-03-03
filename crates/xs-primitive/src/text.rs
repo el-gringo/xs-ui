@@ -4,7 +4,7 @@ use std::{any::TypeId, rc::Rc};
 use xs_core::{Context, Element, Message, Render};
 use xs_layout::{FixedSize, Material, View};
 
-pub struct Text(pub &'static str);
+pub struct Text(pub String);
 
 impl Render for Text {
     fn tag(&self) -> TypeId {
@@ -13,7 +13,7 @@ impl Render for Text {
 
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
         let image = ctx.app_context
-                .textures
+                .texts
                 .entry(self.0.to_string())
                 .or_insert_with(|| {
                     ctx.app_context.messages.push(Message::Text(
@@ -57,12 +57,12 @@ impl Into<Rc<Box<dyn Render>>> for Text {
     }
 }
 
-impl From<Text> for &'static str {
+impl From<Text> for String {
     fn from(value: Text) -> Self {
         value.0
     }
 }
 
-pub fn text(text: &'static str) -> Text {
+pub fn text(text: String) -> Text {
     Text(text)
 }

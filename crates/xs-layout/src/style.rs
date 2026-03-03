@@ -3,7 +3,7 @@ use crate::{
     JustifyContent, colors::BLACK,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum FontStyle {
     Normal,
     Italic,

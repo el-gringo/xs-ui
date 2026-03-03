@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
 };
 
-use xs_layout::Image;
+use xs_layout::{Image, TextProperties};
 use xs_platform_event::KeyEvent;
 
 use crate::{FocusManager, Message, core::NodeId, navigation::NavigationNodeId};
@@ -17,6 +17,7 @@ pub struct AppContext {
     pub current_node_id: NodeId,
     pub current_nav_node_id: NavigationNodeId,
     pub textures: HashMap<String, Option<Image>>,
+    pub texts: HashMap<String, Option<Image>>,
     pub messages: Vec<Message>
 }
 
@@ -31,6 +32,7 @@ impl AppContext {
             current_nav_node_id: 0,
             nodes: Default::default(),
             textures: Default::default(),
+            texts: Default::default(),
             messages: Default::default()
         }
     }

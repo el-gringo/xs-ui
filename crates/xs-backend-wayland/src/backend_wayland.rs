@@ -122,10 +122,15 @@ impl Backend for BackendWayland {
         }
         if let Ok(message) = rx.try_recv() {
             match message {
-                BackendMessage::ImageLoaded(src, bytes, width, height, alpha) => {
-                    let texture = renderer.load_texture(&bytes, width, height, alpha);
-                    let image = Image::new(width, height, texture, bytes, alpha);
+                BackendMessage::ImageLoaded(src, bytes, width, height) => {
+                    let texture = renderer.load_texture(&bytes, width, height, false);
+                    let image = Image::new(width, height, texture, bytes, false);
                     app_context.textures.insert(src, Some(image));
+                },
+                BackendMessage::TextRendered(text, _text_properties, bytes, width, height) => {
+                    let texture = renderer.load_texture(&bytes, width, height, true);
+                    let image = Image::new(width, height, texture, bytes, true);
+                    app_context.texts.insert(text, Some(image));
                 }
             }
         }
@@ -146,7 +151,7 @@ impl Backend for BackendWayland {
                     let height = height as u32;
                     let _ = image.convert_color(ColorSpace::RGBA);
                     let bytes = image.flatten_to_u8().get(0).unwrap().clone();
-                    let _ = tx.send(BackendMessage::ImageLoaded(src, bytes, width, height, false));
+                    let _ = tx.send(BackendMessage::ImageLoaded(src, bytes, width, height));
                 }
                 Err(error) => {
                     eprintln!("Backend::load_image error: {:?}", error);
@@ -164,7 +169,7 @@ impl Backend for BackendWayland {
             self.text_system
                 .render_text(&text, &text_properties)
         {
-            let _ = tx.send(BackendMessage::ImageLoaded(text, bytes, width, height, true));
+            let _ = tx.send(BackendMessage::TextRendered(text, text_properties, bytes, width, height));
         }
     }
 
