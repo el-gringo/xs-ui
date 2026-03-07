@@ -1,2 +1,2 @@
-mod client_wasm;
-pub use client_wasm::HttpClient;
+pub mod wasm_client;
+pub use wasm_client::HttpClient;

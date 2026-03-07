@@ -1,12 +1,11 @@
-use crate::request::HttpRequest;
-
+use crate::native::request::HttpRequest;
 
 pub struct HttpServer {
     pub listener: std::net::TcpListener,
 }
 
 pub struct IncomingRequests<'a> {
-    pub listener: &'a std::net::TcpListener
+    pub listener: &'a std::net::TcpListener,
 }
 
 impl Iterator for IncomingRequests<'_> {
@@ -18,11 +17,11 @@ impl Iterator for IncomingRequests<'_> {
             Some(next) => match next {
                 Ok(tcp_listener) => match HttpRequest::read(tcp_listener) {
                     Ok(request) => Some(request),
-                    _ => None
+                    _ => None,
                 },
-                Err(_) => None
+                Err(_) => None,
             },
-            None => None
+            None => None,
         }
     }
 }
@@ -30,13 +29,14 @@ impl Iterator for IncomingRequests<'_> {
 impl HttpServer {
     pub fn listen(host: &str, port: u16) -> Self {
         let address = std::net::SocketAddr::new(host.parse().unwrap(), port);
-        let listener = std::net::TcpListener::bind(address).expect(
-            &format!("unable to bind port {:?} {}", host, port)
-        );
+        let listener = std::net::TcpListener::bind(address)
+            .expect(&format!("unable to bind port {:?} {}", host, port));
         Self { listener }
     }
 
     pub fn incoming_requests(&mut self) -> IncomingRequests<'_> {
-        IncomingRequests { listener: &self.listener }
+        IncomingRequests {
+            listener: &self.listener,
+        }
     }
 }

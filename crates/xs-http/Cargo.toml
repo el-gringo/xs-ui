@@ -12,10 +12,6 @@ path = "examples/http-server.rs"
 name = "https-client"
 path = "examples/https-client.rs"
 
-[[example]]
-name = "https-client-async"
-path = "examples/https-client-async.rs"
-
 [features]
 default = []
 

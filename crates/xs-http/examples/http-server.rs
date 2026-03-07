@@ -1,18 +1,9 @@
-use xs_http::{response::{
-        HttpHeaders,
-        HttpResponse
-    },
-    server::HttpServer
-};
+use xs_http::{HttpServer, headers::HttpHeaders, response::HttpResponse};
 
 pub fn main() {
     let mut server = HttpServer::listen("127.0.0.1", 8888);
     for request in server.incoming_requests() {
-        let response = HttpResponse::new(
-            200,
-            HttpHeaders::new(),
-            "test\r\n".as_bytes().to_vec()
-        );
+        let response = HttpResponse::new(200, HttpHeaders::new(), "test\r\n".as_bytes().to_vec());
         request.respond(response);
     }
 }
