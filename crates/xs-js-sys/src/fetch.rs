@@ -1,8 +1,11 @@
-use crate::{Closure, log};
+use crate::{
+    AnyClosure, Closure,
+    closure::{drop_closure, invoke_closure, store_closure},
+};
 
 mod js {
     unsafe extern "C" {
-        pub fn fetch(ptr: u32, len: u32, resolve: *mut (), vcall: usize);
+        pub fn fetch(handle: usize, ptr: u32, len: u32);
     }
 }
 
@@ -11,22 +14,21 @@ pub struct FetchInit {
     method: String,
 }
 
-pub fn fetch(url: String, _init: Option<&FetchInit>, resolve: impl FnMut(String) + 'static) {
-    let mut closure = Closure::new(resolve);
+pub fn fetch(url: &str, _init: Option<&FetchInit>, resolve: Closure<Vec<u8>>) {
     let bytes = url.as_bytes();
     let ptr = bytes.as_ptr();
     let len = bytes.len();
     unsafe {
-        let (ptr_closure, len_closure) = closure.to_js();
-        js::fetch(ptr as _, len as _, ptr_closure, len_closure);
+        let handle = store_closure(AnyClosure::new(resolve));
+        js::fetch(handle as _, ptr as _, len as _);
     }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn fetch_callback(ptr: *mut u8, len: usize, closure: *mut (), vcall: usize) {
+pub extern "C" fn fetch_callback(handle: usize, ptr: *mut u8, len: usize) {
     unsafe {
-        let body = String::from_raw_parts(ptr, len, len);
-        let vcall: fn(String, *mut ()) = std::mem::transmute(vcall);
-        vcall(body, closure);
+        let bytes = Vec::from_raw_parts(ptr, len, len);
+        invoke_closure(handle, bytes);
+        drop_closure(handle);
     }
 }

@@ -5,8 +5,13 @@ authors.workspace = true
 edition.workspace = true
 
 [[example]]
-name = "simple-fetch"
-path = "examples/simple-fetch.rs"
-crate-type = ["bin"]
+name = "fetch"
+path = "examples/fetch.rs"
+crate-type = [ "bin" ]
+
+[[example]]
+name = "request-animation-frame"
+path = "examples/request-animation-frame.rs"
+crate-type = [ "bin" ]
 
 [dependencies]

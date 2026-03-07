@@ -1,11 +1,9 @@
-use std::rc::Rc;
-
 use crate::Closure;
 
 mod js {
     unsafe extern "C" {
         pub fn console_log(ptr: u32, len: u32);
-        pub fn request_animation_frame(closure: *mut (), vcall: usize) -> u32;
+        pub fn request_animation_frame(closure: *mut (), vcall: usize);
     }
 }
 
@@ -16,19 +14,17 @@ pub fn log(message: &str) {
     }
 }
 
-pub fn request_animation_frame(closure: &mut Closure<impl FnMut(u32) + 'static, u32>) -> u32
-{
+pub fn request_animation_frame(closure: &mut Closure<u32>) {
     unsafe {
         let (ptr, len) = closure.to_js();
-        js::request_animation_frame(ptr, len)
+        js::request_animation_frame(ptr as _, len)
     }
 }
 
-
 #[unsafe(no_mangle)]
-pub extern "C" fn request_animation_frame_callback(now: u64, closure: *mut (), vcall: usize) {
+pub extern "C" fn callback_request_animation_frame(closure: *mut (), vcall: usize, now: u32) {
     unsafe {
-        let vcall: fn(u64, *mut ()) = std::mem::transmute(vcall);
-        vcall(now, closure);
+        let vcall: fn(*mut (), u32) = std::mem::transmute(vcall);
+        vcall(closure, now);
     }
 }

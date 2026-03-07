@@ -29,10 +29,12 @@
         );
     }
 
-
     let cachedUint8ArrayMemory0 = null;
     function getUint8ArrayMemory0() {
-        if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
+        if (
+            cachedUint8ArrayMemory0 === null ||
+            cachedUint8ArrayMemory0.byteLength === 0
+        ) {
             cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
         }
         return cachedUint8ArrayMemory0;
@@ -42,7 +44,9 @@
         if (realloc === undefined) {
             const buf = cachedTextEncoder.encode(arg);
             const ptr = malloc(buf.length, 1) >>> 0;
-            getUint8ArrayMemory0().subarray(ptr, ptr + buf.length).set(buf);
+            getUint8ArrayMemory0()
+                .subarray(ptr, ptr + buf.length)
+                .set(buf);
             WASM_VECTOR_LEN = buf.length;
             return ptr;
         }
@@ -56,15 +60,18 @@
 
         for (; offset < len; offset++) {
             const code = arg.charCodeAt(offset);
-            if (code > 0x7F) break;
+            if (code > 0x7f) break;
             mem[ptr + offset] = code;
         }
         if (offset !== len) {
             if (offset !== 0) {
                 arg = arg.slice(offset);
             }
-            ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
-            const view = getUint8ArrayMemory0().subarray(ptr + offset, ptr + len);
+            ptr = realloc(ptr, len, (len = offset + arg.length * 3), 1) >>> 0;
+            const view = getUint8ArrayMemory0().subarray(
+                ptr + offset,
+                ptr + len,
+            );
             const ret = cachedTextEncoder.encodeInto(arg, view);
 
             offset += ret.written;
@@ -75,24 +82,54 @@
         return ptr;
     }
 
+    function passBytesToWasm(buffer, malloc, realloc) {
+        let bytes = new Uint8Array(buffer);
+        const ptr = malloc(bytes.byteLength, 1) >>> 0;
+        getUint8ArrayMemory0()
+            .subarray(ptr, ptr + bytes.byteLength)
+            .set(bytes);
+        WASM_VECTOR_LEN = bytes.byteLength;
+        return ptr;
+    }
+
+    let max_render_time = 0;
     const env = {
         console_log(ptr, len) {
             console.log(getStringFromWasm0(ptr, len));
         },
-        fetch(ptr, len, closure, vcall) {
+        fetch(handle, ptr, len) {
             const url = getStringFromWasm0(ptr, len);
             console.log("fetch", url, arguments);
             fetch(url)
-                .then((response) => response.text())
+                .then((response) => response.arrayBuffer())
                 .then((body) => {
-                    console.log("body", body);
-                    const ptr = passStringToWasm0(body, wasm.__xs_malloc, wasm.__xs_realloc);
+                    const ptr = passBytesToWasm(
+                        body,
+                        wasm.__xs_malloc,
+                        wasm.__xs_realloc,
+                    );
                     const len = WASM_VECTOR_LEN;
-                    wasm.fetch_callback(ptr, len, closure, vcall);
+                    console.log('js fetch_callback', ptr, len);
+                    wasm.fetch_callback(handle, ptr, len);
                 });
         },
+        request_animation_frame(closure, vcall) {
+            let start = performance.now();
+            return requestAnimationFrame((now) => {
+                wasm.callback_request_animation_frame(closure, vcall, now);
+                const frame_duration = performance.now() - now;
+                if (frame_duration > max_render_time) {
+                    max_render_time = frame_duration;
+                }
+                if (performance.now() - start > 1000) {
+                    console.log("max_render_time", max_render_time);
+                    max_render_time = 0;
+                    start = performance.now();
+                }
+            });
+        },
     };
-    fetch("wasm/simple-fetch.wasm")
+    fetch("{wasm-file}.wasm")
         .then((response) => response.arrayBuffer())
         .then((bytes) => WebAssembly.instantiate(bytes, { env }))
         .then((res) => {
