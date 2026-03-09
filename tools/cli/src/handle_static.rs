@@ -1,10 +1,7 @@
 use std::io::Read;
 use xs_http::{
-    request::HttpRequest,
-    response::{
-        HttpHeaders,
-        HttpResponse
-    }
+    client::HttpRequest,
+    response::{HttpHeaders, HttpResponse},
 };
 
 use crate::cargo_metadata::CargoMetadata;
@@ -35,7 +32,7 @@ fn get_content_type(path: &std::path::PathBuf) -> &'static str {
 pub fn handle_static(request: HttpRequest, config: &CargoMetadata, package: Option<&String>) {
     let pathname = match request.pathname.split_once('?') {
         Some((path, _)) => &path[1..],
-        None => &request.pathname[1..]
+        None => &request.pathname[1..],
     };
     println!("pathname: {:?}", pathname);
     let path = if pathname == "" {
@@ -43,9 +40,7 @@ pub fn handle_static(request: HttpRequest, config: &CargoMetadata, package: Opti
     } else if pathname.starts_with("assets/") {
         &std::path::Path::new("tools/cli/src/html").join(pathname)
     } else if pathname == "app.wasm" {
-        let binary_name = package.unwrap_or(
-            &config.packages[0].name
-        );
+        let binary_name = package.unwrap_or(&config.packages[0].name);
         &std::path::Path::new("tools/cli/src")
             .join(&config.target_directory)
             .join("wasm32-unknown-unknown")
@@ -58,21 +53,29 @@ pub fn handle_static(request: HttpRequest, config: &CargoMetadata, package: Opti
     let file = std::fs::File::open(path);
     let response = if file.is_ok() && path.is_file() {
         let mut file = file.unwrap();
-        let content_length = file.metadata().ok().map(|v| v.len() as usize)
+        let content_length = file
+            .metadata()
+            .ok()
+            .map(|v| v.len() as usize)
             .expect("unable to get file size".into());
 
         let mut body = Vec::with_capacity(content_length);
-        file.read_to_end(&mut body)
-            .expect("unable to read file");
+        file.read_to_end(&mut body).expect("unable to read file");
 
         let mut headers = HttpHeaders::new();
-        headers.insert("Content-Type".to_string(), get_content_type(&path).to_string());
+        headers.insert(
+            "Content-Type".to_string(),
+            get_content_type(&path).to_string(),
+        );
         headers.insert("Content-Length".to_string(), content_length.to_string());
         let response = HttpResponse::new(200, headers, body);
         response
     } else {
         let mut headers = HttpHeaders::new();
-        headers.insert("Content-Type".to_string(), "text/plain; charset=utf8".to_string());
+        headers.insert(
+            "Content-Type".to_string(),
+            "text/plain; charset=utf8".to_string(),
+        );
         let response = HttpResponse::new(404, headers, "Not found".into());
         response
     };

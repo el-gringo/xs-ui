@@ -227,7 +227,14 @@ impl Renderer for RendererOpenGl {
         }
     }
 
-    fn load_texture(&self, bytes: &[u8], width: u32, height: u32, alpha: bool) -> u32 {
+    fn load_texture(
+        &self,
+        bytes: &[u8],
+        _image_handler: u32,
+        width: u32,
+        height: u32,
+        alpha: bool,
+    ) -> u32 {
         unsafe {
             let mut texture: u32 = 0;
             let interfnal_format = if alpha { GL_RED } else { GL_RGBA };

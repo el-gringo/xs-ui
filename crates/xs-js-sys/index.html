@@ -99,7 +99,6 @@
         },
         fetch(handle, ptr, len) {
             const url = getStringFromWasm0(ptr, len);
-            console.log("fetch", url, arguments);
             fetch(url)
                 .then((response) => response.arrayBuffer())
                 .then((body) => {
@@ -109,7 +108,6 @@
                         wasm.__xs_realloc,
                     );
                     const len = WASM_VECTOR_LEN;
-                    console.log('js fetch_callback', ptr, len);
                     wasm.fetch_callback(handle, ptr, len);
                 });
         },

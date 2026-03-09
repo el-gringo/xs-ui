@@ -1,7 +1,6 @@
-
 use std::{any::TypeId, rc::Rc};
 
-use xs_core::{Context, Element, Message, Render};
+use xs_core::{BackendRequest, Context, Element, Render};
 use xs_layout::{FixedSize, Material, View};
 
 pub struct Text(pub String);
@@ -12,17 +11,18 @@ impl Render for Text {
     }
 
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let image = ctx.app_context
-                .texts
-                .entry(self.0.to_string())
-                .or_insert_with(|| {
-                    ctx.app_context.messages.push(Message::Text(
-                        self.0.to_string(),
-                        ctx.text_properties.clone()
-                    ));
-                    None
-                })
-                .clone();
+        let image = ctx
+            .app_context
+            .texts
+            .entry(self.0.to_string())
+            .or_insert_with(|| {
+                ctx.app_context.messages.push(BackendRequest::Text(
+                    self.0.to_string(),
+                    ctx.text_properties.clone(),
+                ));
+                None
+            })
+            .clone();
         let (width, height) = match &image {
             Some(img) => (img.width as f32, img.height as f32),
             None => (0., 0.),
@@ -31,11 +31,10 @@ impl Render for Text {
         Box::new(TextElement(FixedSize {
             width,
             height,
-            material: material.clone()
+            material: material.clone(),
         }))
     }
 }
-
 
 struct TextElement(pub FixedSize);
 

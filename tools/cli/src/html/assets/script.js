@@ -1,7 +1,7 @@
 let wasm, start;
 let max_render_time = 0;
 
-//const memory = new WebAssembly.Memory({ initial: 20, maximum: 100 });
+const memory = new WebAssembly.Memory({ initial: 20, maximum: 10_000 });
 const heap = Array.from({ length: 128 }).fill(undefined);
 
 heap.push(undefined, null, true, false);
@@ -33,15 +33,14 @@ function add_heap_object(obj) {
   return idx;
 }
 
-  const cachedTextDecoder = new TextDecoder("utf-8", {
-    ignoreBOM: true,
-    fatal: true,
-  });
+const cachedTextDecoder = new TextDecoder("utf-8", {
+  ignoreBOM: true,
+  fatal: true,
+});
 
 cachedTextDecoder.decode();
 
 let cachedUint8Memory0 = null;
-
 
 function getUint8Memory0() {
   if (cachedUint8Memory0 === null || cachedUint8Memory0.byteLength === 0) {
@@ -51,7 +50,7 @@ function getUint8Memory0() {
 }
 
 function getStringFromWasm0(ptr, len) {
-    return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
+  return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 
 function UTF8ToString(ptr, maxBytesToRead) {
@@ -159,93 +158,72 @@ let WASM_VECTOR_LEN = 0;
 
 const cachedTextEncoder = new TextEncoder("utf-8");
 
-const encodeString =
-  typeof cachedTextEncoder.encodeInto === "function"
-    ? function (arg, view) {
-        return cachedTextEncoder.encodeInto(arg, view);
-      }
-    : function (arg, view) {
-        const buf = cachedTextEncoder.encode(arg);
-        view.set(buf);
-        return {
-          read: arg.length,
-          written: buf.length,
-        };
-      };
-
-
 let cachedUint8ArrayMemory0 = null;
 function getUint8ArrayMemory0() {
-    if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
-        cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
-    }
-    return cachedUint8ArrayMemory0;
-}
-
-function passStringToWasm0(arg, malloc, realloc) {
-    if (realloc === undefined) {
-        const buf = cachedTextEncoder.encode(arg);
-        const ptr = malloc(buf.length, 1) >>> 0;
-        getUint8ArrayMemory0().subarray(ptr, ptr + buf.length).set(buf);
-        WASM_VECTOR_LEN = buf.length;
-        return ptr;
-    }
-
-    let len = arg.length;
-    let ptr = malloc(len, 1) >>> 0;
-
-    const mem = getUint8ArrayMemory0();
-
-    let offset = 0;
-
-    for (; offset < len; offset++) {
-        const code = arg.charCodeAt(offset);
-        if (code > 0x7F) break;
-        mem[ptr + offset] = code;
-    }
-    if (offset !== len) {
-        if (offset !== 0) {
-            arg = arg.slice(offset);
-        }
-        ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
-        const view = getUint8ArrayMemory0().subarray(ptr + offset, ptr + len);
-        const ret = cachedTextEncoder.encodeInto(arg, view);
-
-        offset += ret.written;
-        ptr = realloc(ptr, len, offset, 1) >>> 0;
-    }
-
-    WASM_VECTOR_LEN = offset;
-    return ptr;
-}
-
-function isLikeNone(x) {
-  return x === undefined || x === null;
-}
-
-let cachedInt32Memory0 = null;
-
-function getInt32Memory0() {
-  if (cachedInt32Memory0 === null || cachedInt32Memory0.byteLength === 0) {
-    cachedInt32Memory0 = new Int32Array(wasm.memory.buffer);
+  if (
+    cachedUint8ArrayMemory0 === null ||
+    cachedUint8ArrayMemory0.byteLength === 0
+  ) {
+    cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
   }
-  return cachedInt32Memory0;
+  return cachedUint8ArrayMemory0;
 }
-let cachedUint32Memory0 = null;
+
+/* oxlint-disable-next-line: no-unused-vars */
+function passStringToWasm0(arg, malloc, realloc) {
+  if (realloc === undefined) {
+    const buf = cachedTextEncoder.encode(arg);
+    const ptr = malloc(buf.length, 1) >>> 0;
+    getUint8ArrayMemory0()
+      .subarray(ptr, ptr + buf.length)
+      .set(buf);
+    WASM_VECTOR_LEN = buf.length;
+    return ptr;
+  }
+
+  let len = arg.length;
+  let ptr = malloc(len, 1) >>> 0;
+
+  const mem = getUint8ArrayMemory0();
+
+  let offset = 0;
+
+  for (; offset < len; offset++) {
+    const code = arg.charCodeAt(offset);
+    if (code > 0x7f) break;
+    mem[ptr + offset] = code;
+  }
+  if (offset !== len) {
+    if (offset !== 0) {
+      arg = arg.slice(offset);
+    }
+    ptr = realloc(ptr, len, (len = offset + arg.length * 3), 1) >>> 0;
+    const view = getUint8ArrayMemory0().subarray(ptr + offset, ptr + len);
+    const ret = cachedTextEncoder.encodeInto(arg, view);
+
+    offset += ret.written;
+    ptr = realloc(ptr, len, offset, 1) >>> 0;
+  }
+
+  WASM_VECTOR_LEN = offset;
+  return ptr;
+}
+
+function passBytesToWasm0(buffer, malloc) {
+  let bytes = new Uint8Array(buffer);
+  const ptr = malloc(bytes.byteLength, 1) >>> 0;
+  getUint8ArrayMemory0()
+    .subarray(ptr, ptr + bytes.byteLength)
+    .set(bytes);
+  WASM_VECTOR_LEN = bytes.byteLength;
+  return ptr;
+}
 
 function getArray(ptr, arr, n) {
   if (!ptr) {
     throw new Error();
   }
   return new arr(wasm.memory.buffer, ptr, n);
-}
-
-function handleError(f, args) {
-  try {
-    return f.apply(this, args);
-  } catch (e) {
-    wasm.__wbindgen_exn_store(add_heap_object(e));
-  }
 }
 
 var GL = {
@@ -585,23 +563,6 @@ canvas.focus();
 const FPS = 60;
 const FRAME_INTERVAL = 1000 / FPS;
 
-function request_animation_frame(closure, vcall) {
-  return requestAnimationFrame(() => {
-    const frame_start = performance.now();;
-    wasm.callback(closure, vcall);
-    const frame_duration = performance.now() - frame_start;
-    if (frame_duration > max_render_time) {
-      max_render_time = frame_duration;
-    }
-    if (performance.now() - start > 1000) {
-      console.log('max_render_time', max_render_time);
-      max_render_time = 0;
-      start = performance.now();
-    }
-    request_animation_frame(closure, vcall);
-  });
-}
-
 const env = {
   console_log: function (ptr, len) {
     console.log(getStringFromWasm0(ptr, len));
@@ -664,29 +625,48 @@ const env = {
     //   requestAnimationFrame(loop_frames);
     // }
   },
-  request_animation_frame,
   load_image(ptr, len, texture_index) {
     let src = getStringFromWasm0(ptr, len);
     const image = new Image();
     image.onload = function onImageLoaded() {
       const img_ptr = add_heap_object(image);
-      wasm.on_image_loaded(ptr, len, img_ptr, image.naturalWidth, image.naturalHeight, texture_index);
+      wasm.on_image_loaded(
+        ptr,
+        len,
+        img_ptr,
+        image.naturalWidth,
+        image.naturalHeight,
+        texture_index,
+      );
     };
     image.crossOrigin = true;
     image.src = src;
   },
-  fetch(ptr, len, closure, vcall) {
-      const url = getStringFromWasm0(ptr, len);
-      fetch(url)
-          .then((response) => response.text())
-          .then((body) => {
-              const ptr = passStringToWasm0(body, wasm.__xs_malloc, wasm.__xs_realloc);
-              const len = WASM_VECTOR_LEN;
-              wasm.fetch_callback(ptr, len, closure, vcall);
-          });
+  fetch(handle, ptr, len) {
+    const url = getStringFromWasm0(ptr, len);
+    fetch(url)
+      .then((response) => response.arrayBuffer())
+      .then((body) => {
+        const ptr = passBytesToWasm0(body, wasm.__xs_malloc, wasm.__xs_realloc);
+        const len = WASM_VECTOR_LEN;
+        console.log("js fetch_callback", ptr, len);
+        wasm.fetch_callback(handle, ptr, len);
+      });
   },
-  glViewport: function (x, y, width, height) {
-    gl.viewport(x, y, width, height);
+  request_animation_frame(closure, vcall) {
+    let start = performance.now();
+    return requestAnimationFrame((now) => {
+      wasm.callback_request_animation_frame(closure, vcall, now);
+      const frame_duration = performance.now() - now;
+      if (frame_duration > max_render_time) {
+        max_render_time = frame_duration;
+      }
+      if (performance.now() - start > 1000) {
+        console.log("max_render_time", max_render_time);
+        max_render_time = 0;
+        start = performance.now();
+      }
+    });
   },
   glClearDepthf: function (depth) {
     gl.clearDepth(depth);
@@ -740,7 +720,7 @@ const env = {
     image,
   ) {
     const source = get_object(image);
-    console.log('texImage2D', source);
+    console.log("texImage2D", source);
     gl.texImage2D(
       target,
       level,
@@ -750,7 +730,7 @@ const env = {
       border,
       format,
       type,
-      source
+      source,
     );
   },
   glTexSubImage2D: function (
@@ -1363,7 +1343,9 @@ const env = {
 function load(wasmUrl) {
   fetch(wasmUrl)
     .then((response) => response.arrayBuffer())
-    .then((bytes) => WebAssembly.instantiate(bytes, { env }))
+    .then((bytes) =>
+      WebAssembly.instantiate(bytes, { env, js: { mem: memory } }),
+    )
     .then((res) => {
       wasm = res.instance.exports;
       cachedInt32Memory0 = null;

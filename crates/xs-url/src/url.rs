@@ -90,6 +90,16 @@ impl Url {
             _ => None,
         }
     }
+
+    pub fn to_string(&self) -> String {
+        self.scheme
+            .as_ref()
+            .unwrap_or(&"http".to_string())
+            .to_owned()
+            + "://"
+            + &self.host
+            + &self.pathname
+    }
 }
 
 impl From<&str> for Url {
@@ -106,7 +116,7 @@ impl From<String> for Url {
 
 impl From<Url> for String {
     fn from(url: Url) -> Self {
-        url.scheme.unwrap_or("http".to_string()) + "://" + &url.host + &url.pathname
+        url.to_string()
     }
 }
 

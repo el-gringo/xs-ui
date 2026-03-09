@@ -1,17 +1,12 @@
-
 use std::io::{BufWriter, Write};
 
 use xs_http::{
-    digest::{base64_encode, Sha1},
-    request::HttpRequest,
-    response::{HttpHeaders, HttpResponse}
+    client::HttpRequest,
+    digest::{Sha1, base64_encode},
+    response::{HttpHeaders, HttpResponse},
 };
 
-use crate::{
-    message::WebSocketMessage,
-    server::WebSocketServer
-};
-
+use crate::{message::WebSocketMessage, server::WebSocketServer};
 
 fn convert_key(key: &str) -> String {
     let hash = key.to_owned() + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -37,7 +32,11 @@ pub fn handshake(request: HttpRequest) -> Option<WebSocketServer> {
         let response = create_handshake_response(key.as_str());
         request.respond(response);
         let wss = WebSocketServer::with_stream(stream);
-        let message = WebSocketMessage::new(crate::opcode::OpCode::Text, None, "Welcome".as_bytes().to_vec());
+        let message = WebSocketMessage::new(
+            crate::opcode::OpCode::Text,
+            None,
+            "Welcome".as_bytes().to_vec(),
+        );
         let mut writer = BufWriter::new(wss.stream.try_clone().unwrap());
         let mut buffer: Vec<u8> = message.into();
         writer.write_all(&mut buffer).unwrap();

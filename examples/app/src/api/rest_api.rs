@@ -1,4 +1,4 @@
-use xs_http::HttpClient;
+use xs_http::{HttpClient, response::HttpResponse};
 
 pub struct RestApi {
     base_url: String,
@@ -9,18 +9,13 @@ impl RestApi {
     pub fn new(base_url: &str) -> Self {
         Self {
             base_url: base_url.to_string(),
-            client: HttpClient::new(base_url),
+            client: HttpClient::new(),
         }
     }
 
-    pub fn get(&self, path: &str) -> xs_http::response::HttpResponse {
+    pub fn get(&self, path: &str, on_response: impl FnMut(HttpResponse) + Send + 'static) {
         let url = format!("{}{}", self.base_url, path);
-        HttpClient::new(url).get()
-    }
-
-    pub fn post(&self, path: &str, body: Option<&[u8]>) -> xs_http::response::HttpResponse {
-        let url = format!("{}{}", self.base_url, path);
-        HttpClient::new(url).post(body)
+        let _ = HttpClient::new().get(url, on_response);
     }
 }
 

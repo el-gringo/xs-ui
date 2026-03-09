@@ -2,7 +2,9 @@ use std::rc::Rc;
 
 use xs_layout::{TextProperties, View};
 
-use crate::{AppContext, Context, Element, Render, core::NodeId, navigation::NavigationNodeId};
+use crate::{
+    AppContext, Context, Element, Render, core::NodeId, navigation::NavigationNodeId,
+};
 
 type RcWidget = Rc<Box<dyn Render>>;
 
@@ -13,7 +15,7 @@ struct StackItem {
     index: usize,
     parent_index: Option<usize>,
     nav_id: NavigationNodeId,
-    text_properties: TextProperties
+    text_properties: TextProperties,
 }
 
 pub trait Renderer {
@@ -21,7 +23,14 @@ pub trait Renderer {
     fn screen_width(&self) -> i32;
     fn screen_height(&self) -> i32;
     fn draw_frame(&mut self, widget_tree: &View);
-    fn load_texture(&self, bytes: &[u8], width: u32, height: u32, alpha: bool) -> u32;
+    fn load_texture(
+        &self,
+        bytes: &[u8],
+        image_handle: u32,
+        width: u32,
+        height: u32,
+        alpha: bool,
+    ) -> u32;
     fn render(&mut self, app_context: &mut AppContext, widget: RcWidget) -> View {
         let mut stack: Vec<StackItem> = vec![StackItem {
             widget: widget.clone(),
@@ -29,14 +38,15 @@ pub trait Renderer {
             index: 0,
             parent_index: None,
             nav_id: app_context.current_nav_node_id,
-            text_properties: TextProperties::default()
+            text_properties: TextProperties::default(),
         }];
 
         // Store (parent_index, element) for each rendered element
         let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Vec::new();
         while let Some(mut item) = stack.pop() {
             let node_id: NodeId = (item.widget.tag(), item.depth, item.index);
-            let mut ctx = Context::new(app_context, node_id, item.nav_id, &mut item.text_properties);
+            let mut ctx =
+                Context::new(app_context, node_id, item.nav_id, &mut item.text_properties);
             let element = item.widget.render(&mut ctx);
 
             // Get children before moving element
@@ -47,14 +57,13 @@ pub trait Renderer {
 
             // Push children onto stack (in reverse order)
             for (child_index, child) in children.iter().enumerate().rev() {
-
                 let new_item = StackItem {
                     widget: Rc::clone(child),
                     depth: item.depth + 1,
                     index: child_index,
                     parent_index: Some(current_index),
                     nav_id: ctx.nav_id,
-                    text_properties: ctx.text_properties.clone()
+                    text_properties: ctx.text_properties.clone(),
                 };
                 stack.push(new_item);
             }
@@ -111,7 +120,14 @@ impl Renderer for RendererDummy {
 
     fn draw_frame(&mut self, _widget_tree: &View) {}
 
-    fn load_texture(&self, _bytes: &[u8], _width: u32, _height: u32, _alpha: bool) -> u32 {
+    fn load_texture(
+        &self,
+        _bytes: &[u8],
+        _image_handle: u32,
+        _width: u32,
+        _height: u32,
+        _alpha: bool,
+    ) -> u32 {
         0
     }
 }

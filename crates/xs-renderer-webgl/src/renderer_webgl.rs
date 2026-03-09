@@ -12,20 +12,15 @@ pub struct RendererWebGl {
     width: i32,
     height: i32,
     shaders: StandardShader,
-    textures: HashMap<Image, usize>,
-    text_system: Box<dyn TextSystem>,
 }
 
 impl RendererWebGl {
-    pub fn new(width: i32, height: i32, text_system: Box<dyn TextSystem>) -> Self {
+    pub fn new(width: i32, height: i32) -> Self {
         let shaders = StandardShader::new();
-        let textures = HashMap::new();
         Self {
             width,
             height,
             shaders,
-            textures,
-            text_system,
         }
     }
 }
@@ -65,9 +60,14 @@ impl Renderer for RendererWebGl {
         self.height
     }
 
-    fn load_texture(&self, _rba: Vec<u8>, _width: i32, _height: i32) -> usize {
-        // load_texture(image, image.texture_index as usize, width, height);
-        // texture_index
-        0
+    fn load_texture(
+        &self,
+        bytes: &[u8],
+        image_handle: u32,
+        width: u32,
+        height: u32,
+        alpha: bool,
+    ) -> u32 {
+        load_texture(bytes, image_handle, width, height, alpha)
     }
 }

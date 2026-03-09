@@ -4,15 +4,16 @@ use std::{
     sync::mpsc::{Receiver, Sender, channel},
     time::Instant,
 };
+use xs_http::HttpClient;
 use zune_image::codecs::qoi::zune_core::{colorspace::ColorSpace, options::DecoderOptions};
 
 use xs_backend_wayland_client::{
     WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
 };
 use xs_core::{
-    AppContext, Application, Backend, BackendMessage, Message, Render, Renderer, TextSystem,
+    AppContext, Application, Backend, BackendRequest, BackendResponse, Render, Renderer,
+    TextSystem,
 };
-use xs_http::HttpClient;
 use xs_layout::{Image, TextProperties};
 
 use crate::{
@@ -106,29 +107,29 @@ impl Backend for BackendWayland {
         &mut self,
         app_context: &mut AppContext,
         renderer: &mut Box<dyn Renderer>,
-        tx: Sender<BackendMessage>,
-        rx: &Receiver<BackendMessage>,
+        tx: Sender<BackendResponse>,
+        rx: &Receiver<BackendResponse>,
     ) {
         app_context.dispatch();
         while let Some(message) = app_context.messages.pop() {
             match message {
-                Message::LoadImage(src) => {
+                BackendRequest::LoadImage(src) => {
                     self.load_image(src, tx.clone());
                 }
-                Message::Text(text, text_properties) => {
+                BackendRequest::Text(text, text_properties) => {
                     self.text(text, text_properties, tx.clone());
                 }
             }
         }
         if let Ok(message) = rx.try_recv() {
             match message {
-                BackendMessage::ImageLoaded(src, bytes, width, height) => {
-                    let texture = renderer.load_texture(&bytes, width, height, false);
+                BackendResponse::ImageLoaded(src, image_handle, bytes, width, height) => {
+                    let texture = renderer.load_texture(&bytes, image_handle, width, height, false);
                     let image = Image::new(width, height, texture, bytes, false);
-                    app_context.textures.insert(src, Some(image));
-                },
-                BackendMessage::TextRendered(text, _text_properties, bytes, width, height) => {
-                    let texture = renderer.load_texture(&bytes, width, height, true);
+                    app_context.textures.insert(src.clone(), Some(image));
+                }
+                BackendResponse::TextRendered(text, _text_properties, bytes, width, height) => {
+                    let texture = renderer.load_texture(&bytes, 0, width, height, true);
                     let image = Image::new(width, height, texture, bytes, true);
                     app_context.texts.insert(text, Some(image));
                 }
@@ -136,27 +137,34 @@ impl Backend for BackendWayland {
         }
     }
 
-    fn load_image(&mut self, src: String, tx: Sender<BackendMessage>) {
+    fn load_image(&mut self, src: String, tx: Sender<BackendResponse>) {
         std::thread::spawn(move || {
-            let http = HttpClient::new(src.as_str());
-            let response = http.get();
-            let bytes = response.body;
-            match zune_image::image::Image::read(
-                std::io::Cursor::new(bytes),
-                DecoderOptions::default(),
-            ) {
-                Ok(mut image) => {
-                    let (width, height) = image.dimensions();
-                    let width = width as u32;
-                    let height = height as u32;
-                    let _ = image.convert_color(ColorSpace::RGBA);
-                    let bytes = image.flatten_to_u8().get(0).unwrap().clone();
-                    let _ = tx.send(BackendMessage::ImageLoaded(src, bytes, width, height));
-                }
-                Err(error) => {
-                    eprintln!("Backend::load_image error: {:?}", error);
-                }
-            }
+            let http = HttpClient::new();
+            http.get(
+                src.clone(),
+                move |response| match zune_image::image::Image::read(
+                    std::io::Cursor::new(response.body),
+                    DecoderOptions::default(),
+                ) {
+                    Ok(mut image) => {
+                        let (width, height) = image.dimensions();
+                        let width = width as u32;
+                        let height = height as u32;
+                        let _ = image.convert_color(ColorSpace::RGBA);
+                        let bytes = image.flatten_to_u8().get(0).unwrap().clone();
+                        let _ = tx.send(BackendResponse::ImageLoaded(
+                            src.clone(),
+                            0,
+                            bytes,
+                            width,
+                            height,
+                        ));
+                    }
+                    Err(error) => {
+                        eprintln!("Backend::load_image error: {:?}", error);
+                    }
+                },
+            );
         });
     }
 
@@ -164,12 +172,15 @@ impl Backend for BackendWayland {
         0
     }
 
-    fn text(&mut self, text: String, text_properties: TextProperties, tx: Sender<BackendMessage>) {
-        if let Ok((bytes, width, height)) =
-            self.text_system
-                .render_text(&text, &text_properties)
-        {
-            let _ = tx.send(BackendMessage::TextRendered(text, text_properties, bytes, width, height));
+    fn text(&mut self, text: String, text_properties: TextProperties, tx: Sender<BackendResponse>) {
+        if let Ok((bytes, width, height)) = self.text_system.render_text(&text, &text_properties) {
+            let _ = tx.send(BackendResponse::TextRendered(
+                text,
+                text_properties,
+                bytes,
+                width,
+                height,
+            ));
         }
     }
 

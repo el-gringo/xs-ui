@@ -11,28 +11,33 @@ mod theme;
 use std::any::TypeId;
 
 use xs::{
-    AlignItems, Application, Context, Element, FocusHandle, NavigationNode, ORANGE, Render, div,
-    run,
+    AlignItems, Application, Context, Element, FocusHandle, NavigationNode, ORANGE, Render, WHITE,
+    div, run,
 };
 
-use crate::{body::body, card::card, grid::grid, sidebar::sidebar, theme::GRAY4};
+use crate::{
+    api::peertube::Video, body::body, card::card, grid::grid, sidebar::sidebar, theme::GRAY4,
+};
+
+const PEERTUBE_API_URL: &str = "https://video.monsieurbidouille.fr/api/v1";
 
 struct MyApp;
 impl Render for MyApp {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let (_, videos) = ctx.use_state::<(FocusHandle, Vec<api::peertube::Video>)>(|ctx| {
-            let focus_handle = ctx.focus_handle(NavigationNode::new("app").horizontal());
-            let videos = api::peertube::PeerTubeClient::get_videos();
-            (focus_handle, videos)
+        let _ = ctx.use_state::<FocusHandle>(|ctx, _| {
+            ctx.focus_handle(NavigationNode::new("app").horizontal())
+        });
+        let videos = ctx.use_state::<Vec<Video>>(|_ctx, mutator| {
+            let videos = Vec::new();
+            let client = api::peertube::PeerTubeClient::new();
+            client.get_videos(0, 100, mutator);
+            videos
         });
         div()
             .id("app")
             .row()
-            // .width(ctx.app.width as f32)
-            // .height(ctx.app.height as f32)
             .justify_content(xs::JustifyContent::FlexStart)
             .align_items(AlignItems::FlexStart)
-            //.background_color(YELLOW)
             .child(
                 sidebar()
                     //.buttons([button(RED), button(GREEN), button(BLUE)].into())
@@ -46,17 +51,18 @@ impl Render for MyApp {
                             .background_color(ORANGE)
                             .column()
                             .children([
-                                // div()
-                                //     .height(50.)
-                                //     .text("PeerTube")
-                                //     .into(),
+                                div()
+                                    .height(50.)
+                                    .color(WHITE)
+                                    .text("Monsieur Bidouille")
+                                    .into(),
                                 div()
                                     .row()
                                     .padding_top(64.)
                                     .gap(32.)
                                     .child(
                                         grid()
-                                            .items(videos.to_vec())
+                                            .items(videos.clone())
                                             .columns(3)
                                             .cell_width(320.)
                                             .cell_height(240.)

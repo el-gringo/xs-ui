@@ -4,9 +4,21 @@ use xs_layout::TextProperties;
 
 use crate::{AppContext, Application, Render, Renderer};
 
-pub enum BackendMessage {
-    ImageLoaded(String, Vec<u8>, u32, u32),
-    TextRendered(String, TextProperties, Vec<u8>, u32, u32)
+pub enum BackendResponse {
+    /// image src
+    /// image handle (js)
+    /// bytes (native)
+    /// width
+    /// height
+    ImageLoaded(String, u32, Vec<u8>, u32, u32),
+    /// text, text-properties
+    TextRendered(String, TextProperties, Vec<u8>, u32, u32),
+}
+
+pub enum BackendRequest {
+    /// src url
+    LoadImage(String),
+    Text(String, TextProperties),
 }
 
 pub trait Backend {
@@ -18,15 +30,15 @@ pub trait Backend {
         root: Box<dyn Render>,
     );
     fn performance_now(&self) -> u128;
-    fn load_image(&mut self, src: String, tx: Sender<BackendMessage>);
+    fn load_image(&mut self, src: String, tx: Sender<BackendResponse>);
     fn new_image(&mut self, rgba: Vec<u8>, width: u32, height: u32) -> u32;
-    fn text(&mut self, text: String, text_properties: TextProperties, tx: Sender<BackendMessage>);
+    fn text(&mut self, text: String, text_properties: TextProperties, tx: Sender<BackendResponse>);
     fn read_messages(
         &mut self,
         app_context: &mut AppContext,
         renderer: &mut Box<dyn Renderer>,
-        tx: Sender<BackendMessage>,
-        rx: &Receiver<BackendMessage>,
+        tx: Sender<BackendResponse>,
+        rx: &Receiver<BackendResponse>,
     );
 }
 
@@ -42,13 +54,12 @@ impl Backend for BackendDummy {
         _root: Box<dyn Render>,
     ) {
     }
-    fn load_image(&mut self, _src: String, _tx: Sender<BackendMessage>) {
+    fn load_image(&mut self, _src: String, _tx: Sender<BackendResponse>) {
         panic!("{}", BACKEND_DUMMY_WARNING);
     }
     fn new_image(&mut self, _rgba: Vec<u8>, _width: u32, _height: u32) -> u32 {
         panic!("{}", BACKEND_DUMMY_WARNING);
     }
-
     fn performance_now(&self) -> u128 {
         panic!("{}", BACKEND_DUMMY_WARNING);
     }
@@ -56,13 +67,18 @@ impl Backend for BackendDummy {
         &mut self,
         _app_context: &mut AppContext,
         _renderer: &mut Box<dyn Renderer>,
-        _tx: Sender<BackendMessage>,
-        _rx: &Receiver<BackendMessage>,
+        _tx: Sender<BackendResponse>,
+        _rx: &Receiver<BackendResponse>,
     ) {
         panic!("{}", BACKEND_DUMMY_WARNING);
     }
 
-    fn text(&mut self, _text: String, _text_properties: TextProperties, _tx: Sender<BackendMessage>) {
+    fn text(
+        &mut self,
+        _text: String,
+        _text_properties: TextProperties,
+        _tx: Sender<BackendResponse>,
+    ) {
         panic!("{}", BACKEND_DUMMY_WARNING);
     }
 }

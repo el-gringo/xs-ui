@@ -1,8 +1,8 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs_core::{AppContext, Context, Element, Message, Render};
+use xs_core::{AppContext, Context, Element, Render};
 use xs_layout::{
-    AlignItems, BorderSide, Borders, Color, EdgeInsets, Flex, FlexDirection, FlexWrap, Image,
+    AlignItems, BorderSide, Borders, Color, EdgeInsets, Flex, FlexDirection, FlexWrap,
     JustifyContent, Material, Positioned, Style, StyleDisplay, StylePosition, View,
 };
 
@@ -270,7 +270,8 @@ impl Render for Div {
 
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
         if self.style.text_properties.is_some() {
-            ctx.text_properties.replace(self.style.text_properties.clone());
+            ctx.text_properties
+                .replace(self.style.text_properties.clone());
         }
         Box::new(self.clone())
     }
@@ -286,19 +287,7 @@ impl Element for Div {
     }
 
     fn paint(&self, app_context: &mut AppContext, children: &[View]) -> View {
-        let image = if let Some(src) = self.style.background_image.clone() {
-            app_context
-                .textures
-                .entry(src.clone())
-                .or_insert_with(|| {
-                    app_context.messages.push(Message::LoadImage(src));
-                    None
-                })
-                .clone()
-        } else {
-            Option::<Image>::None
-        };
-
+        let image = app_context.load_image(self.style.background_image.clone());
         let material = Material::Quad(self.style.border, self.style.background_color, image);
         match self.style.position {
             StylePosition::Absolute => {

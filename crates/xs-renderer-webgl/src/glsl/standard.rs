@@ -36,16 +36,22 @@ impl StandardShader {
         let max_x = rect.x + rect.width;
         let max_y = rect.y + rect.height;
         webgl::set_uniform_vec2(self.program, "u_viewport", self.viewport.into());
-        webgl::set_uniform_vec4(self.program, "u_color", material.fill.into());
         webgl::set_uniform_vec2(self.program, "u_rect_min", [min_x, min_y]);
         webgl::set_uniform_vec2(self.program, "u_rect_max", [max_x, max_y]);
-        self.set_borders(material.borders);
-        if let Some(image) = &material.image {
-            webgl::set_uniform1i(self.program, "u_texture_enabled", 1);
-            webgl::set_uniform1i(self.program, "u_texture", image.texture as i32);
-        } else {
-            webgl::set_uniform1i(self.program, "u_texture_enabled", 0);
+        match material {
+            Material::Quad(borders, color, image) => {
+                webgl::set_uniform_vec4(self.program, "u_color", color.clone().into());
+                self.set_borders(borders);
+                if let Some(image) = image {
+                    webgl::set_uniform1i(self.program, "u_texture_enabled", 1);
+                    webgl::set_uniform1i(self.program, "u_texture", image.texture as i32);
+                } else {
+                    webgl::set_uniform1i(self.program, "u_texture_enabled", 0);
+                }
+            }
+            Material::Text(color, image) => {}
         }
+
         let vertices: [Vector3; 6] = [
             Vector3::new(min_x, min_y, 0.0),
             Vector3::new(min_x, max_y, 0.0),
@@ -57,7 +63,7 @@ impl StandardShader {
         webgl::draw_mesh(self.program, "a_position", vertices.to_vec());
     }
 
-    fn set_borders(&mut self, borders: Borders) {
+    fn set_borders(&mut self, borders: &Borders) {
         self.set_border(0, borders.top);
         self.set_border(1, borders.bottom);
         self.set_border(2, borders.left);

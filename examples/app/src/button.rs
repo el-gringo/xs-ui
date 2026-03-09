@@ -15,7 +15,7 @@ impl Button {
 impl Render for Button {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
         let nav_node =
-            ctx.use_state::<FocusHandle>(|ctx| ctx.focus_handle(NavigationNode::new("button")));
+            ctx.use_state::<FocusHandle>(|ctx, _| ctx.focus_handle(NavigationNode::new("button")));
         div()
             .id("button")
             .width(200.)

@@ -1,8 +1,7 @@
-use std::sync::mpsc::channel;
-
 use nanoserde::DeJson;
+use xs::StateMutator;
 
-use crate::api::rest_api::{body_string, RestApi};
+use crate::api::rest_api::{RestApi, body_string};
 
 const PEERTUBE_BASE_URL: &str = "https://video.monsieurbidouille.fr";
 const PEERTUBE_API_URL: &str = "https://video.monsieurbidouille.fr/api/v1";
@@ -32,39 +31,24 @@ pub struct PeerTubeClient {
     api: RestApi,
 }
 
-impl PeerTubeClient {
+impl<'a> PeerTubeClient {
     pub fn new() -> Self {
         Self {
             api: RestApi::new(PEERTUBE_API_URL),
         }
     }
 
-    pub fn get_videos() -> Vec<Video> {
+    pub fn get_videos(&self, offset: u32, count: u32, mutator: StateMutator<Vec<Video>>)
+    {
         let api = RestApi::new(PEERTUBE_API_URL);
-        let response = api.get("/videos");
-        let json_str = body_string(&response);
-
-        if let Ok(video_list) = VideoListResponse::deserialize_json(&json_str) {
-            video_list.data
-        } else {
-            Vec::new()
-        }
-    }
-
-    pub fn get_videos_async(&self, videos: &mut Vec<Video>) {
-        let (tx, rx) = channel();
-        std::thread::spawn(move || {
-            let api = RestApi::new(PEERTUBE_API_URL);
-            let response = api.get("/videos");
+        api.get(&format!("/videos?start={offset}&count={count}"), move |response| {
             let json_str = body_string(&response);
-
             if let Ok(VideoListResponse { data }) = VideoListResponse::deserialize_json(&json_str) {
-                let _ = tx.send(data);
+                mutator.mutate(|videos| {
+                    videos.extend(data);
+                });
             };
         });
-        if let Ok(data) = rx.try_recv() {
-            videos.extend(data);
-        }
     }
 }
 

@@ -12,3 +12,6 @@ edition.workspace = true
 xs.workspace = true
 xs-http.workspace = true
 nanoserde.workspace = true
+
+[target.wasm32-unknown-unknown.dependencies]
+xs-js-sys.workspace = true

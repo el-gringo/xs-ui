@@ -34,7 +34,7 @@ impl Sidebar {
 
 impl Render for Sidebar {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let _ = ctx.use_state::<FocusHandle>(|ctx| {
+        let _ = ctx.use_state::<FocusHandle>(|ctx, _| {
             let node = NavigationNode::new("sidebar").vertical();
             ctx.focus_handle(node)
         });

@@ -24,6 +24,7 @@ dependencies = [
  "nanoserde",
  "xs",
  "xs-http",
+ "xs-js-sys",
 ]
 
 [[package]]
@@ -481,6 +482,7 @@ version = "0.1.0"
 dependencies = [
  "xs-backend-core",
  "xs-core",
+ "xs-http",
  "xs-js-sys",
  "xs-layout",
  "xs-platform-event",

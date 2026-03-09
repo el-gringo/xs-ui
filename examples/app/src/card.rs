@@ -10,7 +10,7 @@ use crate::theme::GRAY3;
 pub struct Card {
     id: Option<&'static str>,
     thumbnail: String,
-    title: String
+    title: String,
 }
 
 impl Card {
@@ -18,7 +18,7 @@ impl Card {
         Self {
             id: None,
             thumbnail: String::new(),
-            title: String::new()
+            title: String::new(),
         }
     }
 
@@ -42,7 +42,7 @@ impl Render for Card {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
         let id = self.id.unwrap_or("card");
         let nav_node =
-            ctx.use_state::<FocusHandle>(|ctx| ctx.focus_handle(NavigationNode::new(id)));
+            ctx.use_state::<FocusHandle>(|ctx, _| ctx.focus_handle(NavigationNode::new(id)));
         div()
             .column()
             .width(320.)
@@ -73,9 +73,9 @@ impl Render for Card {
                     .font_size(20.)
                     .margin_top(16.)
                     .color(GRAY3)
-                    .child(
-                        text(self.title.clone()).into()
-                    ).into())
+                    .child(text(self.title.clone()).into())
+                    .into(),
+            )
             .into()
     }
 

@@ -24,7 +24,7 @@ impl Body {
 
 impl Render for Body {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let _ = ctx.use_state::<FocusHandle>(|ctx| {
+        let _ = ctx.use_state::<FocusHandle>(|ctx, _| {
             ctx.focus_handle(NavigationNode::new("body").horizontal())
         });
         div()

@@ -244,26 +244,36 @@ pub fn compile_shader(shader_type: u32, source: &str) -> GLuint {
     }
 }
 
-fn is_power_of_2(value: i32) -> bool {
+fn is_power_of_2(value: u32) -> bool {
     (value & (value - 1)) == 0
 }
 
-pub fn load_texture(image: &Image, texture: usize, width: i32, height: i32) -> GLuint {
+pub fn load_texture(
+    rgba: &[u8],
+    image_handle: u32,
+    width: u32,
+    height: u32,
+    alpha: bool,
+) -> GLuint {
     unsafe {
-        let ptr = glCreateTexture();
-        glActiveTexture(texture.try_into().unwrap());
-        glBindTexture(GL_TEXTURE_2D, ptr);
+        let texture = glCreateTexture();
+        glActiveTexture(texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
             GL_RGBA,
-            width,
-            height,
+            width as _,
+            height as _,
             0,
             GL_RGBA,
             GL_UNSIGNED_BYTE,
-            image.as_ptr(),
+            if rgba.len() > 0 {
+                rgba.as_ptr() as _
+            } else {
+                image_handle as _
+            },
         );
         if is_power_of_2(width) && is_power_of_2(height) {
             glGenerateMipmap(GL_TEXTURE_2D);
@@ -272,7 +282,7 @@ pub fn load_texture(image: &Image, texture: usize, width: i32, height: i32) -> G
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         }
-        ptr
+        texture
     }
 }
 
