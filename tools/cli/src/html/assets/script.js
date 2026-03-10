@@ -1,4 +1,4 @@
-let wasm, start;
+let wasm;
 let max_render_time = 0;
 
 const memory = new WebAssembly.Memory({ initial: 20, maximum: 10_000 });
@@ -18,7 +18,7 @@ function drop_object(idx) {
   heap_next = idx;
 }
 
-function take_object(idx) {
+function _take_object(idx) {
   const ret = get_object(idx);
   drop_object(idx);
   return ret;
@@ -563,6 +563,7 @@ canvas.focus();
 const FPS = 60;
 const FRAME_INTERVAL = 1000 / FPS;
 
+let start = performance.now();
 const env = {
   console_log: function (ptr, len) {
     console.log(getStringFromWasm0(ptr, len));
@@ -649,12 +650,10 @@ const env = {
       .then((body) => {
         const ptr = passBytesToWasm0(body, wasm.__xs_malloc, wasm.__xs_realloc);
         const len = WASM_VECTOR_LEN;
-        console.log("js fetch_callback", ptr, len);
         wasm.fetch_callback(handle, ptr, len);
       });
   },
   request_animation_frame(closure, vcall) {
-    let start = performance.now();
     return requestAnimationFrame((now) => {
       wasm.callback_request_animation_frame(closure, vcall, now);
       const frame_duration = performance.now() - now;
@@ -707,6 +706,9 @@ const env = {
   glBindTexture: function (target, texture) {
     GL.validateGLObjectID(GL.textures, texture, "glBindTexture", "texture");
     gl.bindTexture(target, GL.textures[texture]);
+  },
+  glTexParameteriv(target, pname, param) {
+    gl.glTexParameteriv(target, pname, param);
   },
   glTexImage2D: function (
     target,
@@ -770,38 +772,24 @@ const env = {
     gl.texParameteri(target, pname, param);
   },
   glUniform1fv: function (location, count, value) {
-    GL.validateGLObjectID(GL.uniforms, location, "glUniform1fv", "location");
-    assert(
-      (value & 3) == 0,
-      "Pointer to float data passed to glUniform1fv must be aligned to four bytes!",
-    );
     var view = getArray(value, Float32Array, 1 * count);
     gl.uniform1fv(GL.uniforms[location], view);
   },
+  glUniform2f: function (location, v0, v1) {
+    gl.uniform2f(GL.uniforms[location], v0, v1);
+  },
   glUniform2fv: function (location, count, value) {
-    GL.validateGLObjectID(GL.uniforms, location, "glUniform2fv", "location");
-    assert(
-      (value & 3) == 0,
-      "Pointer to float data passed to glUniform2fv must be aligned to four bytes!",
-    );
     var view = getArray(value, Float32Array, count);
     gl.uniform2fv(GL.uniforms[location], view);
   },
   glUniform3fv: function (location, count, value) {
-    GL.validateGLObjectID(GL.uniforms, location, "glUniform3fv", "location");
-    assert(
-      (value & 3) == 0,
-      "Pointer to float data passed to glUniform3fv must be aligned to four bytes!",
-    );
     var view = getArray(value, Float32Array, 3 * count);
     gl.uniform3fv(GL.uniforms[location], view);
   },
+  glUniform4f: function (location, v0, v1, v2, v3) {
+    gl.uniform4f(GL.uniforms[location], v0, v1, v2, v3);
+  },
   glUniform4fv: function (location, count, value) {
-    GL.validateGLObjectID(GL.uniforms, location, "glUniform4fv", "location");
-    assert(
-      (value & 3) == 0,
-      "Pointer to float data passed to glUniform4fv must be aligned to four bytes!",
-    );
     var view = getArray(value, Float32Array, count);
     gl.uniform4fv(GL.uniforms[location], view);
   },

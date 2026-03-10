@@ -30,7 +30,7 @@ impl Render for MyApp {
         let videos = ctx.use_state::<Vec<Video>>(|_ctx, mutator| {
             let videos = Vec::new();
             let client = api::peertube::PeerTubeClient::new();
-            client.get_videos(0, 100, mutator);
+            client.get_videos(0, 50, mutator);
             videos
         });
         div()

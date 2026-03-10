@@ -1,6 +1,6 @@
 mod bindings;
+mod mesh;
 mod renderer_webgl;
-mod webgl;
-mod glsl;
+mod shader;
 
 pub use renderer_webgl::RendererWebGl;

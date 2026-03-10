@@ -24,9 +24,9 @@ pub enum BackendRequest {
 pub trait Backend {
     fn run(
         &mut self,
-        app: &mut Application,
-        app_context: &mut AppContext,
-        renderer: &mut Box<dyn Renderer>,
+        app: Application,
+        app_context: AppContext,
+        renderer: Box<dyn Renderer>,
         root: Box<dyn Render>,
     );
     fn performance_now(&self) -> u128;
@@ -48,9 +48,9 @@ pub struct BackendDummy;
 impl Backend for BackendDummy {
     fn run(
         &mut self,
-        _app: &mut Application,
-        _app_context: &mut AppContext,
-        _renderer: &mut Box<dyn Renderer>,
+        _app: Application,
+        _app_context: AppContext,
+        _renderer: Box<dyn Renderer>,
         _root: Box<dyn Render>,
     ) {
     }

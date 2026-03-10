@@ -12,7 +12,7 @@ use xs_backend_wayland_client::{
 };
 use xs_core::{
     AppContext, Application, Backend, BackendRequest, BackendResponse, Render, Renderer,
-    TextSystem,
+    TextSystem, set_app_context,
 };
 use xs_layout::{Image, TextProperties};
 
@@ -66,9 +66,9 @@ impl BackendWayland {
 impl Backend for BackendWayland {
     fn run(
         &mut self,
-        app: &mut Application,
-        app_context: &mut AppContext,
-        renderer: &mut Box<dyn Renderer>,
+        app: Application,
+        mut app_context: AppContext,
+        mut renderer: Box<dyn Renderer>,
         root: Box<dyn Render>,
     ) {
         let config = WaylandConfig {
@@ -78,7 +78,7 @@ impl Backend for BackendWayland {
             window_height: app.height,
             fullscreen: false,
         };
-        let mut ctx = WaylandContext::new(app_context);
+        let mut ctx = WaylandContext::new(&mut app_context);
         let app_id = app.id;
         let app_title = app.title;
         connect(&mut ctx);
@@ -94,7 +94,8 @@ impl Backend for BackendWayland {
         let start = Instant::now();
         let (tx, rx) = channel();
         while ctx.dispatch_pending() != -1 && ctx.app_context.running {
-            self.read_messages(&mut ctx.app_context, renderer, tx.clone(), &rx);
+            set_app_context(ctx.app_context);
+            self.read_messages(&mut ctx.app_context, &mut renderer, tx.clone(), &rx);
             self.elapsed = start.elapsed().as_millis();
             let widget_tree = renderer.render(&mut ctx.app_context, root.clone());
             renderer.draw_frame(&widget_tree);

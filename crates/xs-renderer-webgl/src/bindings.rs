@@ -326,12 +326,15 @@ unsafe extern "C" {
     );
 
     pub fn glEnable(cap: GLenum);
+    pub fn glDisable(cap: GLenum);
     pub fn glBindBuffer(target: GLenum, buffer: GLuint);
     pub fn glUniform1i(location: GLint, v0: GLint);
     pub fn glUniform1f(location: GLint, v0: GLfloat);
+    pub fn glUniform2f(location: GLint, v0: GLfloat, v1: GLfloat);
     pub fn glUniform2fv(location: GLint, count: GLsizei, value: *const GLfloat, len: GLuint);
     pub fn glUseProgram(program: GLuint);
     pub fn glGetUniformLocation(program: GLuint, name: *const GLchar, len: GLuint) -> GLint;
+    pub fn glUniform4f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat, v3: GLfloat);
     pub fn glUniform4fv(location: GLint, count: GLsizei, value: *const GLfloat, len: GLuint);
     pub fn glCreateBuffer() -> GLuint;
     pub fn glCreateProgram() -> GLuint;
@@ -361,4 +364,7 @@ unsafe extern "C" {
     pub fn glGenerateMipmap(target: GLenum);
     pub fn glCreateTexture() -> GLuint;
     pub fn glBindTexture(target: GLenum, texture: GLuint);
+    pub fn glFlush();
+    pub fn glPixelStorei(pname: GLenum, param: GLint);
+    pub fn glTexParameteriv(target: GLenum, pname: GLenum, param: GLint);
 }

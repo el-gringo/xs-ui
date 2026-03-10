@@ -1,7 +1,8 @@
-precision mediump float;
+precision lowp float;
 
 // Current position
 varying vec2 v_position;
+varying vec2 texture_coordinate;
 
 uniform vec2 u_viewport;
 uniform vec4 u_color;
@@ -37,9 +38,10 @@ void main() {
     } else if (right_border.enabled && v_position.x > u_rect_max.x - right_border.width) {
         gl_FragColor = right_border.color;
     } else {
-        gl_FragColor = u_color;
         if (u_texture_enabled) {
-            gl_FragColor = texture2D(u_texture, (v_position - u_rect_min) / (u_rect_max - u_rect_min));
+            gl_FragColor = mix(u_color, texture2D(u_texture, (v_position - u_rect_min) / (u_rect_max - u_rect_min)), 1.);
+        } else {
+                gl_FragColor = u_color;
         }
     }
 }

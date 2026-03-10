@@ -89,8 +89,6 @@ impl RendererOpenGl {
         );
         self.shaders.insert("text".into(), shader);
     }
-
-    pub fn draw_mesh(&self) {}
 }
 
 impl Renderer for RendererOpenGl {

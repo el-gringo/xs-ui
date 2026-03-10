@@ -2,7 +2,7 @@ precision lowp float;
 
 // Current position
 varying vec2 v_position;
-varying lowp vec2 texture_coordinate;
+varying vec2 texture_coordinate;
 
 uniform vec2 u_viewport;
 uniform vec4 u_color;

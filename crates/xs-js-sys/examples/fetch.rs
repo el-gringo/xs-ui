@@ -1,4 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
 
 use xs_js_sys::{Closure, fetch, log};
 
