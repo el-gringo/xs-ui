@@ -346,6 +346,7 @@ unsafe extern "C" {
         source: *const GLchar,
         length: GLsizei,
     );
+    pub fn getShaderInfoLog(shader: GLuint);
     pub fn glCompileShader(shader: GLuint);
     pub fn glGetAttribLocation(program: GLuint, name: *const GLchar, len: GLuint) -> GLint;
 

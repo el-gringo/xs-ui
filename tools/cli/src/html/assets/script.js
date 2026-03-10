@@ -53,58 +53,6 @@ function getStringFromWasm0(ptr, len) {
   return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 
-function UTF8ToString(ptr, maxBytesToRead) {
-  return getStringFromWasm0(ptr, maxBytesToRead);
-
-  var idx = 0;
-  var endIdx = idx + maxBytesToRead;
-
-  var str = "";
-  while (!(idx >= endIdx)) {
-    // For UTF8 byte structure, see:
-    // http://en.wikipedia.org/wiki/UTF-8#Description
-    // https://www.ietf.org/rfc/rfc2279.txt
-    // https://tools.ietf.org/html/rfc3629
-    var u0 = u8Array[idx++];
-
-    // If not building with TextDecoder enabled, we don't know the string length, so scan for \0 byte.
-    // If building with TextDecoder, we know exactly at what byte index the string ends, so checking for nulls here would be redundant.
-    if (!u0) return str;
-
-    if (!(u0 & 0x80)) {
-      str += String.fromCharCode(u0);
-      continue;
-    }
-    var u1 = u8Array[idx++] & 63;
-    if ((u0 & 0xe0) == 0xc0) {
-      str += String.fromCharCode(((u0 & 31) << 6) | u1);
-      continue;
-    }
-    var u2 = u8Array[idx++] & 63;
-    if ((u0 & 0xf0) == 0xe0) {
-      u0 = ((u0 & 15) << 12) | (u1 << 6) | u2;
-    } else {
-      if ((u0 & 0xf8) != 0xf0)
-        console.warn(
-          "Invalid UTF-8 leading byte 0x" +
-            u0.toString(16) +
-            " encountered when deserializing a UTF-8 string on the asm.js/wasm heap to a JS string!",
-        );
-
-      u0 = ((u0 & 7) << 18) | (u1 << 12) | (u2 << 6) | (u8Array[idx++] & 63);
-    }
-
-    if (u0 < 0x10000) {
-      str += String.fromCharCode(u0);
-    } else {
-      var ch = u0 - 0x10000;
-      str += String.fromCharCode(0xd800 | (ch >> 10), 0xdc00 | (ch & 0x3ff));
-    }
-  }
-
-  return str;
-}
-
 function stringToUTF8(str, heap, outIdx, maxBytesToWrite) {
   var startIdx = outIdx;
   var endIdx = outIdx + maxBytesToWrite;
@@ -226,328 +174,6 @@ function getArray(ptr, arr, n) {
   return new arr(wasm.memory.buffer, ptr, n);
 }
 
-var GL = {
-  counter: 1,
-  buffers: [],
-  mappedBuffers: {},
-  programs: [],
-  framebuffers: [],
-  renderbuffers: [],
-  textures: [],
-  uniforms: [],
-  shaders: [],
-  vaos: [],
-  timerQueries: [],
-  contexts: {},
-  programInfos: {},
-
-  getNewId: function (table) {
-    var ret = GL.counter++;
-    for (var i = table.length; i < ret; i++) {
-      table[i] = null;
-    }
-    return ret;
-  },
-
-  validateGLObjectID: function (
-    objectHandleArray,
-    objectID,
-    callerFunctionName,
-    objectReadableType,
-  ) {
-    if (objectID != 0) {
-      if (objectHandleArray[objectID] === null) {
-        console.error(
-          callerFunctionName +
-            " called with an already deleted " +
-            objectReadableType +
-            " ID " +
-            objectID +
-            "!",
-        );
-      } else if (!objectHandleArray[objectID]) {
-        console.error(
-          callerFunctionName +
-            " called with an invalid " +
-            objectReadableType +
-            " ID " +
-            objectID +
-            "!",
-        );
-      }
-    }
-  },
-  getSource: function (shader, count, string, length) {
-    var source = "";
-    for (var i = 0; i < count; ++i) {
-      var len =
-        length == 0 ? undefined : getArray(length + i * 4, Uint32Array, 1)[0];
-      source += UTF8ToString(getArray(string + i * 4, Uint32Array, 1)[0], len);
-    }
-    return source;
-  },
-  populateUniformTable: function (program) {
-    GL.validateGLObjectID(
-      GL.programs,
-      program,
-      "populateUniformTable",
-      "program",
-    );
-    var p = GL.programs[program];
-    var ptable = (GL.programInfos[program] = {
-      uniforms: {},
-      maxUniformLength: 0, // This is eagerly computed below, since we already enumerate all uniforms anyway.
-      maxAttributeLength: -1, // This is lazily computed and cached, computed when/if first asked, "-1" meaning not computed yet.
-      maxUniformBlockNameLength: -1, // Lazily computed as well
-    });
-
-    var utable = ptable.uniforms;
-    // A program's uniform table maps the string name of an uniform to an integer location of that uniform.
-    // The global GL.uniforms map maps integer locations to WebGLUniformLocations.
-    var numUniforms = gl.getProgramParameter(p, 0x8b86 /*GL_ACTIVE_UNIFORMS*/);
-    for (var i = 0; i < numUniforms; ++i) {
-      var u = gl.getActiveUniform(p, i);
-
-      var name = u.name;
-      ptable.maxUniformLength = Math.max(
-        ptable.maxUniformLength,
-        name.length + 1,
-      );
-
-      // If we are dealing with an array, e.g. vec4 foo[3], strip off the array index part to canonicalize that "foo", "foo[]",
-      // and "foo[0]" will mean the same. Loop below will populate foo[1] and foo[2].
-      if (name.slice(-1) == "]") {
-        name = name.slice(0, name.lastIndexOf("["));
-      }
-
-      // Optimize memory usage slightly: If we have an array of uniforms, e.g. 'vec3 colors[3];', then
-      // only store the string 'colors' in utable, and 'colors[0]', 'colors[1]' and 'colors[2]' will be parsed as 'colors'+i.
-      // Note that for the GL.uniforms table, we still need to fetch the all WebGLUniformLocations for all the indices.
-      var loc = gl.getUniformLocation(p, name);
-      if (loc) {
-        var id = GL.getNewId(GL.uniforms);
-        utable[name] = [u.size, id];
-        GL.uniforms[id] = loc;
-
-        for (var j = 1; j < u.size; ++j) {
-          var n = name + "[" + j + "]";
-          loc = gl.getUniformLocation(p, n);
-          id = GL.getNewId(GL.uniforms);
-
-          GL.uniforms[id] = loc;
-        }
-      }
-    }
-  },
-};
-
-function _glGenObject(n, buffers, createFunction, objectTable, functionName) {
-  for (var i = 0; i < n; i++) {
-    var buffer = gl[createFunction]();
-    var id = buffer && GL.getNewId(objectTable);
-    if (buffer) {
-      buffer.name = id;
-      objectTable[id] = buffer;
-    } else {
-      console.error("GL_INVALID_OPERATION");
-      GL.recordError(0x0502 /* GL_INVALID_OPERATION */);
-
-      alert(
-        "GL_INVALID_OPERATION in " +
-          functionName +
-          ": GLctx." +
-          createFunction +
-          " returned null - most likely GL context is lost!",
-      );
-    }
-    getArray(buffers + i * 4, Int32Array, 1)[0] = id;
-  }
-}
-
-function _webglGet(name_, p, type) {
-  // Guard against user passing a null pointer.
-  // Note that GLES2 spec does not say anything about how passing a null pointer should be treated.
-  // Testing on desktop core GL 3, the application crashes on glGetIntegerv to a null pointer, but
-  // better to report an error instead of doing anything random.
-  if (!p) {
-    console.error(
-      "GL_INVALID_VALUE in glGet" +
-        type +
-        "v(name=" +
-        name_ +
-        ": Function called with null out pointer!",
-    );
-    GL.recordError(0x501 /* GL_INVALID_VALUE */);
-    return;
-  }
-  var ret = undefined;
-  switch (
-    name_ // Handle a few trivial GLES values
-  ) {
-    case 0x8dfa: // GL_SHADER_COMPILER
-      ret = 1;
-      break;
-    case 0x8df8: // GL_SHADER_BINARY_FORMATS
-      if (type != "EM_FUNC_SIG_PARAM_I" && type != "EM_FUNC_SIG_PARAM_I64") {
-        GL.recordError(0x500); // GL_INVALID_ENUM
-
-        err(
-          "GL_INVALID_ENUM in glGet" +
-            type +
-            "v(GL_SHADER_BINARY_FORMATS): Invalid parameter type!",
-        );
-      }
-      return; // Do not write anything to the out pointer, since no binary formats are supported.
-    case 0x87fe: // GL_NUM_PROGRAM_BINARY_FORMATS
-    case 0x8df9: // GL_NUM_SHADER_BINARY_FORMATS
-      ret = 0;
-      break;
-    case 0x86a2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
-      // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
-      // so implement it ourselves to allow C++ GLES2 code get the length.
-      var formats = gl.getParameter(0x86a3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
-      ret = formats ? formats.length : 0;
-      break;
-    case 0x821d: // GL_NUM_EXTENSIONS
-      assert(false, "unimplemented");
-      break;
-    case 0x821b: // GL_MAJOR_VERSION
-    case 0x821c: // GL_MINOR_VERSION
-      assert(false, "unimplemented");
-      break;
-  }
-
-  if (ret === undefined) {
-    var result = gl.getParameter(name_);
-    switch (typeof result) {
-      case "number":
-        ret = result;
-        break;
-      case "boolean":
-        ret = result ? 1 : 0;
-        break;
-      case "string":
-        GL.recordError(0x500); // GL_INVALID_ENUM
-        console.error(
-          "GL_INVALID_ENUM in glGet" +
-            type +
-            "v(" +
-            name_ +
-            ") on a name which returns a string!",
-        );
-        return;
-      case "object":
-        if (result === null) {
-          // null is a valid result for some (e.g., which buffer is bound - perhaps nothing is bound), but otherwise
-          // can mean an invalid name_, which we need to report as an error
-          switch (name_) {
-            case 0x8894: // ARRAY_BUFFER_BINDING
-            case 0x8b8d: // CURRENT_PROGRAM
-            case 0x8895: // ELEMENT_ARRAY_BUFFER_BINDING
-            case 0x8ca6: // FRAMEBUFFER_BINDING
-            case 0x8ca7: // RENDERBUFFER_BINDING
-            case 0x8069: // TEXTURE_BINDING_2D
-            case 0x85b5: // WebGL 2 GL_VERTEX_ARRAY_BINDING, or WebGL 1 extension OES_vertex_array_object GL_VERTEX_ARRAY_BINDING_OES
-            case 0x8919: // GL_SAMPLER_BINDING
-            case 0x8e25: // GL_TRANSFORM_FEEDBACK_BINDING
-            case 0x8514: {
-              // TEXTURE_BINDING_CUBE_MAP
-              ret = 0;
-              break;
-            }
-            default: {
-              GL.recordError(0x500); // GL_INVALID_ENUM
-              console.error(
-                "GL_INVALID_ENUM in glGet" +
-                  type +
-                  "v(" +
-                  name_ +
-                  ") and it returns null!",
-              );
-              return;
-            }
-          }
-        } else if (
-          result instanceof Float32Array ||
-          result instanceof Uint32Array ||
-          result instanceof Int32Array ||
-          result instanceof Array
-        ) {
-          for (var i = 0; i < result.length; ++i) {
-            assert(false, "unimplemented");
-          }
-          return;
-        } else {
-          try {
-            ret = result.name | 0;
-          } catch (e) {
-            GL.recordError(0x500); // GL_INVALID_ENUM
-            console.error(
-              "GL_INVALID_ENUM in glGet" +
-                type +
-                "v: Unknown object returned from WebGL getParameter(" +
-                name_ +
-                ")! (error: " +
-                e +
-                ")",
-            );
-            return;
-          }
-        }
-        break;
-      default:
-        GL.recordError(0x500); // GL_INVALID_ENUM
-        console.error(
-          "GL_INVALID_ENUM in glGet" +
-            type +
-            "v: Native code calling glGet" +
-            type +
-            "v(" +
-            name_ +
-            ") and it returns " +
-            result +
-            " of type " +
-            typeof result +
-            "!",
-        );
-        return;
-    }
-  }
-
-  switch (type) {
-    case "EM_FUNC_SIG_PARAM_I64":
-      getArray(p, Int32Array, 1)[0] = ret;
-    case "EM_FUNC_SIG_PARAM_I":
-      getArray(p, Int32Array, 1)[0] = ret;
-      break;
-    case "EM_FUNC_SIG_PARAM_F":
-      getArray(p, Float32Array, 1)[0] = ret;
-      break;
-    case "EM_FUNC_SIG_PARAM_B":
-      getArray(p, Int8Array, 1)[0] = ret ? 1 : 0;
-      break;
-    default:
-      throw "internal glGet error, bad type: " + type;
-  }
-}
-
-function texture_size(internalFormat, width, height) {
-  if (internalFormat == gl.ALPHA) {
-    return width * height;
-  } else if (internalFormat == gl.RGB) {
-    return width * height * 3;
-  } else if (internalFormat == gl.RGBA) {
-    return width * height * 4;
-  } else {
-    // TextureFormat::RGB565 | TextureFormat::RGBA4 | TextureFormat::RGBA5551
-    return width * height * 3;
-  }
-}
-
-const FS = {
-  loaded_files: [],
-  unique_id: 0,
-};
 const SAPP_MODIFIER_SHIFT = 1;
 const SAPP_MODIFIER_CTRL = 2;
 const SAPP_MODIFIER_ALT = 4;
@@ -681,15 +307,11 @@ const env = {
   },
   glCreateBuffer: function () {
     const buffer = gl.createBuffer();
-    const ptr = add_heap_object(buffer);
-    GL.buffers[ptr] = buffer;
-    return ptr;
+    return add_heap_object(buffer);
   },
   glCreateTexture: function () {
     const texture = gl.createTexture();
-    const ptr = add_heap_object(texture);
-    GL.textures[ptr] = texture;
-    return ptr;
+    return add_heap_object(texture);
   },
   glScissor: function (x, y, w, h) {
     gl.scissor(x, y, w, h);
@@ -697,15 +319,11 @@ const env = {
   glClear: function (mask) {
     gl.clear(mask);
   },
-  glGenTextures: function (n, textures) {
-    _glGenObject(n, textures, "createTexture", GL.textures, "glGenTextures");
-  },
   glActiveTexture: function (texture_index) {
     gl.activeTexture(gl["TEXTURE" + texture_index]);
   },
   glBindTexture: function (target, texture) {
-    GL.validateGLObjectID(GL.textures, texture, "glBindTexture", "texture");
-    gl.bindTexture(target, GL.textures[texture]);
+    gl.bindTexture(target, texture);
   },
   glTexParameteriv(target, pname, param) {
     gl.glTexParameteriv(target, pname, param);
@@ -773,67 +391,47 @@ const env = {
   },
   glUniform1fv: function (location, count, value) {
     var view = getArray(value, Float32Array, 1 * count);
-    gl.uniform1fv(GL.uniforms[location], view);
+    gl.uniform1fv(get_object(location), view);
   },
   glUniform2f: function (location, v0, v1) {
-    gl.uniform2f(GL.uniforms[location], v0, v1);
+    gl.uniform2f(get_object(location), v0, v1);
   },
   glUniform2fv: function (location, count, value) {
     var view = getArray(value, Float32Array, count);
-    gl.uniform2fv(GL.uniforms[location], view);
+    gl.uniform2fv(get_object(location), view);
   },
   glUniform3fv: function (location, count, value) {
     var view = getArray(value, Float32Array, 3 * count);
-    gl.uniform3fv(GL.uniforms[location], view);
+    gl.uniform3fv(get_object(location), view);
   },
   glUniform4f: function (location, v0, v1, v2, v3) {
-    gl.uniform4f(GL.uniforms[location], v0, v1, v2, v3);
+    gl.uniform4f(get_object(location), v0, v1, v2, v3);
   },
   glUniform4fv: function (location, count, value) {
     var view = getArray(value, Float32Array, count);
-    gl.uniform4fv(GL.uniforms[location], view);
+    gl.uniform4fv(get_object(location), view);
   },
-
   glUniform1f: function (location, value) {
-    GL.validateGLObjectID(GL.uniforms, location, "glUniform1f", "location");
-    gl.uniform1f(GL.uniforms[location], value);
+    gl.uniform1f(get_object(location), value);
   },
   glUniform1i: function (location, value) {
-    GL.validateGLObjectID(GL.uniforms, location, "glUniform1i", "location");
-    gl.uniform1i(GL.uniforms[location], value);
+    gl.uniform1i(get_object(location), value);
   },
   glUniform1iv: function (location, count, value) {
-    GL.validateGLObjectID(GL.uniforms, location, "glUniform1iv", "location");
-    assert(
-      (value & 3) == 0,
-      "Pointer to i32 data passed to glUniform1iv must be aligned to four bytes!",
-    );
-    var view = getArray(value, Int32Array, 1 * count);
-    gl.uniform1iv(GL.uniforms[location], view);
+    const view = getArray(value, Int32Array, 1 * count);
+    gl.uniform1iv(location, view);
   },
   glUniform2iv: function (location, count, value) {
-    GL.validateGLObjectID(GL.uniforms, location, "glUniform2iv", "location");
-    assert(
-      (value & 3) == 0,
-      "Pointer to i32 data passed to glUniform2iv must be aligned to four bytes!",
-    );
     var view = getArray(value, Int32Array, 2 * count);
-    gl.uniform2iv(GL.uniforms[location], view);
+    gl.uniform2iv(get_object(location), view);
   },
   glUniform3iv: function (location, count, value) {
-    GL.validateGLObjectID(GL.uniforms, location, "glUniform3fv", "location");
-    assert(
-      (value & 3) == 0,
-      "Pointer to i32 data passed to glUniform3iv must be aligned to four bytes!",
-    );
     var view = getArray(value, Int32Array, 3 * count);
-    gl.uniform3iv(GL.uniforms[location], view);
+    gl.uniform3iv(get_object(location), view);
   },
   glUniform4iv: function (location, count, value) {
-    GL.validateGLObjectID(GL.uniforms, location, "glUniform4fv", "location");
-    //assert((value & 3) == 0, 'Pointer to i32 data passed to glUniform4iv must be aligned to four bytes!');
     var view = getArray(value, Int32Array, 4 * count);
-    gl.uniform4iv(GL.uniforms[location], view);
+    gl.uniform4iv(get_object(location), view);
   },
   glBlendFunc: function (sfactor, dfactor) {
     gl.blendFunc(sfactor, dfactor);
@@ -851,102 +449,39 @@ const env = {
     _webglGet(name_, p, "EM_FUNC_SIG_PARAM_I");
   },
   glGetAttribLocation: function (program, name, len) {
-    name = UTF8ToString(name, len);
-    const location = gl.getAttribLocation(GL.programs[program], name);
-    return location;
+    const fieldName = getStringFromWasm0(name, len);
+    const location = gl.getAttribLocation(get_object(program), fieldName);
+    return add_heap_object(location);
   },
-  glEnableVertexAttribArray: function (index) {
-    gl.enableVertexAttribArray(index);
+  glEnableVertexAttribArray: function (attribLocation) {
+    gl.enableVertexAttribArray(get_object(attribLocation));
   },
-  glDisableVertexAttribArray: function (index) {
-    gl.disableVertexAttribArray(index);
+  glDisableVertexAttribArray: function (attribLocation) {
+    gl.disableVertexAttribArray(get_object(attribLocation));
   },
-  glVertexAttribPointer: function (index, size, type, normalized, stride, ptr) {
-    gl.vertexAttribPointer(index, size, type, !!normalized, stride, ptr);
+  glVertexAttribPointer: function (attribLocation, size, type, normalized, stride, ptr) {
+    gl.vertexAttribPointer(get_object(attribLocation), size, type, !!normalized, stride, ptr);
   },
-  glVertexAttribIPointer: function (index, size, type, stride, ptr) {
-    gl.vertexAttribIPointer(index, size, type, stride, ptr);
+  glVertexAttribIPointer: function (attribLocation, size, type, stride, ptr) {
+    gl.vertexAttribIPointer(get_object(attribLocation), size, type, stride, ptr);
   },
   glGetUniformLocation: function (program, name, len) {
-    GL.validateGLObjectID(
-      GL.programs,
-      program,
-      "glGetUniformLocation",
-      "program",
-    );
-    const fieldName = UTF8ToString(name, len);
-    var arrayIndex = 0;
-    let uniformName = fieldName;
-    // If user passed an array accessor "[index]", parse the array index off the accessor.
-    if (fieldName[fieldName.length - 1] == "]") {
-      var leftBrace = fieldName.lastIndexOf("[");
-      arrayIndex =
-        fieldName[leftBrace + 1] != "]"
-          ? parseInt(fieldName.slice(leftBrace + 1))
-          : 0; // "index]", parseInt will ignore the ']' at the end; but treat "foo[]" as "foo[0]"
-      uniformName = fieldName.slice(0, leftBrace);
-    }
-    var uniformInfo =
-      GL.programInfos[program] &&
-      GL.programInfos[program].uniforms[uniformName]; // returns pair [ dimension_of_uniform_array, uniform_location ]
-    if (uniformInfo && arrayIndex >= 0 && arrayIndex < uniformInfo[0]) {
-      // Check if user asked for an out-of-bounds element, i.e. for 'vec4 colors[3];' user could ask for 'colors[10]' which should return -1.
-      const location = uniformInfo[1] + arrayIndex;
-      return location;
-    } else {
-      return -1;
-    }
+    const fieldName = getStringFromWasm0(name, len);
+    const location = gl.getUniformLocation(get_object(program), fieldName);
+    return add_heap_object(location);
   },
   glUniformMatrix4fv: function (location, count, transpose, value) {
-    GL.validateGLObjectID(
-      GL.uniforms,
-      location,
-      "glUniformMatrix4fv",
-      "location",
-    );
-    assert(
-      (value & 3) == 0,
-      "Pointer to float data passed to glUniformMatrix4fv must be aligned to four bytes!",
-    );
     var view = getArray(value, Float32Array, 16);
-    gl.uniformMatrix4fv(GL.uniforms[location], !!transpose, view);
+    gl.uniformMatrix4fv(location, !!transpose, view);
   },
   glUseProgram: function (program) {
-    GL.validateGLObjectID(GL.programs, program, "glUseProgram", "program");
-    gl.useProgram(GL.programs[program]);
-  },
-  glGenVertexArrays: function (n, arrays) {
-    _glGenObject(n, arrays, "createVertexArray", GL.vaos, "glGenVertexArrays");
-  },
-  glGenFramebuffers: function (n, ids) {
-    _glGenObject(
-      n,
-      ids,
-      "createFramebuffer",
-      GL.framebuffers,
-      "glGenFramebuffers",
-    );
-  },
-  glBindVertexArray: function (vao) {
-    gl.bindVertexArray(GL.vaos[vao]);
+    gl.useProgram(get_object(program));
   },
   glBindFramebuffer: function (target, framebuffer) {
-    GL.validateGLObjectID(
-      GL.framebuffers,
-      framebuffer,
-      "glBindFramebuffer",
-      "framebuffer",
-    );
-
-    gl.bindFramebuffer(target, GL.framebuffers[framebuffer]);
-  },
-
-  glGenBuffers: function (n, buffers) {
-    _glGenObject(n, buffers, "createBuffer", GL.buffers, "glGenBuffers");
+    gl.bindFramebuffer(target, get_object(framebuffer));
   },
   glBindBuffer: function (target, buffer) {
-    GL.validateGLObjectID(GL.buffers, buffer, "glBindBuffer", "buffer");
-    gl.bindBuffer(target, GL.buffers[buffer]);
+    gl.bindBuffer(target, get_object(buffer));
   },
   glBufferData: function (target, ptr, size, usage) {
     data = getArray(ptr, Float32Array, size);
@@ -989,26 +524,18 @@ const env = {
     gl.drawBuffers(getArray(bufs, Int32Array, n));
   },
   glCreateProgram: function () {
-    var id = GL.getNewId(GL.programs);
-    var program = gl.createProgram();
-    program.name = id;
-    GL.programs[id] = program;
-    return id;
+    const program = gl.createProgram();
+    return add_heap_object(program);
   },
   glAttachShader: function (program, shader) {
-    GL.validateGLObjectID(GL.programs, program, "glAttachShader", "program");
-    GL.validateGLObjectID(GL.shaders, shader, "glAttachShader", "shader");
-    gl.attachShader(GL.programs[program], GL.shaders[shader]);
+    gl.attachShader(get_object(program), get_object(shader));
   },
   glDetachShader: function (program, shader) {
-    GL.validateGLObjectID(GL.programs, program, "glDetachShader", "program");
-    GL.validateGLObjectID(GL.shaders, shader, "glDetachShader", "shader");
-    gl.detachShader(GL.programs[program], GL.shaders[shader]);
+    gl.detachShader(get_object(program), get_object(shader));
   },
   glLinkProgram: function (program) {
-    GL.validateGLObjectID(GL.programs, program, "glLinkProgram", "program");
-    gl.linkProgram(GL.programs[program]);
-    GL.populateUniformTable(program);
+    gl.linkProgram(get_object(program));
+    //GL.populateUniformTable(program);
   },
   glPixelStorei: function (pname, param) {
     gl.pixelStorei(pname, param);
@@ -1020,69 +547,20 @@ const env = {
     texture,
     level,
   ) {
-    GL.validateGLObjectID(
-      GL.textures,
-      texture,
-      "glFramebufferTexture2D",
-      "texture",
-    );
     gl.framebufferTexture2D(
       target,
       attachment,
       textarget,
-      GL.textures[texture],
+      texture,
       level,
     );
   },
-  glGetProgramiv: function (program, pname, p) {
-    assert(p);
-    GL.validateGLObjectID(GL.programs, program, "glGetProgramiv", "program");
-    if (program >= GL.counter) {
-      console.error("GL_INVALID_VALUE in glGetProgramiv");
-      return;
-    }
-    var ptable = GL.programInfos[program];
-    if (!ptable) {
-      console.error(
-        "GL_INVALID_OPERATION in glGetProgramiv(program=" +
-          program +
-          ", pname=" +
-          pname +
-          ", p=0x" +
-          p.toString(16) +
-          "): The specified GL object name does not refer to a program object!",
-      );
-      return;
-    }
-    if (pname == 0x8b84) {
-      // GL_INFO_LOG_LENGTH
-      var log = gl.getProgramInfoLog(GL.programs[program]);
-      assert(log !== null);
-
-      getArray(p, Int32Array, 1)[0] = log.length + 1;
-    } else if (pname == 0x8b87 /* GL_ACTIVE_UNIFORM_MAX_LENGTH */) {
-      console.error("unsupported operation");
-      return;
-    } else if (pname == 0x8b8a /* GL_ACTIVE_ATTRIBUTE_MAX_LENGTH */) {
-      console.error("unsupported operation");
-      return;
-    } else if (pname == 0x8a35 /* GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH */) {
-      console.error("unsupported operation");
-      return;
-    } else {
-      getArray(p, Int32Array, 1)[0] = gl.getProgramParameter(
-        GL.programs[program],
-        pname,
-      );
-    }
-  },
   glGetProgramParameter: function (program, pname) {
-    return gl.getProgramParameter(program, pname);
+    return gl.getProgramParameter(get_object(program), pname);
   },
   glCreateShader: function (shaderType) {
-    var id = GL.getNewId(GL.shaders);
-    GL.shaders[id] = gl.createShader(shaderType);
-    return id;
+    const shader = gl.createShader(shaderType);
+    return add_heap_object(shader);
   },
   glStencilFuncSeparate: function (face, func, ref_, mask) {
     gl.stencilFuncSeparate(face, func, ref_, mask);
@@ -1123,108 +601,30 @@ const env = {
 
   glShaderSource: function (shader, ptr, length) {
     const source = getStringFromWasm0(ptr, length);
-    gl.shaderSource(GL.shaders[shader], source);
-
-    /*
-      GL.validateGLObjectID(GL.shaders, shader, 'glShaderSource', 'shader');
-      var source = GL.getSource(shader, count, string, length);
-
-      // https://github.com/emscripten-core/emscripten/blob/incoming/src/library_webgl.js#L2708
-      if (emscripten_shaders_hack) {
-          source = source.replace(/#extension GL_OES_standard_derivatives : enable/g, "");
-          source = source.replace(/#extension GL_EXT_shader_texture_lod : enable/g, '');
-          var prelude = '';
-          if (source.indexOf('gl_FragColor') != -1) {
-              prelude += 'out mediump vec4 GL_FragColor;\n';
-              source = source.replace(/gl_FragColor/g, 'GL_FragColor');
-          }
-          if (source.indexOf('attribute') != -1) {
-              source = source.replace(/attribute/g, 'in');
-              source = source.replace(/varying/g, 'out');
-          } else {
-              source = source.replace(/varying/g, 'in');
-          }
-
-          source = source.replace(/textureCubeLodEXT/g, 'textureCubeLod');
-          source = source.replace(/texture2DLodEXT/g, 'texture2DLod');
-          source = source.replace(/texture2DProjLodEXT/g, 'texture2DProjLod');
-          source = source.replace(/texture2DGradEXT/g, 'texture2DGrad');
-          source = source.replace(/texture2DProjGradEXT/g, 'texture2DProjGrad');
-          source = source.replace(/textureCubeGradEXT/g, 'textureCubeGrad');
-
-          source = source.replace(/textureCube/g, 'texture');
-          source = source.replace(/texture1D/g, 'texture');
-          source = source.replace(/texture2D/g, 'texture');
-          source = source.replace(/texture3D/g, 'texture');
-          source = source.replace(/#version 100/g, '#version 300 es\n' + prelude);
-      }
-
-      gl.shaderSource(GL.shaders[shader], source);
-      */
+    console.log('glShaderSource', shader, source)
+    gl.shaderSource(get_object(shader), source);
   },
-  glGetProgramInfoLog: function (program, maxLength, length, infoLog) {
-    GL.validateGLObjectID(
-      GL.programs,
-      program,
-      "glGetProgramInfoLog",
-      "program",
-    );
-    var log = gl.getProgramInfoLog(GL.programs[program]);
-    assert(log !== null);
-    let array = getArray(infoLog, Uint8Array, maxLength);
-    for (var i = 0; i < maxLength; i++) {
-      array[i] = log.charCodeAt(i);
+  glGetProgramInfoLog: function (program) {
+    var log = gl.getProgramInfoLog(get_object(program));
+    if (log && log.length > 0) {
+      console.error('glGetProgramInfoLog', log);
+      return passStringToWasm0(log);
     }
+    return -1;
   },
-  glGetString: function (id) {
-    // getParameter returns "any": it could be GLenum, String or whatever,
-    // depending on the id.
-    var parameter = gl.getParameter(id).toString();
-    var len = parameter.length + 1;
-    var msg = wasm_exports.allocate_vec_u8(len);
-    var array = new Uint8Array(wasm.memory.buffer, msg, len);
-    array[parameter.length] = 0;
-    stringToUTF8(parameter, array, 0, len);
-    return msg;
-  },
-  glCompileShader: function (shader, count, string, length) {
-    GL.validateGLObjectID(GL.shaders, shader, "glCompileShader", "shader");
-    gl.compileShader(GL.shaders[shader]);
-    const params = gl.getShaderParameter(GL.shaders[shader], gl.COMPILE_STATUS);
-    if (!params) {
-      //const err = gl.getProgramInfoLog(program);
-    }
+  glCompileShader: function (shader) {
+    gl.compileShader(get_object(shader));
   },
   glGetShaderiv: function (shader, pname, p) {
-    assert(p);
-    GL.validateGLObjectID(GL.shaders, shader, "glGetShaderiv", "shader");
-    if (pname == 0x8b84) {
-      // GL_INFO_LOG_LENGTH
-      var log = gl.getShaderInfoLog(GL.shaders[shader]);
-      assert(log !== null);
-
-      getArray(p, Int32Array, 1)[0] = log.length + 1;
-    } else if (pname == 0x8b88) {
-      // GL_SHADER_SOURCE_LENGTH
-      var source = gl.getShaderSource(GL.shaders[shader]);
-      var sourceLength =
-        source === null || source.length == 0 ? 0 : source.length + 1;
-      getArray(p, Int32Array, 1)[0] = sourceLength;
-    } else {
-      getArray(p, Int32Array, 1)[0] = gl.getShaderParameter(
-        GL.shaders[shader],
-        pname,
-      );
-    }
+    gl.getShaderParameter(get_object(shader), pname, p);
   },
-  glGetShaderInfoLog: function (shader, maxLength, length, infoLog) {
-    GL.validateGLObjectID(GL.shaders, shader, "glGetShaderInfoLog", "shader");
-    var log = gl.getShaderInfoLog(GL.shaders[shader]);
-    assert(log !== null);
-    let array = getArray(infoLog, Uint8Array, maxLength);
-    for (var i = 0; i < maxLength; i++) {
-      array[i] = log.charCodeAt(i);
+  glGetShaderInfoLog: function (shader) {
+    var log = gl.getShaderInfoLog(get_object(shader));
+    if (log && log.length > 0) {
+      console.error('glGetShaderInfoLog', log);
+      return passStringToWasm0(log);
     }
+    return -1;
   },
   glVertexAttribDivisor: function (index, divisor) {
     gl.vertexAttribDivisor(index, divisor);
@@ -1236,39 +636,35 @@ const env = {
     gl.drawElementsInstanced(mode, count, type, indices, primcount);
   },
   glDeleteShader: function (shader) {
-    var id = GL.shaders[shader];
+    var id = get_object(shader);
     if (id == null) {
       return;
     }
     gl.deleteShader(id);
-    GL.shaders[shader] = null;
   },
   glDeleteProgram: function (program) {
-    var id = GL.programs[program];
+    var id = get_object(program);
     if (id == null) {
       return;
     }
     gl.deleteProgram(id);
-    GL.programs[program] = null;
   },
   glDeleteBuffers: function (n, buffers) {
     for (var i = 0; i < n; i++) {
       var id = getArray(buffers + i * 4, Uint32Array, 1)[0];
-      var buffer = GL.buffers[id];
+      var buffer = get_object(id);
 
       // From spec: "glDeleteBuffers silently ignores 0's and names that do not
       // correspond to existing buffer objects."
       if (!buffer) continue;
 
       gl.deleteBuffer(buffer);
-      buffer.name = 0;
-      GL.buffers[id] = null;
     }
   },
   glDeleteFramebuffers: function (n, buffers) {
     for (var i = 0; i < n; i++) {
       var id = getArray(buffers + i * 4, Uint32Array, 1)[0];
-      var buffer = GL.framebuffers[id];
+      var buffer = get_object(id);
 
       // From spec: "glDeleteFrameBuffers silently ignores 0's and names that do not
       // correspond to existing buffer objects."
@@ -1276,52 +672,15 @@ const env = {
 
       gl.deleteFramebuffer(buffer);
       buffer.name = 0;
-      GL.framebuffers[id] = null;
     }
   },
   glDeleteTextures: function (n, textures) {
     for (var i = 0; i < n; i++) {
       var id = getArray(textures + i * 4, Uint32Array, 1)[0];
-      var texture = GL.textures[id];
+      var texture = get_object(id);
       if (!texture) continue; // GL spec: "glDeleteTextures silently ignores 0s and names that do not correspond to existing textures".
       gl.deleteTexture(texture);
-      texture.name = 0;
-      GL.textures[id] = null;
     }
-  },
-  glGenQueries: function (n, ids) {
-    _glGenObject(n, ids, "createQuery", GL.timerQueries, "glGenQueries");
-  },
-  glDeleteQueries: function (n, ids) {
-    for (var i = 0; i < n; i++) {
-      var id = getArray(textures + i * 4, Uint32Array, 1)[0];
-      var query = GL.timerQueries[id];
-      if (!query) {
-        continue;
-      }
-      gl.deleteQuery(query);
-      query.name = 0;
-      GL.timerQueries[id] = null;
-    }
-  },
-  glBeginQuery: function (target, id) {
-    GL.validateGLObjectID(GL.timerQueries, id, "glBeginQuery", "id");
-    gl.beginQuery(target, GL.timerQueries[id]);
-  },
-  glEndQuery: function (target) {
-    gl.endQuery(target);
-  },
-  glGetQueryObjectiv: function (id, pname, ptr) {
-    GL.validateGLObjectID(GL.timerQueries, id, "glGetQueryObjectiv", "id");
-    let result = gl.getQueryObject(GL.timerQueries[id], pname);
-    getArray(ptr, Uint32Array, 1)[0] = result;
-  },
-  glGetQueryObjectui64v: function (id, pname, ptr) {
-    GL.validateGLObjectID(GL.timerQueries, id, "glGetQueryObjectui64v", "id");
-    let result = gl.getQueryObject(GL.timerQueries[id], pname);
-    let heap = getArray(ptr, Uint32Array, 2);
-    heap[0] = result;
-    heap[1] = (result - heap[0]) / 4294967296;
   },
   glGenerateMipmap: function (index) {
     gl.generateMipmap(index);
