@@ -32,8 +32,8 @@ pub struct AppContext {
     pub messages: Vec<BackendRequest>,
 }
 
-impl AppContext {
-    pub fn new() -> Self {
+impl Default for AppContext {
+    fn default() -> Self {
         AppContext {
             //app,
             running: true,
@@ -47,6 +47,12 @@ impl AppContext {
             requests: Default::default(),
             messages: Default::default(),
         }
+    }
+}
+
+impl AppContext {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn dispatch(&mut self) {

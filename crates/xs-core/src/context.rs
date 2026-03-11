@@ -4,9 +4,7 @@ use crate::{
     AppContext, FocusHandle, NavigationNode, core::NodeId, get_app_context,
     navigation::NavigationNodeId,
 };
-use std::{
-    any::Any, fmt::Debug, marker::PhantomData
-};
+use std::{any::Any, fmt::Debug, marker::PhantomData};
 
 pub struct StateMutator<S> {
     node_id: NodeId,
@@ -17,12 +15,11 @@ pub struct StateMutator<S> {
 impl<S: Any + Debug> StateMutator<S> {
     pub fn mutate(&self, mutator: impl FnOnce(&mut S)) {
         let ctx = get_app_context();
-        if let Some(node_states) = ctx.nodes.get_mut(&self.node_id) {
-            if let Some(state) = node_states.get_mut(self.state_index) {
-                if let Some(value) = state.downcast_mut::<S>() {
-                    mutator(value);
-                }
-            }
+        if let Some(node_states) = ctx.nodes.get_mut(&self.node_id)
+            && let Some(state) = node_states.get_mut(self.state_index)
+            && let Some(value) = state.downcast_mut::<S>()
+        {
+            mutator(value);
         }
     }
 }
@@ -56,10 +53,7 @@ impl<'a> Context<'a> {
         S: Any,
     {
         let state_index = self.state_index;
-        self.app_context
-            .nodes
-            .entry(self.node_id)
-            .or_insert(Vec::new());
+        self.app_context.nodes.entry(self.node_id).or_default();
         let state_count = self.app_context.nodes.get(&self.node_id).unwrap().len();
         if state_index >= state_count {
             let mutator: StateMutator<S> = StateMutator {

@@ -5,14 +5,21 @@ pub struct Application {
     pub height: i32,
 }
 
-impl Application {
-    pub fn new() -> Self {
+impl Default for Application {
+    fn default() -> Self {
         Self {
             id: "app",
             title: "App",
             width: 1440,
             height: 810,
         }
+    }
+}
+
+
+impl Application {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn id(mut self, id: &'static str) -> Self {

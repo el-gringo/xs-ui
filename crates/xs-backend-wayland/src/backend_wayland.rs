@@ -39,13 +39,14 @@ pub fn create_surface(ctx: &mut WaylandContext) -> *mut wl_surface {
     }
 }
 
+#[derive(Default)]
 pub struct BackendWayland {
     elapsed: u128,
 }
 
 impl BackendWayland {
     pub fn new() -> Self {
-        Self { elapsed: 0 }
+        Default::default()
     }
 }
 
@@ -85,14 +86,14 @@ impl Backend for BackendWayland {
         while ctx.dispatch_pending() != -1 && ctx.app_context.running {
             let rx = rx.clone();
             message_dispatcher.read_messages(
-                &mut ctx.app_context,
+                ctx.app_context,
                 &mut renderer,
                 &mut text_system,
                 tx.clone(),
                 rx,
             );
             self.elapsed = start.elapsed().as_millis();
-            let widget_tree = renderer.render(&mut ctx.app_context, root.clone());
+            let widget_tree = renderer.render(ctx.app_context, root.clone());
             renderer.draw_frame(&widget_tree);
             ctx.swap_buffers();
             //std::thread::sleep(std::time::Duration::from_secs(3));

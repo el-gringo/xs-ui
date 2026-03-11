@@ -1,25 +1,24 @@
-use std::{collections::HashMap, usize};
+use std::{collections::HashMap};
 
 use xs_core::TextProperties;
 pub use xs_text_system_glyph::{Font, FontRef, PxScale, ScaleFont, point};
 
 use crate::layout_paragraph::layout_paragraph;
 
+#[derive(Default)]
 pub struct TextSystem {
     fonts: HashMap<&'static str, FontRef<'static>>,
 }
 
 impl TextSystem {
     pub fn new() -> Self {
-        Self {
-            fonts: HashMap::new(),
-        }
+        Default::default()
     }
 }
 
 impl xs_core::TextSystem for TextSystem {
     fn load_font(&mut self, font_family: &'static str, binary_font: &'static [u8]) {
-        let font = FontRef::try_from_slice(&binary_font).unwrap();
+        let font = FontRef::try_from_slice(binary_font).unwrap();
         self.fonts.insert(font_family, font);
     }
 
@@ -35,7 +34,7 @@ impl xs_core::TextSystem for TextSystem {
         let scale = PxScale::from(text_properties.font_size);
         let scaled_font = font.into_scaled(scale);
         let mut glyphs = Vec::new();
-        layout_paragraph(&scaled_font, point(0.0, 20.0), 200.0, text, &mut glyphs);
+        layout_paragraph(scaled_font, point(0.0, 20.0), 200.0, text, &mut glyphs);
 
         // to work out the exact size needed for the drawn glyphs we need to outline
         // them and use their `px_bounds` which hold the coords of their render bounds.
@@ -79,7 +78,7 @@ impl xs_core::TextSystem for TextSystem {
                     pixels[pos] = (v * 255.) as u8;
                 });
             }
-            return Ok((pixels, width, height));
+            Ok((pixels, width, height))
         } else {
             Err("No outlined glyphs?")
         }

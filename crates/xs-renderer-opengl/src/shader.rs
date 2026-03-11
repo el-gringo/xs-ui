@@ -68,7 +68,7 @@ pub fn compile_shader(shader_type: GLenum, source: &str) -> GLuint {
         let error_message = glGetShaderInfoLog(shader);
         panic!("failed to compile shader: {:?}", error_message);
     }
-    return shader;
+    shader
 }
 
 pub struct ShaderGlsl {

@@ -3,17 +3,12 @@ use crate::{
     JustifyContent, colors::BLACK,
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub enum FontStyle {
+    #[default]
     Normal,
     Italic,
     Oblique,
-}
-
-impl Default for FontStyle {
-    fn default() -> Self {
-        FontStyle::Normal
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -82,29 +77,19 @@ impl TextProperties {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub enum StyleDisplay {
+    #[default]
     Flex,
     Block,
     Inline,
 }
 
-impl Default for StyleDisplay {
-    fn default() -> Self {
-        Self::Flex
-    }
-}
-
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub enum StylePosition {
+    #[default]
     Static,
     Absolute,
-}
-
-impl Default for StylePosition {
-    fn default() -> Self {
-        Self::Static
-    }
 }
 
 #[derive(Clone, Default)]

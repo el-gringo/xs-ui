@@ -31,7 +31,7 @@ pub struct PeerTubeClient {
     api: RestApi,
 }
 
-impl<'a> PeerTubeClient {
+impl PeerTubeClient {
     pub fn new() -> Self {
         Self {
             api: RestApi::new(PEERTUBE_API_URL),

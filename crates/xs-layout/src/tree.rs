@@ -224,13 +224,13 @@ impl LayoutTree {
                     match m {
                         Material::Quad(_, color, _) |
                         Material::Text(color, _) => {
-                            format!("{:?}", color)
+                            format!("{color:?}")
                         }
                     }
                 } else {
                     String::from("")
                 }
-            )
+            );
         }
     }
 }

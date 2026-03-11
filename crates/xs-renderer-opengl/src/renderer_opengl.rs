@@ -57,9 +57,9 @@ impl RendererOpenGl {
         ];
         for index in 0..4 {
             let prefix = format!("u_borders[{}]", index);
-            uniforms.push((format!("{}.enabled", prefix), (Int1, 1 as i32)));
-            uniforms.push((format!("{}.width", prefix), (Float1, 1 as i32)));
-            uniforms.push((format!("{}.color", prefix), (Float4, 1 as i32)));
+            uniforms.push((format!("{}.enabled", prefix), (Int1, 1)));
+            uniforms.push((format!("{}.width", prefix), (Float1, 1)));
+            uniforms.push((format!("{}.color", prefix), (Float4, 1)));
         }
         let shader = ShaderGlsl::new(
             VERTEX_SHADER_DEFAULT,
@@ -245,7 +245,7 @@ impl Renderer for RendererOpenGl {
                 GL_UNSIGNED_BYTE,
                 image_handler as _,
             );
-        } else if bytes.len() > 0 {
+        } else if !bytes.is_empty() {
             glTexImage2DByBytes(
                 GL_TEXTURE_2D,
                 0,

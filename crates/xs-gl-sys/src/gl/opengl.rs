@@ -5,7 +5,10 @@ use std::ffi::CString;
 pub use crate::bindings::load_gl_funcs;
 use crate::bindings::{self, common_sys::*};
 
-pub fn glBufferData(
+/// # Safety
+///
+/// Raw pointer deferencement
+pub unsafe fn glBufferData(
     target: GLenum,
     size: GLsizeiptr,
     data: *const ::core::ffi::c_void,

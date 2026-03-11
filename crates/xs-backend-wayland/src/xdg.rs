@@ -10,7 +10,7 @@ pub unsafe extern "C" fn xdg_wm_base_handle_ping(
     data: *mut std::ffi::c_void,
     _toplevel: *mut xdg_shell::xdg_wm_base,
     serial: u32,
-) -> () {
+) {
     unsafe {
         assert!(!data.is_null());
         let ctx: &mut WaylandContext = &mut *(data as *mut _);
@@ -49,7 +49,7 @@ unsafe extern "C" fn xdg_toplevel_handle_configure(
     width: i32,
     height: i32,
     _states: *mut wl_array,
-) -> () {
+) {
     assert!(!data.is_null());
     unsafe {
         let ctx: &mut WaylandContext = &mut *(data as *mut _);
@@ -103,7 +103,7 @@ pub fn create_xdg(ctx: &mut WaylandContext) {
             &raw const xdg_shell::xdg_surface_interface,
             ctx.wl_surface
         );
-        assert!(ctx.xdg_surface.is_null() == false);
+        assert!(!ctx.xdg_surface.is_null());
 
         (ctx.client.wl_proxy_add_listener)(
             ctx.xdg_surface as _,

@@ -2,9 +2,7 @@ use std::rc::Rc;
 
 use xs_layout::{TextProperties, View};
 
-use crate::{
-    AppContext, Context, Element, Render, core::NodeId, navigation::NavigationNodeId,
-};
+use crate::{AppContext, Context, Element, Render, core::NodeId, navigation::NavigationNodeId};
 
 type RcWidget = Rc<dyn Render>;
 
@@ -85,10 +83,10 @@ pub trait Renderer {
             let mut children_views: Vec<View> = Vec::new();
             for j in (i + 1..rendered_elements.len()).rev() {
                 if let Some(parent_idx) = rendered_elements[j].0 {
-                    if parent_idx == i {
-                        if let Some(child_view) = &views[j] {
-                            children_views.push(child_view.clone());
-                        }
+                    if parent_idx == i
+                        && let Some(child_view) = &views[j]
+                    {
+                        children_views.push(child_view.clone());
                     }
                 }
             }

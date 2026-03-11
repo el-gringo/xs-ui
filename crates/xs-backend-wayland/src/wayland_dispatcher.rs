@@ -57,7 +57,7 @@ impl WaylandDispatcher {
                         let width = width as u32;
                         let height = height as u32;
                         let _ = image.convert_color(ColorSpace::RGBA);
-                        let bytes = image.flatten_to_u8().get(0).unwrap().clone();
+                        let bytes = image.flatten_to_u8().first().unwrap().clone();
                         let _ = tx.send(BackendResponse::ImageLoaded(
                             src.clone(),
                             -1,

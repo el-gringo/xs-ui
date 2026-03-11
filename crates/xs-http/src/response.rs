@@ -20,13 +20,13 @@ impl HttpResponse {
     }
 }
 
-impl Into<Vec<u8>> for HttpResponse {
-    fn into(self) -> Vec<u8> {
+impl From<HttpResponse> for Vec<u8> {
+    fn from(value: HttpResponse) -> Self {
         let mut buffer: Vec<u8> = Vec::new();
         let status = String::new();
-        let status_line = format!("HTTP/1.1 {} {}\r\n", self.status_code, status);
+        let status_line = format!("HTTP/1.1 {} {}\r\n", value.status_code, status);
         buffer.append(&mut status_line.as_bytes().to_vec());
-        let headers = self.headers;
+        let headers = value.headers;
         /*
         headers.insert(
             "Content-Length".to_string(),
@@ -45,7 +45,7 @@ impl Into<Vec<u8>> for HttpResponse {
             .as_bytes()
             .to_vec();
         buffer.append(&mut headers);
-        let mut body = self.body;
+        let mut body = value.body;
         buffer.append(&mut "\r\n".as_bytes().to_vec());
         buffer.append(&mut body);
         buffer
@@ -65,7 +65,7 @@ pub struct HttpResponseError {
 
 impl std::fmt::Display for HttpResponseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.to_string().fmt(f)
+        write!(f, "{:?}", self.kind)
     }
 }
 

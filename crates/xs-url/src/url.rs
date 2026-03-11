@@ -72,7 +72,7 @@ impl Url {
         }
     }
 
-    pub fn port<'a>(scheme: Option<&str>, hostname: &String) -> (String, Option<u16>) {
+    pub fn port(scheme: Option<&str>, hostname: &String) -> (String, Option<u16>) {
         match hostname.split_once(":") {
             Some((host, port)) => match port.parse() {
                 Ok(port) => (host.to_string(), Some(port)),
