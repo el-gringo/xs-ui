@@ -7,8 +7,8 @@ pub fn run(app: Application, root: Box<dyn Render>) {
     text_system.load_font(font_family, data);
 
     let app_context = AppContext::new();
-    let mut backend = Box::new(xs_backend::Backend::new(text_system));
+    let mut backend = Box::new(xs_backend::Backend::new());
     let renderer =
         Box::new(xs_renderer::Renderer::new(app.width, app.height)) as Box<dyn Renderer>;
-    backend.run(app, app_context, renderer, root);
+    backend.run(app, app_context, renderer, text_system, root);
 }

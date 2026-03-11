@@ -10,3 +10,6 @@ xs-gl-sys.workspace = true
 xs-layout.workspace = true
 xs-math.workspace = true
 xs-platform-linux.workspace = true
+
+[target.wasm32-unknown-unknown.dependencies]
+xs-js-sys.workspace = true

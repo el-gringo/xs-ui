@@ -66,9 +66,13 @@ unsafe extern "C" fn xdg_toplevel_handle_configure(
 }
 
 unsafe extern "C" fn xdg_toplevel_handle_close(
-    _data: *mut std::ffi::c_void,
+    data: *mut std::ffi::c_void,
     _xdg_toplevel: *mut xdg_shell::xdg_toplevel,
 ) {
+    unsafe {
+        let ctx: &mut WaylandContext = &mut *(data as *mut _);
+        ctx.app_context.running = false;
+    }
 }
 
 pub static mut XDG_WM_BASE_LISTENER: xdg_wm_base_listener = xdg_wm_base_listener {

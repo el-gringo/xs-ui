@@ -1,16 +1,6 @@
 use xs_gl_sys::{
-    glBindBuffer,
-    glBufferData,
-    glDrawArrays,
-    glGenBuffers,
-    GLsizei,
-    GLsizeiptr,
-    GLuint,
-    GLvoid,
-    GL_ARRAY_BUFFER,
-    GL_NONE,
-    GL_STATIC_DRAW,
-    GL_TRIANGLES
+    GL_ARRAY_BUFFER, GL_NONE, GL_STATIC_DRAW, GL_TRIANGLES, GLsizei, GLsizeiptr, GLuint, GLvoid,
+    glBindBuffer, glBufferData, glDrawArrays, glGenBuffers,
 };
 
 /*
@@ -33,32 +23,25 @@ impl Mesh {
     pub fn new(vertices: &[f32]) -> Mesh {
         let size = vertices.len() / 3;
 
-        let mut buffer: GLuint = 0;
-        unsafe {
-            //let bytes = cast_slice(vertices);
-            glGenBuffers(1, &mut buffer);
-            glBindBuffer(GL_ARRAY_BUFFER, buffer);
-            glBufferData(
-                GL_ARRAY_BUFFER,
-                (vertices.len() * std::mem::size_of::<f32>()) as GLsizeiptr,
-                vertices.as_ptr() as *const GLvoid,
-                GL_STATIC_DRAW,
-            );
-            glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
-            Mesh { buffer, size }
-        }
+        //let bytes = cast_slice(vertices);
+        let buffer = glGenBuffers(1)[0];
+        glBindBuffer(GL_ARRAY_BUFFER, buffer);
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            (vertices.len() * std::mem::size_of::<f32>()) as GLsizeiptr,
+            vertices.as_ptr() as *const GLvoid,
+            GL_STATIC_DRAW,
+        );
+        glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
+        Mesh { buffer, size }
     }
 
     pub fn begin(&mut self) {
-        unsafe {
-            glBindBuffer(GL_ARRAY_BUFFER, self.buffer);
-        }
+        glBindBuffer(GL_ARRAY_BUFFER, self.buffer);
     }
 
     pub fn end(&mut self) {
-        unsafe {
-            glDrawArrays(GL_TRIANGLES, 0, self.size as GLsizei);
-            glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
-        }
+        glDrawArrays(GL_TRIANGLES, 0, self.size as GLsizei);
+        glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
     }
 }

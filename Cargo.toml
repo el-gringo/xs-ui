@@ -47,7 +47,6 @@ xs-primitive = { path = "crates/xs-primitive" }
 xs-renderer = { path = "crates/xs-renderer" }
 xs-renderer-core = { path = "crates/xs-renderer-core" }
 xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
-xs-renderer-webgl = { path = "crates/xs-renderer-webgl" }
 xs-serde = { path = "crates/xs-serde" }
 xs-text-system = { path = "crates/xs-text-system" }
 xs-text-system-glyph = { path = "crates/xs-text-system-glyph" }

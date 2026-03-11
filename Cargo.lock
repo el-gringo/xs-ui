@@ -577,6 +577,7 @@ dependencies = [
 name = "xs-gl-sys"
 version = "0.1.0"
 dependencies = [
+ "xs-js-sys",
  "xs-platform-linux",
 ]
 
@@ -631,7 +632,6 @@ name = "xs-renderer"
 version = "0.1.0"
 dependencies = [
  "xs-renderer-opengl",
- "xs-renderer-webgl",
 ]
 
 [[package]]
@@ -649,20 +649,10 @@ version = "0.1.0"
 dependencies = [
  "xs-core",
  "xs-gl-sys",
- "xs-layout",
- "xs-math",
- "xs-platform-linux",
-]
-
-[[package]]
-name = "xs-renderer-webgl"
-version = "0.1.0"
-dependencies = [
- "xs-core",
  "xs-js-sys",
  "xs-layout",
  "xs-math",
- "xs-renderer-core",
+ "xs-platform-linux",
 ]
 
 [[package]]

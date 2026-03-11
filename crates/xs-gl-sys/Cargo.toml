@@ -6,3 +6,6 @@ edition.workspace = true
 
 [dependencies]
 xs-platform-linux = { workspace = true }
+
+[target.wasm32-unknown-unknown.dependencies]
+xs-js-sys = { workspace = true }

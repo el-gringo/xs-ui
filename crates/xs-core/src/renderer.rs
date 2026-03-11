@@ -24,9 +24,9 @@ pub trait Renderer {
     fn screen_height(&self) -> i32;
     fn draw_frame(&mut self, widget_tree: &View);
     fn load_texture(
-        &self,
+        &mut self,
         bytes: &[u8],
-        image_handle: u32,
+        image_handle: i32,
         width: u32,
         height: u32,
         alpha: bool,
@@ -121,9 +121,9 @@ impl Renderer for RendererDummy {
     fn draw_frame(&mut self, _widget_tree: &View) {}
 
     fn load_texture(
-        &self,
+        &mut self,
         _bytes: &[u8],
-        _image_handle: u32,
+        _image_handle: i32,
         _width: u32,
         _height: u32,
         _alpha: bool,

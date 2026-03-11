@@ -83,12 +83,6 @@ impl AnyClosure {
     }
 }
 
-impl<Args> Drop for Closure<Args> {
-    fn drop(&mut self) {
-        crate::log("Closure drop");
-    }
-}
-
 // Get AnyClosure from table and call with u32
 pub fn invoke_closure<Args>(handle: usize, args: Args)
 where

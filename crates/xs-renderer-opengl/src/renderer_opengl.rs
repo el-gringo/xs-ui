@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use xs_core::Renderer;
 use xs_gl_sys::{
-    GL_BLEND, GL_CLAMP_TO_EDGE, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_LINEAR,
-    GL_ONE_MINUS_SRC_ALPHA, GL_RED, GL_RGBA, GL_SRC_ALPHA, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-    GL_TEXTURE_MIN_FILTER, GL_TEXTURE_SWIZZLE_RGBA, GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T,
-    GL_TEXTURE0, GL_UNPACK_ALIGNMENT, GL_UNSIGNED_BYTE, GL_ZERO, glActiveTexture, glBindTexture,
-    glBlendFunc, glClear, glDisable, glEnable, glFlush, glGenTextures, glGenerateMipmap,
-    glPixelStorei, glTexImage2D, glTexParameteri, glTexParameteriv,
+    GL_ALPHA, GL_BLEND, GL_CLAMP_TO_EDGE, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_LINEAR,
+    GL_ONE_MINUS_SRC_ALPHA, GL_RGBA, GL_SRC_ALPHA, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+    GL_TEXTURE_MIN_FILTER, GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_UNPACK_ALIGNMENT,
+    GL_UNSIGNED_BYTE, glBindTexture, glBlendFunc, glClear, glClearColor,
+    glDisable, glEnable, glFlush, glGenTextures, glGenerateMipmap, glPixelStorei,
+    glTexImage2DByBytes, glTexImage2DByPointer, glTexParameteri, glViewport,
 };
 use xs_layout::{
     BoxConstraints, LayoutBox, LayoutTree,
@@ -33,7 +33,7 @@ fn is_power_of_2(value: i32) -> bool {
 pub struct RendererOpenGl {
     width: i32,
     height: i32,
-    shaders: HashMap<String, ShaderGlsl>,
+    shaders: HashMap<String, ShaderGlsl>
 }
 
 impl RendererOpenGl {
@@ -42,7 +42,7 @@ impl RendererOpenGl {
         Self {
             width,
             height,
-            shaders,
+            shaders
         }
     }
 
@@ -65,10 +65,7 @@ impl RendererOpenGl {
             VERTEX_SHADER_DEFAULT,
             FRAGMENT_SHADER_DEFAULT,
             uniforms,
-            vec![
-                ("a_position".to_string(), (Float2, 1)),
-                ("a_uv".to_string(), (Float2, 1)),
-            ],
+            vec![("a_position".to_string(), (Float2, 1))],
         );
         self.shaders.insert("default".into(), shader);
     }
@@ -109,18 +106,14 @@ impl Renderer for RendererOpenGl {
         let shader_default = self.shaders.get("default").unwrap();
         let shader_text = self.shaders.get("text").unwrap();
 
-        unsafe {
-            glClear(GL_COLOR_BUFFER_BIT);
-            glEnable(GL_BLEND);
-            glDisable(GL_DEPTH_TEST);
-            // glBlendFuncSeparate(
-            //     GL_ONE,
-            //     GL_ONE_MINUS_SRC_ALPHA,
-            //     GL_ONE,
-            //     GL_ONE_MINUS_SRC_ALPHA,
-            // );
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        }
+        glViewport(0, 0, self.width, self.height);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(0., 0., 0., 0.);
+        //glColorMask(true, true, true, false);
+        glEnable(GL_BLEND);
+        glDisable(GL_DEPTH_TEST);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         let mut tree = LayoutTree::new();
         let constraints = BoxConstraints {
             min: Vector2::new(0.0, 0.0),
@@ -184,12 +177,10 @@ impl Renderer for RendererOpenGl {
                                 }
                             }
                             if let Some(image) = image.clone() {
-                                unsafe {
-                                    glActiveTexture(GL_TEXTURE0 + image.texture);
-                                    glBindTexture(GL_TEXTURE_2D, image.texture);
-                                }
+                                //glActiveTexture(image.texture_unit);
+                                glBindTexture(GL_TEXTURE_2D, image.texture);
                                 shader_default.set_uniform_1i("u_texture_enabled", 1);
-                                shader_default.set_uniform_1i("u_texture", image.texture as i32);
+                                shader_default.set_uniform_1i("u_texture", 0);
                             } else {
                                 shader_default.set_uniform_1i("u_texture_enabled", 0);
                             }
@@ -207,11 +198,9 @@ impl Renderer for RendererOpenGl {
                             shader_text.set_uniform_2f("u_rect_min", min.x, min.y);
                             shader_text.set_uniform_2f("u_rect_max", max.x, max.y);
                             if let Some(image) = image.clone() {
-                                unsafe {
-                                    glActiveTexture(GL_TEXTURE0 + image.texture);
-                                    glBindTexture(GL_TEXTURE_2D, image.texture);
-                                }
-                                shader_text.set_uniform_1i("u_texture", image.texture as i32);
+                                //glActiveTexture(image.texture_unit);
+                                glBindTexture(GL_TEXTURE_2D, image.texture);
+                                shader_text.set_uniform_1i("u_texture", 0);
                             }
                             shader_text.apply_attributes();
                         }
@@ -220,58 +209,55 @@ impl Renderer for RendererOpenGl {
                 mesh.end();
             }
         }
-        unsafe {
-            glFlush();
-        }
+        glFlush();
     }
 
     fn load_texture(
-        &self,
+        &mut self,
         bytes: &[u8],
-        _image_handler: u32,
+        image_handler: i32,
         width: u32,
         height: u32,
         alpha: bool,
     ) -> u32 {
-        unsafe {
-            let mut texture: u32 = 0;
-            let interfnal_format = if alpha { GL_RED } else { GL_RGBA };
-            let format = if alpha { GL_RED } else { GL_RGBA };
-            glGenTextures(1, &mut texture);
-            glActiveTexture(GL_TEXTURE0 + texture);
-            glBindTexture(GL_TEXTURE_2D, texture);
-            if alpha {
-                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                let swizzle_mask = [GL_ZERO, GL_ZERO, GL_ZERO, GL_RED];
-                glTexParameteriv(
-                    GL_TEXTURE_2D,
-                    GL_TEXTURE_SWIZZLE_RGBA,
-                    swizzle_mask.as_ptr() as *const _,
-                );
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR as _);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR as _);
-            } else {
-                if is_power_of_2(width as _) && is_power_of_2(height as _) {
-                    glGenerateMipmap(GL_TEXTURE_2D);
-                } else {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S as _, GL_CLAMP_TO_EDGE as _);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T as _, GL_CLAMP_TO_EDGE as _);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR as _);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR as _);
-                }
-            }
-            glTexImage2D(
+        let internal_format = if alpha { GL_ALPHA } else { GL_RGBA };
+        let format = if alpha { GL_ALPHA } else { GL_RGBA };
+        let texture = glGenTextures(1)[0];
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        if is_power_of_2(width as _) && is_power_of_2(height as _) {
+            glGenerateMipmap(GL_TEXTURE_2D);
+        } else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S as _, GL_CLAMP_TO_EDGE as _);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T as _, GL_CLAMP_TO_EDGE as _);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR as _);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR as _);
+        }
+        if image_handler > 0 {
+            glTexImage2DByPointer(
                 GL_TEXTURE_2D,
                 0,
-                interfnal_format as _,
+                internal_format as _,
                 width as _,
                 height as _,
                 0,
                 format as _,
                 GL_UNSIGNED_BYTE,
-                bytes.as_ptr() as *const _,
+                image_handler as _,
             );
-            texture
+        } else if bytes.len() > 0 {
+            glTexImage2DByBytes(
+                GL_TEXTURE_2D,
+                0,
+                internal_format as _,
+                width as _,
+                height as _,
+                0,
+                format as _,
+                GL_UNSIGNED_BYTE,
+                bytes,
+            );
         }
+        texture
     }
 }

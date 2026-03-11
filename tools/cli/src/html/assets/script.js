@@ -1,7 +1,6 @@
 let wasm;
 let max_render_time = 0;
 
-const memory = new WebAssembly.Memory({ initial: 20, maximum: 10_000 });
 const heap = Array.from({ length: 128 }).fill(undefined);
 
 heap.push(undefined, null, true, false);
@@ -53,57 +52,7 @@ function getStringFromWasm0(ptr, len) {
   return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 
-function stringToUTF8(str, heap, outIdx, maxBytesToWrite) {
-  var startIdx = outIdx;
-  var endIdx = outIdx + maxBytesToWrite;
-  for (var i = 0; i < str.length; ++i) {
-    // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code unit, not a Unicode code point of the character! So decode UTF16->UTF32->UTF8.
-    // See http://unicode.org/faq/utf_bom.html#utf16-3
-    // For UTF8 byte structure, see http://en.wikipedia.org/wiki/UTF-8#Description and https://www.ietf.org/rfc/rfc2279.txt and https://tools.ietf.org/html/rfc3629
-    var u = str.charCodeAt(i); // possibly a lead surrogate
-    if (u >= 0xd800 && u <= 0xdfff) {
-      var u1 = str.charCodeAt(++i);
-      u = (0x10000 + ((u & 0x3ff) << 10)) | (u1 & 0x3ff);
-    }
-    if (u <= 0x7f) {
-      if (outIdx >= endIdx) break;
-      heap[outIdx++] = u;
-    } else if (u <= 0x7ff) {
-      if (outIdx + 1 >= endIdx) break;
-      heap[outIdx++] = 0xc0 | (u >> 6);
-      heap[outIdx++] = 0x80 | (u & 63);
-    } else if (u <= 0xffff) {
-      if (outIdx + 2 >= endIdx) break;
-      heap[outIdx++] = 0xe0 | (u >> 12);
-      heap[outIdx++] = 0x80 | ((u >> 6) & 63);
-      heap[outIdx++] = 0x80 | (u & 63);
-    } else {
-      if (outIdx + 3 >= endIdx) break;
-
-      if (u >= 0x200000)
-        console.warn(
-          "Invalid Unicode code point 0x" +
-            u.toString(16) +
-            " encountered when serializing a JS string to an UTF-8 string on the asm.js/wasm heap! (Valid unicode code points should be in range 0-0x1FFFFF).",
-        );
-
-      heap[outIdx++] = 0xf0 | (u >> 18);
-      heap[outIdx++] = 0x80 | ((u >> 12) & 63);
-      heap[outIdx++] = 0x80 | ((u >> 6) & 63);
-      heap[outIdx++] = 0x80 | (u & 63);
-    }
-  }
-  return outIdx - startIdx;
-}
-
-function assert(flag, message) {
-  if (flag == false) {
-    alert(message);
-  }
-}
-
 let WASM_VECTOR_LEN = 0;
-
 const cachedTextEncoder = new TextEncoder("utf-8");
 
 let cachedUint8ArrayMemory0 = null;
@@ -165,6 +114,49 @@ function passBytesToWasm0(buffer, malloc) {
     .set(bytes);
   WASM_VECTOR_LEN = bytes.byteLength;
   return ptr;
+}
+
+function stringToUTF8(str, heap, outIdx, maxBytesToWrite) {
+  var startIdx = outIdx;
+  var endIdx = outIdx + maxBytesToWrite;
+  for (var i = 0; i < str.length; ++i) {
+    // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code unit, not a Unicode code point of the character! So decode UTF16->UTF32->UTF8.
+    // See http://unicode.org/faq/utf_bom.html#utf16-3
+    // For UTF8 byte structure, see http://en.wikipedia.org/wiki/UTF-8#Description and https://www.ietf.org/rfc/rfc2279.txt and https://tools.ietf.org/html/rfc3629
+    var u = str.charCodeAt(i); // possibly a lead surrogate
+    if (u >= 0xd800 && u <= 0xdfff) {
+      var u1 = str.charCodeAt(++i);
+      u = (0x10000 + ((u & 0x3ff) << 10)) | (u1 & 0x3ff);
+    }
+    if (u <= 0x7f) {
+      if (outIdx >= endIdx) break;
+      heap[outIdx++] = u;
+    } else if (u <= 0x7ff) {
+      if (outIdx + 1 >= endIdx) break;
+      heap[outIdx++] = 0xc0 | (u >> 6);
+      heap[outIdx++] = 0x80 | (u & 63);
+    } else if (u <= 0xffff) {
+      if (outIdx + 2 >= endIdx) break;
+      heap[outIdx++] = 0xe0 | (u >> 12);
+      heap[outIdx++] = 0x80 | ((u >> 6) & 63);
+      heap[outIdx++] = 0x80 | (u & 63);
+    } else {
+      if (outIdx + 3 >= endIdx) break;
+
+      if (u >= 0x200000)
+        console.warn(
+          "Invalid Unicode code point 0x" +
+            u.toString(16) +
+            " encountered when serializing a JS string to an UTF-8 string on the asm.js/wasm heap! (Valid unicode code points should be in range 0-0x1FFFFF).",
+        );
+
+      heap[outIdx++] = 0xf0 | (u >> 18);
+      heap[outIdx++] = 0x80 | ((u >> 12) & 63);
+      heap[outIdx++] = 0x80 | ((u >> 6) & 63);
+      heap[outIdx++] = 0x80 | (u & 63);
+    }
+  }
+  return outIdx - startIdx;
 }
 
 function getArray(ptr, arr, n) {
@@ -252,18 +244,22 @@ const env = {
     //   requestAnimationFrame(loop_frames);
     // }
   },
-  load_image(ptr, len, texture_index) {
-    let src = getStringFromWasm0(ptr, len);
+  load_image(closure, ptr_src, len_src) {
+    let src = getStringFromWasm0(ptr_src, len_src);
     const image = new Image();
     image.onload = function onImageLoaded() {
-      const img_ptr = add_heap_object(image);
-      wasm.on_image_loaded(
-        ptr,
-        len,
-        img_ptr,
+      const ptr_img = add_heap_object(image);
+      console.log(
+        "load_image_callback",
+        ptr_img,
         image.naturalWidth,
         image.naturalHeight,
-        texture_index,
+      );
+      wasm.load_image_callback(
+        closure,
+        ptr_img,
+        image.naturalWidth,
+        image.naturalHeight,
       );
     };
     image.crossOrigin = true;
@@ -319,16 +315,16 @@ const env = {
   glClear: function (mask) {
     gl.clear(mask);
   },
-  glActiveTexture: function (texture_index) {
-    gl.activeTexture(gl["TEXTURE" + texture_index]);
+  glActiveTexture: function (texture_unit) {
+    gl.activeTexture(texture_unit);
   },
   glBindTexture: function (target, texture) {
-    gl.bindTexture(target, texture);
+    gl.bindTexture(target, get_object(texture));
   },
   glTexParameteriv(target, pname, param) {
     gl.glTexParameteriv(target, pname, param);
   },
-  glTexImage2D: function (
+  glTexImage2DByPointer: function (
     target,
     level,
     internalFormat,
@@ -340,7 +336,6 @@ const env = {
     image,
   ) {
     const source = get_object(image);
-    console.log("texImage2D", source);
     gl.texImage2D(
       target,
       level,
@@ -351,6 +346,31 @@ const env = {
       format,
       type,
       source,
+    );
+  },
+  glTexImage2DByBytes: function (
+    target,
+    level,
+    internalFormat,
+    width,
+    height,
+    border,
+    format,
+    type,
+    ptr_data,
+    len_data,
+  ) {
+    let data = getArray(ptr_data, Uint8Array, len_data);
+    gl.texImage2D(
+      target,
+      level,
+      internalFormat,
+      width,
+      height,
+      border,
+      format,
+      type,
+      data
     );
   },
   glTexSubImage2D: function (
@@ -451,7 +471,11 @@ const env = {
   glGetAttribLocation: function (program, name, len) {
     const fieldName = getStringFromWasm0(name, len);
     const location = gl.getAttribLocation(get_object(program), fieldName);
-    return add_heap_object(location);
+    if (location !== null) {
+      const ptr = add_heap_object(location);
+      return ptr;
+    }
+    return -1;
   },
   glEnableVertexAttribArray: function (attribLocation) {
     gl.enableVertexAttribArray(get_object(attribLocation));
@@ -459,16 +483,40 @@ const env = {
   glDisableVertexAttribArray: function (attribLocation) {
     gl.disableVertexAttribArray(get_object(attribLocation));
   },
-  glVertexAttribPointer: function (attribLocation, size, type, normalized, stride, ptr) {
-    gl.vertexAttribPointer(get_object(attribLocation), size, type, !!normalized, stride, ptr);
+  glVertexAttribPointer: function (
+    attribLocation,
+    size,
+    type,
+    normalized,
+    stride,
+    ptr,
+  ) {
+    gl.vertexAttribPointer(
+      get_object(attribLocation),
+      size,
+      type,
+      !!normalized,
+      stride,
+      ptr,
+    );
   },
   glVertexAttribIPointer: function (attribLocation, size, type, stride, ptr) {
-    gl.vertexAttribIPointer(get_object(attribLocation), size, type, stride, ptr);
+    gl.vertexAttribIPointer(
+      get_object(attribLocation),
+      size,
+      type,
+      stride,
+      ptr,
+    );
   },
   glGetUniformLocation: function (program, name, len) {
     const fieldName = getStringFromWasm0(name, len);
     const location = gl.getUniformLocation(get_object(program), fieldName);
-    return add_heap_object(location);
+    if (location !== null) {
+      const ptr = add_heap_object(location);
+      return ptr;
+    }
+    return -1;
   },
   glUniformMatrix4fv: function (location, count, transpose, value) {
     var view = getArray(value, Float32Array, 16);
@@ -483,7 +531,7 @@ const env = {
   glBindBuffer: function (target, buffer) {
     gl.bindBuffer(target, get_object(buffer));
   },
-  glBufferData: function (target, ptr, size, usage) {
+  glBufferData: function (target, size, ptr, usage) {
     data = getArray(ptr, Float32Array, size);
     gl.bufferData(target, data, usage);
   },
@@ -547,16 +595,12 @@ const env = {
     texture,
     level,
   ) {
-    gl.framebufferTexture2D(
-      target,
-      attachment,
-      textarget,
-      texture,
-      level,
-    );
+    gl.framebufferTexture2D(target, attachment, textarget, texture, level);
   },
   glGetProgramParameter: function (program, pname) {
-    return gl.getProgramParameter(get_object(program), pname);
+    const ret = gl.getProgramParameter(get_object(program), pname);
+    console.log("glGetProgramParameter", ret);
+    return ret;
   },
   glCreateShader: function (shaderType) {
     const shader = gl.createShader(shaderType);
@@ -601,30 +645,24 @@ const env = {
 
   glShaderSource: function (shader, ptr, length) {
     const source = getStringFromWasm0(ptr, length);
-    console.log('glShaderSource', shader, source)
     gl.shaderSource(get_object(shader), source);
   },
   glGetProgramInfoLog: function (program) {
     var log = gl.getProgramInfoLog(get_object(program));
-    if (log && log.length > 0) {
-      console.error('glGetProgramInfoLog', log);
-      return passStringToWasm0(log);
-    }
-    return -1;
+    const ptr = passStringToWasm0(log, wasm.__xs_malloc);
+    return ptr;
   },
   glCompileShader: function (shader) {
     gl.compileShader(get_object(shader));
   },
-  glGetShaderiv: function (shader, pname, p) {
-    gl.getShaderParameter(get_object(shader), pname, p);
+  glGetShaderParameter: function (shader, pname) {
+    const ret = gl.getShaderParameter(get_object(shader), pname);
+    return ret;
   },
   glGetShaderInfoLog: function (shader) {
     var log = gl.getShaderInfoLog(get_object(shader));
-    if (log && log.length > 0) {
-      console.error('glGetShaderInfoLog', log);
-      return passStringToWasm0(log);
-    }
-    return -1;
+    const ptr = passStringToWasm0(log, wasm.__xs_malloc);
+    return ptr;
   },
   glVertexAttribDivisor: function (index, divisor) {
     gl.vertexAttribDivisor(index, divisor);
@@ -690,9 +728,7 @@ const env = {
 function load(wasmUrl) {
   fetch(wasmUrl)
     .then((response) => response.arrayBuffer())
-    .then((bytes) =>
-      WebAssembly.instantiate(bytes, { env, js: { mem: memory } }),
-    )
+    .then((bytes) => WebAssembly.instantiate(bytes, { env }))
     .then((res) => {
       wasm = res.instance.exports;
       cachedInt32Memory0 = null;
