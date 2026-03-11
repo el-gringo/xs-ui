@@ -11,7 +11,7 @@ pub struct Div {
     pub id: Option<&'static str>,
     pub style: Style,
     pub text: &'static str,
-    pub children: Vec<Rc<Box<dyn Render>>>,
+    pub children: Vec<Rc<dyn Render>>,
 }
 
 impl Div {
@@ -238,13 +238,13 @@ impl Div {
     //
     // OTHER
     //
-    pub fn child(mut self, child: Box<dyn Render>) -> Self {
-        self.children.push(Rc::new(child));
+    pub fn child(mut self, child: impl Into<Rc<dyn Render>>) -> Self {
+        self.children.push(child.into());
         self
     }
 
-    pub fn children(mut self, children: impl IntoIterator<Item = Rc<Box<dyn Render>>>) -> Self {
-        self.children.extend(children);
+    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<Rc<dyn Render>>>) -> Self {
+        self.children.extend(children.into_iter().map(|child| child.into()));
         self
     }
 }
@@ -282,7 +282,7 @@ impl Element for Div {
         self.id.unwrap_or("div")
     }
 
-    fn children(&self) -> &[Rc<Box<dyn Render>>] {
+    fn children(&self) -> &[Rc<dyn Render>] {
         &self.children
     }
 
@@ -324,15 +324,9 @@ impl From<Div> for Box<dyn Element> {
     }
 }
 
-impl Into<Box<dyn Render>> for Div {
-    fn into(self) -> Box<dyn Render> {
-        Box::new(self)
-    }
-}
-
-impl Into<Rc<Box<dyn Render>>> for Div {
-    fn into(self) -> Rc<Box<dyn Render>> {
-        Rc::new(Box::new(self))
+impl From<Div> for Rc<dyn Render> {
+    fn from(value: Div) -> Self {
+        Rc::new(value)
     }
 }
 

@@ -1,4 +1,6 @@
 
+use std::rc::Rc;
+
 use xs_layout::TextProperties;
 
 use crate::{AppContext, Application, Render, Renderer, TextSystem};
@@ -27,7 +29,7 @@ pub trait Backend {
         app_context: AppContext,
         renderer: Box<dyn Renderer>,
         text_system: Box<dyn TextSystem>,
-        root: Box<dyn Render>,
+        root: Rc<dyn Render>,
     );
     fn performance_now(&self) -> u128;
 }
@@ -42,7 +44,7 @@ impl Backend for BackendDummy {
         _app_context: AppContext,
         _renderer: Box<dyn Renderer>,
         _text_system: Box<dyn TextSystem>,
-        _root: Box<dyn Render>,
+        _root: Rc<dyn Render>
     ) {
     }
     fn performance_now(&self) -> u128 {

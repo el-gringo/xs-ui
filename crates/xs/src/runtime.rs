@@ -1,6 +1,8 @@
+use std::rc::Rc;
+
 use xs_core::{AppContext, Application, Backend, Render, Renderer, TextSystem};
 
-pub fn run(app: Application, root: Box<dyn Render>) {
+pub fn run(app: Application, root: Rc<dyn Render>) {
     let mut text_system = Box::new(xs_text_system::TextSystem::new());
     let font_family = "sans-serif";
     let data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");

@@ -5,19 +5,19 @@ use xs::{Context, Element, FocusHandle, NavigationNode, Render, div};
 use crate::theme::{GRAY1, GRAY4};
 
 pub struct Body {
-    pub children: Vec<Rc<Box<dyn Render>>>,
+    pub children: Vec<Rc<dyn Render>>,
 }
 
 const TITLE: &str = "PeerTube";
 
 impl Body {
-    pub fn child(mut self, child: Box<dyn Render>) -> Self {
-        self.children.push(Rc::new(child));
+    pub fn child(mut self, child: impl Into<Rc<dyn Render>>) -> Self {
+        self.children.push(child.into());
         self
     }
 
-    pub fn children(mut self, children: impl IntoIterator<Item = Rc<Box<dyn Render>>>) -> Self {
-        self.children.extend(children);
+    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<Rc<dyn Render>>>) -> Self {
+        self.children.extend(children.into_iter().map(|child| child.into()));
         self
     }
 }
@@ -36,9 +36,8 @@ impl Render for Body {
                 div()
                     .height(50.)
                     .background_color(GRAY4)
-                    .into(),
             )
-            .child(div().grow(1.).children(self.children.clone()).into())
+            .child(div().grow(1.).children(self.children.clone()))
             .into()
     }
 
@@ -47,9 +46,9 @@ impl Render for Body {
     }
 }
 
-impl From<Body> for Box<dyn Render> {
+impl From<Body> for Rc<dyn Render> {
     fn from(val: Body) -> Self {
-        Box::new(val)
+        Rc::new(val)
     }
 }
 

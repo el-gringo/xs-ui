@@ -6,7 +6,7 @@ use crate::{
     AppContext, Context, Element, Render, core::NodeId, navigation::NavigationNodeId,
 };
 
-type RcWidget = Rc<Box<dyn Render>>;
+type RcWidget = Rc<dyn Render>;
 
 #[derive(Clone)]
 struct StackItem {
@@ -50,7 +50,7 @@ pub trait Renderer {
             let element = item.widget.render(&mut ctx);
 
             // Get children before moving element
-            let children: Vec<Rc<Box<dyn Render>>> = element.children().to_vec();
+            let children: Vec<Rc<dyn Render>> = element.children().to_vec();
 
             let current_index = rendered_elements.len();
             rendered_elements.push((item.parent_index, element));
@@ -58,7 +58,7 @@ pub trait Renderer {
             // Push children onto stack (in reverse order)
             for (child_index, child) in children.iter().enumerate().rev() {
                 let new_item = StackItem {
-                    widget: Rc::clone(child),
+                    widget: child.clone(),
                     depth: item.depth + 1,
                     index: child_index,
                     parent_index: Some(current_index),

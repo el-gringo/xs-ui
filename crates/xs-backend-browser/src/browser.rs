@@ -22,9 +22,8 @@ impl Backend for BackendBrowser {
         app_context: AppContext,
         renderer: Box<dyn Renderer>,
         text_system: Box<dyn TextSystem>,
-        root: Box<dyn Render>,
+        root: Rc<dyn Render>
     ) {
-        let root = Rc::new(root);
         let app_context = Rc::new(RefCell::new(app_context));
         let renderer = Rc::new(RefCell::new(renderer));
         let text_system = Rc::new(RefCell::new(text_system));

@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use std::{any::TypeId, rc::Rc};
 
 use xs::{div, Color, Context, Element, FocusHandle, NavigationNode, Render, GRAY, WHITE};
 
@@ -30,9 +30,9 @@ impl Render for Button {
     }
 }
 
-impl From<Button> for Box<dyn Render> {
+impl From<Button> for Rc<dyn Render> {
     fn from(value: Button) -> Self {
-        Box::new(value)
+        Rc::new(value)
     }
 }
 

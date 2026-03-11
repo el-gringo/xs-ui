@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use std::{any::TypeId, rc::Rc};
 
 use xs::{
     AlignItems, Context, Element, FocusHandle, JustifyContent, NavigationNode, RED, Render,
@@ -65,7 +65,6 @@ impl Render for Card {
                     .margin_top(8.)
                     .background_color(GRAY3)
                     .background_image(self.thumbnail.clone())
-                    .into(),
             )
             .child(
                 div()
@@ -73,8 +72,7 @@ impl Render for Card {
                     .font_size(20.)
                     .margin_top(16.)
                     .color(GRAY3)
-                    .child(text(self.title.clone()).into())
-                    .into(),
+                    .child(text(self.title.clone()))
             )
             .into()
     }
@@ -84,9 +82,9 @@ impl Render for Card {
     }
 }
 
-impl From<Card> for Box<dyn Render> {
+impl From<Card> for Rc<dyn Render> {
     fn from(val: Card) -> Self {
-        Box::new(val)
+        Rc::new(val)
     }
 }
 

@@ -2,7 +2,7 @@ use std::{any::TypeId, rc::Rc};
 
 use xs::{Render, div};
 
-type CellRenderer<T> = dyn Fn(usize, &T) -> Box<dyn Render>;
+type CellRenderer<T> = dyn Fn(usize, &T) -> Rc<dyn Render>;
 
 #[derive(Default)]
 pub struct Grid<T> {
@@ -64,7 +64,7 @@ impl<T: Default + 'static> Grid<T> {
 
     pub fn cell_renderer(
         mut self,
-        cell_renderer: impl Fn(usize, &T) -> Box<dyn Render> + 'static,
+        cell_renderer: impl Fn(usize, &T) -> Rc<dyn Render> + 'static,
     ) -> Self {
         self.cell_renderer = Some(Box::new(cell_renderer));
         self
@@ -90,7 +90,7 @@ impl<T: Default + 'static> Render for Grid<T> {
         let cell_renderer = &self.cell_renderer;
         let calculated_width = self.calculate_width();
 
-        let cells: Vec<Rc<Box<dyn Render>>> = self
+        let cells: Vec<Rc<dyn Render>> = self
             .items
             .iter()
             .enumerate()
@@ -127,9 +127,9 @@ impl<T: Default + 'static> Render for Grid<T> {
     }
 }
 
-impl<T: Default + 'static> From<Grid<T>> for Box<dyn Render> {
+impl<T: Default + 'static> From<Grid<T>> for Rc<dyn Render> {
     fn from(val: Grid<T>) -> Self {
-        Box::new(val)
+        Rc::new(val)
     }
 }
 

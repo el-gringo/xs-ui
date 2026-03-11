@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use std::{any::TypeId, rc::Rc};
 
 use xs::{
     AlignItems, BLUE, Context, Element, FocusHandle, GREEN, JustifyContent, NavigationNode, RED,
@@ -54,8 +54,7 @@ impl Render for Sidebar {
                     .align_items(AlignItems::Center)
                     .color(WHITE)
                     .font_size(45.)
-                    .child(text("PeerTube".to_string()).into())
-                    .into(),
+                    .child(text("PeerTube".to_string()))
             )
             .child(
                 div()
@@ -63,10 +62,9 @@ impl Render for Sidebar {
                     .column()
                     .background_color(GRAY2)
                     .align_items(AlignItems::Center)
-                    .child(Box::new(button(RED)))
-                    .child(Box::new(button(GREEN)))
-                    .child(Box::new(button(BLUE)))
-                    .into(),
+                    .child(button(RED))
+                    .child(button(GREEN))
+                    .child(button(BLUE))
             )
             .into()
     }
@@ -76,9 +74,9 @@ impl Render for Sidebar {
     }
 }
 
-impl From<Sidebar> for Box<dyn Render> {
+impl From<Sidebar> for Rc<dyn Render> {
     fn from(val: Sidebar) -> Self {
-        Box::new(val)
+        Rc::new(val)
     }
 }
 

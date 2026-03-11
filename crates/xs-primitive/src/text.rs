@@ -44,15 +44,9 @@ impl Element for TextElement {
     }
 }
 
-impl Into<Box<dyn Render>> for Text {
-    fn into(self) -> Box<dyn Render> {
-        Box::new(self)
-    }
-}
-
-impl Into<Rc<Box<dyn Render>>> for Text {
-    fn into(self) -> Rc<Box<dyn Render>> {
-        Rc::new(Box::new(self))
+impl From<Text> for Rc<dyn Render> {
+    fn from(value: Text) -> Self {
+        Rc::new(value)
     }
 }
 

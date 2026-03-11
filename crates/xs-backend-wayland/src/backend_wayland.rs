@@ -56,7 +56,7 @@ impl Backend for BackendWayland {
         mut app_context: AppContext,
         mut renderer: Box<dyn Renderer>,
         mut text_system: Box<dyn TextSystem>,
-        root: Box<dyn Render>,
+        root: Rc<dyn Render>,
     ) {
         let config = WaylandConfig {
             app_id: app.id,
@@ -79,7 +79,6 @@ impl Backend for BackendWayland {
         set_title(&mut ctx, app_title.into());
         renderer.init();
         set_app_context(ctx.app_context);
-        let root = Rc::new(root);
         let start = Instant::now();
         let (tx, rx) = channel();
         let rx = Rc::new(rx);

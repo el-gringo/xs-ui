@@ -8,7 +8,7 @@ mod grid;
 mod sidebar;
 mod theme;
 
-use std::any::TypeId;
+use std::{any::TypeId, rc::Rc};
 
 use xs::{
     AlignItems, Application, Context, Element, FocusHandle, NavigationNode, ORANGE, Render, WHITE,
@@ -41,12 +41,11 @@ impl Render for MyApp {
             .child(
                 sidebar()
                     //.buttons([button(RED), button(GREEN), button(BLUE)].into())
-                    .into(),
             )
             .child(
                 body()
                     .children([
-                        div().height(50.).background_color(GRAY4).into(),
+                        div().height(50.).background_color(GRAY4),
                         div()
                             .background_color(ORANGE)
                             .column()
@@ -54,8 +53,7 @@ impl Render for MyApp {
                                 div()
                                     .height(50.)
                                     .color(WHITE)
-                                    .text("Monsieur Bidouille")
-                                    .into(),
+                                    .text("Monsieur Bidouille"),
                                 div()
                                     .row()
                                     .padding_top(64.)
@@ -75,15 +73,10 @@ impl Render for MyApp {
                                                     .title(video.name.clone())
                                                     .into()
                                             })
-                                            .into(),
                                     )
-                                    .into(),
                             ])
-                            .into(),
                     ])
-                    .into(),
-            )
-            .into()
+            ).into()
     }
 
     fn tag(&self) -> std::any::TypeId {
@@ -98,6 +91,6 @@ pub fn main() {
             .title("App")
             .width(1440)
             .height(810),
-        Box::new(MyApp {}),
+        Rc::new(MyApp {}),
     );
 }

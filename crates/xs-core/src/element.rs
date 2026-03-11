@@ -8,7 +8,7 @@ pub trait Element {
     fn id(&self) -> &'static str {
         "unknown"
     }
-    fn children(&self) -> &[Rc<Box<dyn Render>>] {
+    fn children(&self) -> &[Rc<dyn Render>] {
         &[]
     }
     fn paint(&self, app_context: &mut AppContext, views: &[View]) -> View;
