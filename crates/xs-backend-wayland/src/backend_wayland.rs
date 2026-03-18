@@ -6,13 +6,9 @@ use xs_backend_wayland_client::{
 use xs_core::{AppContext, Application, Backend, Render, Renderer, TextSystem, set_app_context};
 
 use crate::{
-    config::WaylandConfig,
-    context::WaylandContext,
-    egl::create_egl_window,
-    registry::create_registry,
-    seat::create_seat,
-    wayland_dispatcher::WaylandDispatcher,
-    xdg::{create_xdg, set_app_id, set_title},
+    config::WaylandConfig, context::WaylandContext, egl::create_egl_window,
+    registry::create_registry, seat::create_seat, wayland_dispatcher::WaylandDispatcher,
+    xdg::create_xdg,
 };
 
 pub fn connect(ctx: &mut WaylandContext) {
@@ -74,10 +70,8 @@ impl Backend for BackendWayland {
         create_registry(&mut ctx);
         create_seat(&mut ctx);
         create_surface(&mut ctx);
+        create_xdg(&mut ctx, app_id, app_title);
         create_egl_window(&mut ctx, config.window_width, config.window_height);
-        create_xdg(&mut ctx);
-        set_app_id(&mut ctx, app_id.into());
-        set_title(&mut ctx, app_title.into());
         renderer.init();
         let font_family = "sans-serif";
         let data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");

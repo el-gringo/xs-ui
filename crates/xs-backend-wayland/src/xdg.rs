@@ -2,7 +2,6 @@ use xs_backend_wayland_client::{wl_array, wl_proxy, wl_request, wl_request_const
 use xs_backend_wayland_extensions::xdg_shell::{
     self, xdg_surface_listener, xdg_toplevel_listener, xdg_wm_base_listener,
 };
-use xs_gl_sys::{glClear, glClearColor, glFlush, glViewport, GL_COLOR_BUFFER_BIT};
 
 use crate::context::WaylandContext;
 
@@ -31,15 +30,13 @@ unsafe extern "C" fn xdg_surface_handle_configure(
     assert!(!data.is_null());
     unsafe {
         let ctx: &mut WaylandContext = &mut *(data as *mut _);
-        if xdg_surface == ctx.xdg_surface {
-            wl_request!(
-                ctx.client,
-                ctx.xdg_surface,
-                xdg_shell::xdg_surface::ack_configure,
-                serial
-            );
-            ctx.sufarce_commit();
-        }
+        wl_request!(
+            ctx.client,
+            xdg_surface,
+            xdg_shell::xdg_surface::ack_configure,
+            serial
+        );
+        ctx.sufarce_commit();
     }
 }
 
@@ -55,12 +52,6 @@ unsafe extern "C" fn xdg_toplevel_handle_configure(
         let ctx: &mut WaylandContext = &mut *(data as *mut _);
         if width != 0 && height != 0 {
             (ctx.lib_wayland_egl.wl_egl_window_resize)(ctx.egl_window, width, height, 0, 0);
-            glViewport(0, 0, width, height);
-            glClearColor(0., 0., 0., 0.);
-            glClear(GL_COLOR_BUFFER_BIT);
-            glFlush();
-            ctx.swap_buffers();
-            ctx.sufarce_commit();
         }
     }
 }
@@ -88,7 +79,7 @@ pub static mut XDG_TOPLEVEL_LISTENER: xdg_toplevel_listener = xdg_toplevel_liste
     close: xdg_toplevel_handle_close,
 };
 
-pub fn create_xdg(ctx: &mut WaylandContext) {
+pub fn create_xdg(ctx: &mut WaylandContext, app_id: &str, app_title: &str) {
     unsafe {
         (ctx.client.wl_proxy_add_listener)(
             ctx.xdg_wm_base as _,
@@ -123,12 +114,13 @@ pub fn create_xdg(ctx: &mut WaylandContext) {
             &raw const XDG_TOPLEVEL_LISTENER as *const _ as _,
             ctx as *mut _ as _,
         );
-
-        ctx.round_trip();
+        ctx.sufarce_commit();
+        set_app_id(ctx, app_id);
+        set_title(ctx, app_title);
     }
 }
 
-pub fn set_app_id(ctx: &mut WaylandContext, app_id: String) {
+pub fn set_app_id(ctx: &mut WaylandContext, app_id: &str) {
     let app_id = std::ffi::CString::new(app_id).unwrap();
     unsafe {
         wl_request!(
@@ -140,14 +132,14 @@ pub fn set_app_id(ctx: &mut WaylandContext, app_id: String) {
     }
 }
 
-pub fn set_title(ctx: &mut WaylandContext, title: String) {
-    let title = std::ffi::CString::new(title).unwrap();
+pub fn set_title(ctx: &mut WaylandContext, app_title: &str) {
+    let app_title = std::ffi::CString::new(app_title).unwrap();
     unsafe {
         wl_request!(
             ctx.client,
             ctx.xdg_toplevel,
             xdg_shell::xdg_toplevel::set_title,
-            title.as_ptr()
+            app_title.as_ptr()
         );
     }
 }
