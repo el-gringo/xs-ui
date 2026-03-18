@@ -30,28 +30,31 @@ impl Layout for Positioned {
     }
 }
 
-
 #[derive(Clone, Debug)]
 pub struct FixedSize {
     pub width: f32,
     pub height: f32,
-    pub material: Material
+    pub material: Option<Material>,
 }
 
 impl Layout for FixedSize {
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         let lbox = LayoutBox {
-            bounds: Rectangle::new(constraints.min.x, constraints.min.y, self.width, self.height),
+            bounds: Rectangle::new(
+                constraints.min.x,
+                constraints.min.y,
+                self.width,
+                self.height,
+            ),
             ..Default::default()
         };
         let child_id = tree.insert(lbox);
         SizedLayoutBox {
             size: Vector2::new(self.width, self.height),
             margin: EdgeInsets::zero(),
-            children: vec![ child_id ],
-            material: Some(self.material.clone()),
+            children: vec![child_id],
+            material: self.material.clone(),
             text_material: None,
-
         }
     }
 }

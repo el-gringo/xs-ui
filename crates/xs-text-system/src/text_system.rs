@@ -1,13 +1,13 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
-use xs_core::TextProperties;
-pub use xs_text_system_glyph::{Font, FontRef, PxScale, ScaleFont, point};
+use xs_core::{Renderer, TextProperties, TextVertices};
+pub use xs_text_system_glyph::{point, Font, FontRef, PxScale, PxScaleFont, ScaleFont};
 
-use crate::layout_paragraph::layout_paragraph;
+use crate::{layout_paragraph::layout_paragraph, FontAtlas};
 
 #[derive(Default)]
 pub struct TextSystem {
-    fonts: HashMap<&'static str, FontRef<'static>>,
+    fonts: HashMap<(&'static str, u16), (FontRef<'static>, FontAtlas, u32)>,
 }
 
 impl TextSystem {
@@ -17,70 +17,159 @@ impl TextSystem {
 }
 
 impl xs_core::TextSystem for TextSystem {
-    fn load_font(&mut self, font_family: &'static str, binary_font: &'static [u8]) {
+    fn load_font(
+        &mut self,
+        font_family: &'static str,
+        font_weight: u16,
+        binary_font: &'static [u8],
+        renderer: &mut Box<dyn Renderer>,
+    ) {
         let font = FontRef::try_from_slice(binary_font).unwrap();
-        self.fonts.insert(font_family, font);
+        let (font_atlas, atlas_data) = FontAtlas::generate(&font, 48.);
+        let texture = renderer.load_texture(
+            &atlas_data,
+            -1,
+            font_atlas.width as _,
+            font_atlas.height as _,
+            true,
+        );
+        self.fonts
+            .insert((font_family, font_weight), (font, font_atlas, texture));
     }
 
     fn render_text(
         &self,
         text: &str,
-        text_properties: &TextProperties
-    ) -> Result<(Vec<u8>, u32, u32), &'static str> {
-        let text_properties = text_properties.unwrap_or_default();
-        let font = self.fonts.get(text_properties.font_family.as_str()).unwrap();
+        text_properties: &TextProperties,
+    ) -> (TextVertices, u32, u32, u32) {
+        let (font, font_atlas, texture) = self
+            .fonts
+            .get(&(
+                text_properties.font_family.as_str(),
+                text_properties.font_weight,
+            ))
+            .unwrap();
+        (
+            make_vertices_for_string(font, font_atlas, text_properties, text),
+            *texture,
+            font_atlas.width as _,
+            font_atlas.height as _,
+        )
+    }
+}
 
-        // The font size to use
-        let scale = PxScale::from(text_properties.font_size);
-        let scaled_font = font.into_scaled(scale);
-        let mut glyphs = Vec::new();
-        layout_paragraph(scaled_font, point(0.0, 20.0), 200.0, text, &mut glyphs);
+pub fn make_vertices_for_string(
+    font: &FontRef<'static>,
+    font_atlas: &FontAtlas,
+    text_properties: &TextProperties,
+    text: &str,
+) -> TextVertices {
+    let scale = PxScale::from(text_properties.font_size as f32);
+    let scaled_font = PxScaleFont {
+        font: font.clone(),
+        scale,
+    };
 
-        // to work out the exact size needed for the drawn glyphs we need to outline
-        // them and use their `px_bounds` which hold the coords of their render bounds.
-        let outlined: Vec<_> = glyphs
-            .into_iter()
-            // Note: not all layout glyphs have outlines (e.g. " ")
-            .filter_map(|g| font.outline_glyph(g))
-            .collect();
+    let max_width = text_properties.max_width.unwrap_or(f32::INFINITY);
 
-        // combine px_bounds to get min bounding coords for the entire layout
-        if let Some(all_px_bounds) = outlined
-            .iter()
-            .map(|g| g.px_bounds())
-            .reduce(|mut b, next| {
-                b.min.x = b.min.x.min(next.min.x);
-                b.max.x = b.max.x.max(next.max.x);
-                b.min.y = b.min.y.min(next.min.y);
-                b.max.y = b.max.y.max(next.max.y);
-                b
-            })
-        {
-            let width = all_px_bounds.width() as u32;
-            let height = all_px_bounds.height() as u32;
+    let mut glyphs = Vec::new();
+    layout_paragraph(&scaled_font, point(0.0, 0.0), max_width, text, &mut glyphs);
 
-            // create a new rgba image using the combined px bound width and height
-            let mut pixels = vec![0; (width * height) as usize];
+    let max_x = font_atlas.width as f32;
+    let max_y = font_atlas.height as f32;
 
-            // Loop through the glyphs in the text, positing each one on a line
-            for glyph in outlined {
-                let bounds = glyph.px_bounds();
-                // calc top/left ords in "image space"
-                // image-x=0 means the *left most pixel*, equivalent to
-                // px_bounds.min.x which *may be non-zero* (and similarly with y)
-                // so `- px_bounds.min` converts the left-most/top-most to 0
-                let img_left = (bounds.min.x - all_px_bounds.min.x) as u32;
-                let img_top = (bounds.min.y - all_px_bounds.min.y) as u32;
-                // Draw the glyph into the image per-pixel by using the draw closure
-                glyph.draw(|x, y, v| {
-                    // save the coverage alpha
-                    let pos = (img_left + x + (img_top + y) * width) as usize;
-                    pixels[pos] = (v * 255.) as u8;
-                });
+    let atlas_font_size = 48.0;
+    let scale_factor = text_properties.font_size as f32 / atlas_font_size;
+
+    let ascent = scaled_font.ascent();
+    let descent = scaled_font.descent();
+
+    let mut min_x = f32::INFINITY;
+    let mut max_x_pos = f32::NEG_INFINITY;
+    let mut min_y = f32::INFINITY;
+    let mut max_y_pos = f32::NEG_INFINITY;
+
+    let num_vertices = glyphs.len() * 6;
+    let mut positions = vec![0.; (num_vertices * 2) as usize];
+    let mut texcoords = vec![0.; (num_vertices * 2) as usize];
+    let mut offset = 0;
+
+    for glyph in &glyphs {
+        let glyph_id = glyph.id.0;
+
+        let letter = text.chars().find(|c| font.glyph_id(*c).0 == glyph_id);
+
+        if let Some(c) = letter {
+            if let Some(glyph_info) = font_atlas.glyphs.get(&c) {
+                let x = glyph.position.x;
+                let y = glyph.position.y - ascent;
+                let glyph_width = font_atlas.scale * scale_factor;
+                let glyph_height = font_atlas.scale * scale_factor;
+
+                let x2 = x + glyph_width;
+                let y2 = y + glyph_height;
+
+                let u1 = glyph_info.x / max_x;
+                let v1 = (glyph_info.y + font_atlas.scale - 1.) / max_y;
+                let u2 = (glyph_info.x + font_atlas.scale - 1.) / max_x;
+                let v2 = glyph_info.y / max_y;
+
+                positions[offset + 0] = x;
+                positions[offset + 1] = y;
+                texcoords[offset + 0] = u1;
+                texcoords[offset + 1] = v1;
+
+                positions[offset + 2] = x2;
+                positions[offset + 3] = y;
+                texcoords[offset + 2] = u2;
+                texcoords[offset + 3] = v1;
+
+                positions[offset + 4] = x;
+                positions[offset + 5] = y2;
+                texcoords[offset + 4] = u1;
+                texcoords[offset + 5] = v2;
+
+                positions[offset + 6] = x;
+                positions[offset + 7] = y2;
+                texcoords[offset + 6] = u1;
+                texcoords[offset + 7] = v2;
+
+                positions[offset + 8] = x2;
+                positions[offset + 9] = y;
+                texcoords[offset + 8] = u2;
+                texcoords[offset + 9] = v1;
+
+                positions[offset + 10] = x2;
+                positions[offset + 11] = y2;
+                texcoords[offset + 10] = u2;
+                texcoords[offset + 11] = v2;
+
+                offset += 12;
+
+                min_x = min_x.min(x);
+                max_x_pos = max_x_pos.max(x2);
+                min_y = min_y.min(y);
+                max_y_pos = max_y_pos.max(y2);
             }
-            Ok((pixels, width, height))
-        } else {
-            Err("No outlined glyphs?")
         }
+    }
+
+    let width = if max_x_pos.is_finite() {
+        max_x_pos - min_x
+    } else {
+        0.0
+    };
+    let height = if max_y_pos.is_finite() {
+        max_y_pos - min_y
+    } else {
+        0.0
+    };
+
+    TextVertices {
+        position: (positions, offset),
+        texture_coordinate: (texcoords, offset),
+        num_vertices: offset / 2,
+        width,
+        height,
     }
 }

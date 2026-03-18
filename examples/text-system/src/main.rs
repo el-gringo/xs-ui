@@ -1,8 +1,5 @@
-use std::{fs::File, io::Write};
+use xs_core::{Renderer, RendererDummy, TextProperties, TextSystem};
 
-use xs_core::{TextProperties, TextSystem};
-
-//const TEXT: &str = "This is ab_glyph rendered into a png!";
 const TEXT: &str = r"Un text avec plusieurs mots
 et un retour à la ligne";
 
@@ -10,17 +7,19 @@ fn main() {
     let mut text_system = xs_text_system::TextSystem::new();
 
     let font_family = "sans-serif";
+    let font_weight = 400;
     let data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
-    text_system.load_font(font_family, data);
+
+    // Use a boxed RendererDummy to satisfy the trait
+    let mut renderer: Box<dyn Renderer> = Box::new(RendererDummy);
+    text_system.load_font(font_family, font_weight, data, &mut renderer);
 
     let mut text_properties = TextProperties::default();
-    text_properties.font_size(45.);
-    if let Ok((data, width, height)) = text_system.render_text(TEXT, &text_properties) {
-        // Save the image to a png file
-        let mut o = File::create("text.pgm").unwrap();
-        let _ = o.write(format!("P5\n{} {}\n255\n", width, height).as_bytes());
-        if let Ok(size) = o.write(&data) {
-            println!("Generated: text.pgn ({}x{}) {}", width, height, size);
-        }
-    }
+    text_properties.font_size = 45;
+    text_properties.max_width = Some(200.0);
+    let (vertices, width, height, _) = text_system.render_text(TEXT, &text_properties);
+    println!(
+        "Text rendered: {}x{} with {} vertices",
+        width, height, vertices.num_vertices
+    );
 }

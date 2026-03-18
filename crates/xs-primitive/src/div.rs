@@ -1,6 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs_core::{AppContext, Context, Element, Render};
+use xs_core::{AppContext, Context, Element, Render, TextProperties};
 use xs_layout::{
     AlignItems, BorderSide, Borders, Color, EdgeInsets, Flex, FlexDirection, FlexWrap,
     JustifyContent, Material, Positioned, Style, StyleDisplay, StylePosition, View,
@@ -208,31 +208,42 @@ impl Div {
     // TEXT
     //
 
-    pub fn color(mut self, color: Color) -> Self {
-        self.style.text_properties.color(color);
-        self
-    }
-
     pub fn text(mut self, text: &'static str) -> Self {
         self.text = text;
         self
     }
 
-    pub fn font_family(mut self, font_family: &'static str) -> Self {
-        self.style
-            .text_properties
-            .font_family(font_family.to_string());
+    pub fn color(mut self, color: impl Into<Color>) -> Self {
+        self.update_text_properties(|text_properties| text_properties.color = color.into());
         self
     }
 
-    pub fn font_size(mut self, font_size: f32) -> Self {
-        self.style.text_properties.font_size(font_size);
+    pub fn font_family(mut self, font_family: impl Into<String>) -> Self {
+        self.update_text_properties(|text_properties| {
+            text_properties.font_family = font_family.into()
+        });
         self
     }
 
-    pub fn font_weight(mut self, font_weight: u32) -> Self {
-        self.style.text_properties.font_weight(font_weight);
+    pub fn font_size(mut self, font_size: u16) -> Self {
+        self.update_text_properties(|text_properties| text_properties.font_size = font_size);
         self
+    }
+
+    pub fn font_weight(mut self, font_weight: u16) -> Self {
+        self.update_text_properties(|text_properties| text_properties.font_weight = font_weight);
+        self
+    }
+
+    fn update_text_properties(&mut self, mutator: impl FnOnce(&mut TextProperties)) {
+        match self.style.text_properties.as_mut() {
+            Some(mut v) => mutator(&mut v),
+            None => {
+                let v = Default::default();
+                self.style.text_properties.replace(v);
+                self.update_text_properties(mutator);
+            }
+        }
     }
 
     //
@@ -243,8 +254,12 @@ impl Div {
         self
     }
 
-    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<Rc<dyn Render>>>) -> Self {
-        self.children.extend(children.into_iter().map(|child| child.into()));
+    pub fn children(
+        mut self,
+        children: impl IntoIterator<Item = impl Into<Rc<dyn Render>>>,
+    ) -> Self {
+        self.children
+            .extend(children.into_iter().map(|child| child.into()));
         self
     }
 }
@@ -269,9 +284,8 @@ impl Render for Div {
     }
 
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        if self.style.text_properties.is_some() {
-            ctx.text_properties
-                .replace(self.style.text_properties.clone());
+        if let Some(text_properties) = self.style.text_properties.clone() {
+            ctx.text_properties = text_properties;
         }
         Box::new(self.clone())
     }

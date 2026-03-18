@@ -20,14 +20,18 @@ impl Backend for BackendBrowser {
         &mut self,
         app: Application,
         app_context: AppContext,
-        renderer: Box<dyn Renderer>,
-        text_system: Box<dyn TextSystem>,
+        mut renderer: Box<dyn Renderer>,
+        mut text_system: Box<dyn TextSystem>,
         root: Rc<dyn Render>
     ) {
+        renderer.init();
+        let font_family = "sans-serif";
+        let data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
+        text_system.load_font(font_family, 400, data, &mut renderer);
+
         let app_context = Rc::new(RefCell::new(app_context));
         let renderer = Rc::new(RefCell::new(renderer));
         let text_system = Rc::new(RefCell::new(text_system));
-        renderer.borrow_mut().init();
 
         set_app_context(&mut app_context.borrow_mut());
         bindings::init(app.width, app.height);

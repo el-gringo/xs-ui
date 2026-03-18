@@ -1,4 +1,7 @@
-use std::{rc::Rc, sync::mpsc::{Receiver, Sender}};
+use std::{
+    rc::Rc,
+    sync::mpsc::{Receiver, Sender},
+};
 
 use xs_core::{AppContext, BackendRequest, BackendResponse, Renderer, TextProperties, TextSystem};
 use xs_http::HttpClient;
@@ -34,10 +37,13 @@ impl WaylandDispatcher {
                     let image = Image::new(width, height, texture, bytes, false);
                     app_context.textures.insert(src.clone(), Some(image));
                 }
-                BackendResponse::TextRendered(text, _text_properties, bytes, width, height) => {
-                    let texture = renderer.load_texture(&bytes, 0, width, height, true);
-                    let image = Image::new(width, height, texture, bytes, true);
-                    app_context.texts.insert(text, Some(image));
+                BackendResponse::TextRendered(text, text_properties, text_vertices, texture) => {
+                    eprintln!("text_vertices: {text_vertices:?}");
+                    app_context
+                        .texts
+                        .get_mut(&(text, text_properties))
+                        .unwrap()
+                        .replace((text_vertices, texture));
                 }
             }
         }
@@ -81,14 +87,13 @@ impl WaylandDispatcher {
         text_properties: TextProperties,
         tx: Sender<BackendResponse>,
     ) {
-        if let Ok((bytes, width, height)) = text_system.render_text(&text, &text_properties) {
-            let _ = tx.send(BackendResponse::TextRendered(
-                text,
-                text_properties,
-                bytes,
-                width,
-                height,
-            ));
-        }
+        let (text_vertices, texture, _width, _height) =
+            text_system.render_text(&text, &text_properties);
+        let _ = tx.send(BackendResponse::TextRendered(
+            text,
+            text_properties,
+            text_vertices,
+            texture,
+        ));
     }
 }

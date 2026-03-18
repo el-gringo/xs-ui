@@ -24,6 +24,9 @@ pub use image::*;
 mod style;
 pub use style::*;
 
+mod text;
+pub use text::*;
+
 mod tree;
 pub use tree::*;
 

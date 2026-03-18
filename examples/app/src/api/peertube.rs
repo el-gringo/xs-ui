@@ -11,14 +11,12 @@ pub struct Video {
     pub uuid: String,
     pub name: String,
     #[nserde(rename = "thumbnailPath")]
-    pub thumbnail_path: Option<String>,
+    pub thumbnail_path: String,
 }
 
 impl Video {
-    pub fn thumbnail_url(&self) -> Option<String> {
-        self.thumbnail_path
-            .as_ref()
-            .map(|path| PEERTUBE_BASE_URL.to_owned() + path)
+    pub fn thumbnail_url(&self) -> String {
+        PEERTUBE_BASE_URL.to_owned() + &self.thumbnail_path
     }
 }
 
@@ -38,17 +36,28 @@ impl PeerTubeClient {
         }
     }
 
-    pub fn get_videos(&self, offset: u32, count: u32, mutator: StateMutator<Vec<Video>>)
-    {
+    pub fn get_videos(&self, offset: u32, count: u32, mutator: StateMutator<Vec<Video>>) {
         let api = RestApi::new(PEERTUBE_API_URL);
-        api.get(&format!("/videos?start={offset}&count={count}"), move |response| {
-            let json_str = body_string(&response);
-            if let Ok(VideoListResponse { data }) = VideoListResponse::deserialize_json(&json_str) {
-                mutator.mutate(|videos| {
-                    videos.extend(data);
-                });
-            };
-        });
+        api.get(
+            &format!("/videos?start={offset}&count={count}"),
+            move |response| {
+                let json_str = body_string(&response);
+                if let Ok(VideoListResponse { data }) =
+                    VideoListResponse::deserialize_json(&json_str)
+                {
+                    let new_videos: Vec<Video> = data
+                        .into_iter()
+                        .filter(|v| {
+                            v.thumbnail_path.ends_with(".jpg")
+                                || v.thumbnail_path.ends_with(".jpeg")
+                        })
+                        .collect();
+                    mutator.mutate(|videos| {
+                        videos.extend(new_videos);
+                    });
+                };
+            },
+        );
     }
 }
 

@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use xs_layout::TextProperties;
 
-use crate::{AppContext, Application, Render, Renderer, TextSystem};
+use crate::{AppContext, Application, Render, Renderer, TextSystem, TextVertices};
 
 pub enum BackendResponse {
     /// image src
@@ -13,7 +13,7 @@ pub enum BackendResponse {
     /// height
     ImageLoaded(String, i32, Vec<u8>, u32, u32),
     /// text, text-properties
-    TextRendered(String, TextProperties, Vec<u8>, u32, u32),
+    TextRendered(String, TextProperties, TextVertices, u32),
 }
 
 pub enum BackendRequest {

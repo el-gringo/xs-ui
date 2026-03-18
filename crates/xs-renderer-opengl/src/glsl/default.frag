@@ -1,47 +1,48 @@
+#version 300 es
 precision lowp float;
 
-// Current position
-varying vec2 v_position;
-varying vec2 texture_coordinate;
+in vec2 v_position;
+in vec2 v_localPosition;
+in vec2 v_texture_coordinate;
 
-uniform vec2 u_viewport;
-uniform vec4 u_color;
+uniform highp vec2 u_rect_min;
+uniform highp vec2 u_rect_max;
+uniform highp vec4 u_color;
 uniform bool u_texture_enabled;
 uniform sampler2D u_texture;
 
-struct border_side {
-    bool enabled;
-    float width;
-    vec4 color;
-};
+uniform highp vec4 u_borderWidth;
+uniform highp vec4 u_borderColor;
 
-uniform border_side u_borders[4];
-
-uniform vec2 u_rect_min;
-uniform vec2 u_rect_max;
+out vec4 fragColor;
 
 void main() {
-    //vec2 uv = (2.0 * v_position.xy - u_viewport) / u_viewport.xx;
+    // Border SDF - normalize by actual dimensions per axis
+    vec2 dim = u_rect_max - u_rect_min;
+    
+    // Normalize border widths by actual dimension per axis
+    float top = u_borderWidth.x / dim.y;
+    float bottom = u_borderWidth.z / dim.y;
+    float left = u_borderWidth.w / dim.x;
+    float right = u_borderWidth.y / dim.x;
 
-    border_side top_border = u_borders[0];
-    border_side bottom_border = u_borders[1];
-    border_side left_border = u_borders[2];
-    border_side right_border = u_borders[3];
-
-    // Probably need to do something here during resizing on fractional values
-    if (top_border.enabled && v_position.y < u_rect_min.y + top_border.width) {
-        gl_FragColor = top_border.color;
-    } else if (bottom_border.enabled && v_position.y > u_rect_max.y - bottom_border.width) {
-        gl_FragColor = bottom_border.color;
-    } else if (left_border.enabled && v_position.x < u_rect_min.x + left_border.width) {
-        gl_FragColor = left_border.color;
-    } else if (right_border.enabled && v_position.x > u_rect_max.x - right_border.width) {
-        gl_FragColor = right_border.color;
-    } else {
-        if (u_texture_enabled) {
-            gl_FragColor = mix(u_color, texture2D(u_texture, (v_position - u_rect_min) / (u_rect_max - u_rect_min)), 1.);
-        } else {
-                gl_FragColor = u_color;
-        }
+    float borderDist = min(
+        min(v_localPosition.y - top, 1.0 - v_localPosition.y - bottom),
+        min(v_localPosition.x - left, 1.0 - v_localPosition.x - right)
+    );
+    
+    if (borderDist < 0.0) {
+        fragColor = u_borderColor;
+        return;
     }
+
+    // Content
+    vec4 content = u_color;
+    if (u_texture_enabled) {
+        vec2 uv = v_localPosition;
+        vec4 texColor = texture(u_texture, uv);
+        content = mix(u_color, texColor, texColor.a);
+    }
+    
+    fragColor = content;
 }

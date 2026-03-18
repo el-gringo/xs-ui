@@ -41,10 +41,9 @@ pub trait Renderer {
 
         // Store (parent_index, element) for each rendered element
         let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Vec::new();
-        while let Some(mut item) = stack.pop() {
+        while let Some(item) = stack.pop() {
             let node_id: NodeId = (item.widget.tag(), item.depth, item.index);
-            let mut ctx =
-                Context::new(app_context, node_id, item.nav_id, &mut item.text_properties);
+            let mut ctx = Context::new(app_context, node_id, item.nav_id, item.text_properties);
             let element = item.widget.render(&mut ctx);
 
             // Get children before moving element

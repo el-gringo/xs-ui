@@ -69,10 +69,15 @@ impl Render for Card {
             .child(
                 div()
                     .width(280.)
-                    .font_size(20.)
+                    .height(60.)
                     .margin_top(16.)
-                    .color(GRAY3)
-                    .child(text(self.title.clone()))
+                    .child(
+                        div()
+                            .font_size(20)
+                            .color(GRAY3)
+                            .child(text(self.title.clone()))
+                    )
+
             )
             .into()
     }

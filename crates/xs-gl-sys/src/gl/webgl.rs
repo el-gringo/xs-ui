@@ -1,18 +1,22 @@
 #![allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]
 
-use crate::bindings::{
+use crate::{GLvoid, bindings::{
     self,
     common_sys::{GLboolean, GLenum, GLint, GLintptr, GLsizei, GLsizeiptr, GLuint},
-};
+}};
 
-pub fn glBufferData(
+pub fn glBufferData<T>(
     target: GLenum,
-    size: GLsizeiptr,
-    data: *const ::core::ffi::c_void,
+    data: &[T],
     usage: GLenum,
 ) {
     unsafe {
-        bindings::glBufferData(target, size, data, usage);
+        bindings::glBufferData(
+            target,
+            (std::mem::size_of::<T>() * data.len()) as _,
+            data.as_ptr() as *const GLvoid,
+            usage,
+        );
     }
 }
 

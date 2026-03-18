@@ -64,9 +64,9 @@ zune-image = {
     default-features = false,
     features = [
         "jpeg",
-        "jpeg-xl",
+        #"jpeg-xl",
         "png",
-        "webp",
+        #"webp",
         "qoi"
     ]
 }

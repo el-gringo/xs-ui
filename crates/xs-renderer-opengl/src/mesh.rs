@@ -26,14 +26,11 @@ impl Mesh {
         //let bytes = cast_slice(vertices);
         let buffer = glGenBuffers(1)[0];
         glBindBuffer(GL_ARRAY_BUFFER, buffer);
-        unsafe {
-            glBufferData(
-                GL_ARRAY_BUFFER,
-                std::mem::size_of_val(vertices) as GLsizeiptr,
-                vertices.as_ptr() as *const GLvoid,
-                GL_STATIC_DRAW,
-            );
-        }
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            &vertices,
+            GL_STATIC_DRAW,
+        );
         glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
         Mesh { buffer, size }
     }

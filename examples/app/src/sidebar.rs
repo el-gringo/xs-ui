@@ -53,8 +53,15 @@ impl Render for Sidebar {
                     .justify_content(JustifyContent::Center)
                     .align_items(AlignItems::Center)
                     .color(WHITE)
-                    .font_size(45.)
-                    .child(text("PeerTube".to_string()))
+                    .font_size(45)
+                    .child(
+                        div()
+                            .height(30.)
+                            .justify_content(JustifyContent::Center)
+                            .child(
+                                text("PeerTube")
+                            )
+                    )
             )
             .child(
                 div()

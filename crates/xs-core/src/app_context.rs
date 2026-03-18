@@ -2,10 +2,10 @@ use std::{
     any::{Any, TypeId}, collections::HashMap, sync::atomic::{AtomicPtr, Ordering}
 };
 
-use xs_layout::Image;
+use xs_layout::{Image, TextProperties};
 use xs_platform_event::KeyEvent;
 
-use crate::{BackendRequest, FocusManager, core::NodeId, navigation::NavigationNodeId};
+use crate::{BackendRequest, FocusManager, TextVertices, core::NodeId, navigation::NavigationNodeId};
 
 // Global AppContext storage
 static APP_CONTEXT: AtomicPtr<AppContext> = AtomicPtr::new(std::ptr::null_mut());
@@ -27,7 +27,7 @@ pub struct AppContext {
     pub current_node_id: NodeId,
     pub current_nav_node_id: NavigationNodeId,
     pub textures: HashMap<String, Option<Image>>,
-    pub texts: HashMap<String, Option<Image>>,
+    pub texts: HashMap<(String, TextProperties), Option<(TextVertices, u32)>>,
     pub requests: HashMap<(String, String), Option<String>>,
     pub messages: Vec<BackendRequest>,
 }

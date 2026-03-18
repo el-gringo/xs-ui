@@ -28,7 +28,7 @@ pub struct Context<'a> {
     pub app_context: &'a mut AppContext,
     pub node_id: NodeId,
     pub nav_id: NavigationNodeId,
-    pub text_properties: &'a mut TextProperties,
+    pub text_properties: TextProperties,
     pub state_index: usize,
 }
 
@@ -37,7 +37,7 @@ impl<'a> Context<'a> {
         app_context: &'a mut AppContext,
         node_id: NodeId,
         nav_id: NavigationNodeId,
-        text_properties: &'a mut TextProperties,
+        text_properties: TextProperties,
     ) -> Self {
         Self {
             app_context,

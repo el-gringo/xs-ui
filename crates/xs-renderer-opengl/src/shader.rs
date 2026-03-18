@@ -1,12 +1,7 @@
 use std::collections::HashMap;
 
 use xs_gl_sys::{
-    GL_COMPILE_STATUS, GL_FALSE, GL_FLOAT, GL_FRAGMENT_SHADER, GL_LINK_STATUS, GL_VERTEX_SHADER,
-    GLenum, GLint, GLsizei, GLuint, glAttachShader, glCompileShader, glCreateProgram,
-    glCreateShader, glEnableVertexAttribArray, glGetAttribLocation, glGetProgramInfoLog,
-    glGetProgramParameter, glGetShaderInfoLog, glGetShaderParameter, glGetUniformLocation,
-    glLinkProgram, glShaderSource, glUniform1f, glUniform1i, glUniform2f, glUniform4f,
-    glUseProgram, glVertexAttribPointer,
+    GL_COMPILE_STATUS, GL_FALSE, GL_FLOAT, GL_FRAGMENT_SHADER, GL_LINK_STATUS, GL_VERTEX_SHADER, GLenum, GLint, GLsizei, GLuint, glAttachShader, glCompileShader, glCreateProgram, glCreateShader, glEnableVertexAttribArray, glGenBuffers, glGetAttribLocation, glGetProgramInfoLog, glGetProgramParameter, glGetShaderInfoLog, glGetShaderParameter, glGetUniformLocation, glLinkProgram, glShaderSource, glUniform1f, glUniform1i, glUniform2f, glUniform4f, glUseProgram, glVertexAttribPointer
 };
 
 #[allow(dead_code)]
@@ -40,8 +35,11 @@ pub struct ShaderGlslUniform {
     count: GLsizei,
 }
 
+#[derive(Debug)]
 pub struct ShaderGlslAttribute {
+    pub buffer: GLuint,
     pub location: GLint,
+    pub num_components: u8
 }
 
 pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
@@ -66,7 +64,7 @@ pub fn compile_shader(shader_type: GLenum, source: &str) -> GLuint {
     let compile_status = glGetShaderParameter(shader, GL_COMPILE_STATUS);
     if compile_status == 0 {
         let error_message = glGetShaderInfoLog(shader);
-        panic!("failed to compile shader: {:?}", error_message);
+        panic!("failed to compile shader: {:?}\n{}", error_message, source);
     }
     shader
 }
@@ -99,9 +97,10 @@ impl ShaderGlsl {
             uniforms.insert(name, uniform);
         }
         let mut attributes = HashMap::new();
-        for (name, (_format, _count)) in attribute_descriptions {
+        for (name, (_format, count)) in attribute_descriptions {
+            let buffer = glGenBuffers(1)[0];
             let location = glGetAttribLocation(program, &name);
-            let attribute = ShaderGlslAttribute { location };
+            let attribute = ShaderGlslAttribute { buffer, location, num_components: count as _ };
             attributes.insert(name.to_string(), attribute);
         }
         ShaderGlsl {

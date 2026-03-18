@@ -53,6 +53,9 @@ pub trait Layout {
     fn margin(&self) -> EdgeInsets {
         EdgeInsets::zero()
     }
+    fn padding(&self) -> EdgeInsets {
+        EdgeInsets::zero()
+    }
 }
 
 pub type View = Rc<dyn Layout>;
@@ -140,7 +143,7 @@ impl LayoutBox {
             margin: child.margin,
             children: child.children,
             material: child.material,
-            text_material: child.text_material
+            text_material: child.text_material,
         }
     }
 }
@@ -222,8 +225,7 @@ impl LayoutTree {
                 child.clone().bounds,
                 if let Some(m) = material {
                     match m {
-                        Material::Quad(_, color, _) |
-                        Material::Text(color, _) => {
+                        Material::Quad(_, color, _) | Material::Text(color, _) => {
                             format!("{color:?}")
                         }
                     }
@@ -239,7 +241,7 @@ pub struct LayoutTreeIterator<'a> {
     tree: &'a LayoutTree,
     parents: VecDeque<LayoutBoxId>,
     offsets: VecDeque<Vector2>,
-    remaining: VecDeque<(LayoutBoxId, usize)>
+    remaining: VecDeque<(LayoutBoxId, usize)>,
 }
 
 impl<'a> Iterator for LayoutTreeIterator<'a> {
@@ -402,7 +404,7 @@ mod tests {
         LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
             children: vec![],
-            material: Some(Material::filled(Color::rgba(0.0, 0.0, 0.0, 0.0))),
+            material: Some(Material::filled(Color::rgba(0, 0, 0, 0))),
             ..Default::default()
         }
     }

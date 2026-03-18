@@ -12,6 +12,7 @@ struct FlexItem {
     min_main: f32,
     max_main: f32,
     margin: EdgeInsets,
+    padding: EdgeInsets,
     children: Vec<LayoutBoxId>,
     material: Option<Material>,
     text_material: Option<Material>,
@@ -127,6 +128,7 @@ impl Layout for Flex {
                     material: layout.material,
                     text_material: layout.text_material,
                     margin: child.margin(),
+                    padding: child.padding(),
                 }
             })
             .collect();
@@ -188,6 +190,15 @@ impl Layout for Flex {
                 });
         }
 
+        let total_cross: f32 = lines
+            .iter()
+            .map(|l| {
+                l.iter()
+                    .map(|i| i.cross(main_is_x))
+                    .fold(0.0f32, |a, b| a.max(b))
+            })
+            .sum();
+
         let mut child_ids = Vec::new();
         let padding_min = style.padding.min();
         let justify_base = justify_offset(container_main, total_main, style.justify_content);
@@ -208,11 +219,7 @@ impl Layout for Flex {
             let line_cross_start = cross_pos;
 
             // For wrapped lines, reset main position to start of container (not accumulated)
-            let line_main_start = if line_idx == 0 {
-                padding_min.x + padding_min.y + justify_base
-            } else {
-                padding_min.x + padding_min.y
-            };
+            let line_main_start = if line_idx == 0 { justify_base } else { 0.0 };
 
             let (line_ids, _new_cursor) =
                 line.iter()
@@ -227,18 +234,23 @@ impl Layout for Flex {
                         );
 
                         let px = if main_is_x {
-                            cursor + margin_main_start
+                            cursor + margin_main_start + style.padding.left
                         } else {
                             cross_pos + cross_offset + margin_cross_start
                         };
                         let py = if main_is_x {
                             line_cross_start + cross_offset + margin_cross_start
                         } else {
-                            cursor + margin_main_start
+                            cursor + margin_main_start + style.padding.top
                         };
 
                         let box_id = tree.insert(LayoutBox {
-                            bounds: Rectangle::new(px, py, item.size.x, item.size.y),
+                            bounds: Rectangle::new(
+                                px,
+                                py,
+                                item.size.x + item.padding.left + item.padding.right,
+                                item.size.y + item.padding.top + item.padding.bottom,
+                            ),
                             margin: item.margin,
                             children: item.children.clone(),
                             material: item.material.clone(),
@@ -262,16 +274,29 @@ impl Layout for Flex {
             child_ids.reverse();
         }
 
-        let final_w = style
-            .width
-            .unwrap_or(w)
-            .max(style.min_width.unwrap_or(0.0))
-            .min(style.max_width.unwrap_or(f32::INFINITY));
-        let final_h = style
-            .height
-            .unwrap_or(h)
-            .max(style.min_height.unwrap_or(0.0))
-            .min(style.max_height.unwrap_or(f32::INFINITY));
+        let pw = style.padding.left + style.padding.right + style.border.total_width();
+        let ph = style.padding.top + style.padding.bottom + style.border.total_height();
+        let content_w = if main_is_x { total_main } else { total_cross };
+        let content_h = if main_is_x { total_cross } else { total_main };
+        let content_plus_padding_w = content_w + pw;
+        let content_plus_padding_h = content_h + ph;
+        let has_explicit_width = style.width.is_some();
+        let has_explicit_height = style.height.is_some();
+        let has_padding = pw > 0.0 || ph > 0.0;
+        let final_w = if has_explicit_width {
+            style.width.unwrap()
+        } else if has_padding {
+            content_plus_padding_w
+        } else {
+            w
+        };
+        let final_h = if has_explicit_height {
+            style.height.unwrap()
+        } else if has_padding {
+            content_plus_padding_h
+        } else {
+            h
+        };
 
         tree.insert(LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, final_w, final_h),
@@ -291,6 +316,9 @@ impl Layout for Flex {
     }
     fn margin(&self) -> EdgeInsets {
         self.style.margin
+    }
+    fn padding(&self) -> EdgeInsets {
+        self.style.padding
     }
 }
 
@@ -317,7 +345,7 @@ mod tests {
         let mut flex = flex(Some(w), Some(h), vec![]);
         flex.material = Some(Material::Quad(
             Borders::none(),
-            Color::rgba(1.0, 0.0, 0.0, 1.0),
+            Color::rgba(255, 0, 0, 255),
             None,
         ));
         Rc::new(flex)
@@ -328,7 +356,7 @@ mod tests {
         flex.style.margin = margin;
         flex.material = Some(Material::Quad(
             Borders::none(),
-            Color::rgba(1.0, 0.0, 0.0, 1.0),
+            Color::rgba(255, 0, 0, 255),
             None,
         ));
         flex
@@ -349,8 +377,8 @@ mod tests {
     fn card(width: Option<f32>, height: Option<f32>) -> Flex {
         let mut flex = flex(width, height, Vec::new());
         flex.material = Some(Material::Quad(
-            Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
-            Color::rgba(1.0, 1.0, 1.0, 1.0),
+            Borders::all(Color::rgba(178, 178, 178, 255), 1.0),
+            Color::rgba(255, 255, 255, 255),
             None,
         ));
         flex
@@ -878,20 +906,123 @@ mod tests {
     }
 
     #[test]
+    fn row_with_padding_reduces_inner_area() {
+        let mut inner = flex(Some(50.0), Some(50.0), vec![]);
+        inner.style.padding = EdgeInsets {
+            left: 20.0,
+            right: 0.0,
+            top: 0.0,
+            bottom: 0.0,
+        };
+
+        let mut flex = row(Some(100.), Some(100.), vec![Rc::new(inner)]);
+        flex.style.padding = EdgeInsets::all(10.0);
+        let mut tree = LayoutTree::new();
+        let result = flex.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+        assert_eq!(result.size.x, 100.0);
+        assert_eq!(result.size.y, 100.0);
+        let child_box = tree.get(result.children[0]).unwrap();
+        assert_eq!(child_box.bounds.x, 10.0);
+        assert_eq!(child_box.bounds.y, 10.0);
+        assert_eq!(child_box.bounds.width, 70.0);
+        assert_eq!(child_box.bounds.height, 50.0);
+    }
+
+    #[test]
+    fn column_with_padding_reduces_inner_area() {
+        let mut flex = column(Some(100.), Some(100.), vec![child(50.0, 50.0)]);
+        flex.style.padding = EdgeInsets::all(10.0);
+        let mut tree = LayoutTree::new();
+        let result = flex.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+        assert_eq!(result.size.x, 100.0);
+        assert_eq!(result.size.y, 100.0);
+        let child_box = tree.get(result.children[0]).unwrap();
+        assert_eq!(child_box.bounds.x, 10.0);
+        assert_eq!(child_box.bounds.y, 10.0);
+        assert_eq!(child_box.bounds.width, 50.0);
+        assert_eq!(child_box.bounds.height, 50.0);
+    }
+
+    #[test]
+    fn padding_with_unbounded_parent_uses_padding() {
+        let mut flex = row(None, None, vec![child(50.0, 50.0)]);
+        flex.style.padding = EdgeInsets {
+            top: 5.0,
+            bottom: 15.0,
+            left: 20.0,
+            right: 10.0,
+        };
+        let mut tree = LayoutTree::new();
+        let result = flex.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+        assert_eq!(result.size.x, 50.0 + 10.0 + 20.0);
+        assert_eq!(result.size.y, 50.0 + 5.0 + 15.0);
+        let child_box = tree.get(result.children[0]).unwrap();
+        assert_eq!(child_box.bounds.x, 20.0);
+        assert_eq!(child_box.bounds.y, 5.0);
+    }
+
+    #[test]
+    fn padding_with_multiple_children() {
+        let mut flex = row(
+            Some(200.),
+            Some(100.),
+            vec![child(40.0, 40.0), child(40.0, 40.0)],
+        );
+        flex.style.padding = EdgeInsets::all(10.0);
+        flex.style.gap = 5.0;
+        let mut tree = LayoutTree::new();
+        let result = flex.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+        let c1 = tree.get(result.children[0]).unwrap();
+        let c2 = tree.get(result.children[1]).unwrap();
+        assert_eq!(c1.bounds.x, 10.0);
+        assert_eq!(c1.bounds.y, 10.0);
+        assert_eq!(c2.bounds.x, 10.0 + 40.0 + 5.0);
+        assert_eq!(c2.bounds.y, 10.0);
+    }
+
+    #[test]
+    fn flex_without_explicit_size_with_padding() {
+        let mut flex = row(None, None, vec![child(50.0, 50.0)]);
+        flex.style.padding = EdgeInsets::all(25.0);
+        let mut tree = LayoutTree::new();
+        let result = flex.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+        assert_eq!(result.size.x, 50.0 + 50.0);
+        assert_eq!(result.size.y, 50.0 + 50.0);
+        let child_box = tree.get(result.children[0]).unwrap();
+        assert_eq!(child_box.bounds.x, 25.0);
+        assert_eq!(child_box.bounds.y, 25.0);
+    }
+
+    #[test]
     fn real_world_app_layout() {
         let mut sidebar_header = row(None, Some(60.0), vec![child(100., 30.)]);
         sidebar_header.style.justify_content = JustifyContent::Center;
         sidebar_header.style.align_items = AlignItems::Center;
         sidebar_header.material = Some(Material::Quad(
             Borders::none(),
-            Color::rgba(0.9, 0.9, 0.9, 1.0),
+            Color::rgba(229, 229, 229, 255),
             None,
         ));
 
         let mut btn = row(Some(218.0), Some(40.0), vec![]);
         btn.material = Some(Material::Quad(
-            Borders::all(Color::rgba(0.5, 0.5, 0.5, 1.0), 1.0),
-            Color::rgba(0.8, 0.8, 0.8, 1.0),
+            Borders::all(Color::rgba(128, 128, 128, 255), 1.0),
+            Color::rgba(204, 204, 204, 255),
             None,
         ));
         let mut sidebar_body = column(
@@ -914,21 +1045,21 @@ mod tests {
         );
         sidebar.material = Some(Material::Quad(
             Borders::none(),
-            Color::rgba(0.85, 0.85, 0.85, 1.0),
+            Color::rgba(217, 217, 217, 255),
             None,
         ));
 
         let mut app_header = row(None, Some(60.0), vec![]);
         app_header.material = Some(Material::Quad(
             Borders::none(),
-            Color::rgba(0.95, 0.95, 0.95, 1.0),
+            Color::rgba(242, 242, 242, 255),
             None,
         ));
 
         let mut card = card(Some(280.0), Some(200.0));
         card.material = Some(Material::Quad(
-            Borders::all(Color::rgba(0.7, 0.7, 0.7, 1.0), 1.0),
-            Color::rgba(1.0, 1.0, 1.0, 1.0),
+            Borders::all(Color::rgba(178, 178, 178, 255), 1.0),
+            Color::rgba(255, 255, 255, 255),
             None,
         ));
 
@@ -978,9 +1109,10 @@ mod tests {
             "sidebar should have material"
         );
         if let Some(Material::Quad(_, fill, _)) = &sidebar_box.material {
-            assert_eq!(fill.r, 0.85, "sidebar should have gray fill");
-            assert_eq!(fill.g, 0.85);
-            assert_eq!(fill.b, 0.85);
+            let expected = 217;
+            assert_eq!(fill.r, expected, "sidebar should have gray fill");
+            assert_eq!(fill.g, expected);
+            assert_eq!(fill.b, expected);
         }
 
         assert_eq!(app_body_box.bounds.x, 250.0);

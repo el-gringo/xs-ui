@@ -79,6 +79,9 @@ impl Backend for BackendWayland {
         set_app_id(&mut ctx, app_id.into());
         set_title(&mut ctx, app_title.into());
         renderer.init();
+        let font_family = "sans-serif";
+        let data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
+        text_system.load_font(font_family, 400, data, &mut renderer);
         set_app_context(ctx.app_context);
         let start = Instant::now();
         let (tx, rx) = channel();

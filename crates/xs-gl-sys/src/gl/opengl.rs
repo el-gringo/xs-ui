@@ -5,17 +5,18 @@ use std::ffi::CString;
 pub use crate::bindings::load_gl_funcs;
 use crate::bindings::{self, common_sys::*};
 
-/// # Safety
-///
-/// Raw pointer deferencement
-pub unsafe fn glBufferData(
+pub fn glBufferData<T>(
     target: GLenum,
-    size: GLsizeiptr,
-    data: *const ::core::ffi::c_void,
+    data: &[T],
     usage: GLenum,
 ) {
     unsafe {
-        bindings::glBufferData(target, size, data, usage);
+        bindings::glBufferData(
+            target,
+            (std::mem::size_of::<T>() * data.len()) as _,
+            data.as_ptr() as *const _,
+            usage
+        );
     }
 }
 
@@ -32,19 +33,20 @@ pub fn glVertexAttribPointer(
     }
 }
 
-pub fn glGenBuffers(n: GLsizei) -> Vec<GLuint> {
+pub fn glGenBuffers(n: usize) -> Vec<GLuint> {
     unsafe {
         let mut buffer: GLuint = 0;
-        bindings::glGenBuffers(n, &mut buffer as _);
-        vec![buffer]
+        let mut buffers = vec![0; n];
+        bindings::glGenBuffers(n as _, buffers.as_ptr() as _);
+        buffers
     }
 }
 
-pub fn glGenTextures(n: GLsizei) -> Vec<GLuint> {
+pub fn glGenTextures(n: usize) -> Vec<GLuint> {
     unsafe {
-        let mut texture: GLuint = 0;
-        bindings::glGenTextures(n, &mut texture as _);
-        vec![texture]
+        let mut textures = vec![0; n];
+        bindings::glGenTextures(n as _, textures.as_ptr() as _);
+        textures
     }
 }
 

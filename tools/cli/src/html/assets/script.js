@@ -249,12 +249,6 @@ const env = {
     const image = new Image();
     image.onload = function onImageLoaded() {
       const ptr_img = add_heap_object(image);
-      console.log(
-        "load_image_callback",
-        ptr_img,
-        image.naturalWidth,
-        image.naturalHeight,
-      );
       wasm.load_image_callback(
         closure,
         ptr_img,

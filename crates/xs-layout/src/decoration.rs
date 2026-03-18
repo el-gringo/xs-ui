@@ -1,10 +1,10 @@
-use crate::{Color, Image, colors::TRANSPARENT};
+use crate::{Color, Image, TextVertices, colors::TRANSPARENT};
 use xs_math::Vector2;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Material {
     Quad(Borders, Color, Option<Image>),
-    Text(Color, Option<Image>)
+    Text(Color, (TextVertices, u32))
 }
 
 impl Material {

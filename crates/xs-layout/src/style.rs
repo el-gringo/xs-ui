@@ -1,6 +1,6 @@
 use crate::{
-    AlignContent, AlignItems, BorderSide, Borders, Color, EdgeInsets, FlexDirection, FlexWrap,
-    JustifyContent, colors::BLACK,
+    colors::BLACK, AlignContent, AlignItems, BorderSide, Borders, Color, EdgeInsets, FlexDirection,
+    FlexWrap, JustifyContent,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
@@ -11,69 +11,38 @@ pub enum FontStyle {
     Oblique,
 }
 
-#[derive(Clone, Debug)]
-pub struct TextPropertiesInner {
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextProperties {
     pub color: Color,
     pub font_family: String,
-    pub font_size: f32,
-    pub font_weight: u32,
+    pub font_size: u16,
+    pub font_weight: u16,
     pub font_style: FontStyle,
+    pub max_width: Option<f32>,
 }
 
-impl Default for TextPropertiesInner {
+impl Default for TextProperties {
     fn default() -> Self {
         Self {
             color: BLACK,
             font_family: String::from("sans-serif"),
-            font_size: 16.,
+            font_size: 16,
             font_weight: 400,
-            font_style: FontStyle::Normal
+            font_style: FontStyle::Normal,
+            max_width: None,
         }
     }
 }
 
-#[derive(Clone, Default, Debug)]
-pub struct TextProperties(pub Option<TextPropertiesInner>);
+impl Eq for TextProperties {}
 
-
-impl TextProperties {
-    pub fn color(&mut self, color: Color) {
-        self.update_field(|prop| prop.color = color);
-    }
-
-    pub fn font_family(&mut self, font_family: String) {
-        self.update_field(|prop| prop.font_family = font_family);
-    }
-
-    pub fn font_size(&mut self, font_size: f32) {
-        self.update_field(|prop| prop.font_size = font_size);
-    }
-
-    pub fn font_weight(&mut self, font_weight: u32) {
-        self.update_field(|prop| prop.font_weight = font_weight);
-    }
-
-    pub fn unwrap_or_default(&self) -> TextPropertiesInner {
-        self.0.clone().unwrap_or_default()
-    }
-
-    pub fn is_some(&self) -> bool {
-        self.0.is_some()
-    }
-
-    pub fn replace(&mut self, new_text_properties: TextProperties) {
-        self.0 = new_text_properties.0.clone();
-    }
-
-    fn update_field(&mut self, callback: impl FnOnce(&mut TextPropertiesInner)) {
-        match self.0.as_mut() {
-            Some(mut v) => callback(&mut v),
-            None => {
-                let v = Default::default();
-                self.0.replace(v);
-                self.update_field(callback);
-            }
-        }
+impl std::hash::Hash for TextProperties {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.color.hash(state);
+        self.font_family.hash(state);
+        self.font_size.hash(state);
+        self.font_weight.hash(state);
+        self.font_style.hash(state);
     }
 }
 
@@ -145,5 +114,5 @@ pub struct Style {
     pub flex_shrink: f32,
 
     // Text properties
-    pub text_properties: TextProperties,
+    pub text_properties: Option<TextProperties>,
 }
