@@ -1,15 +1,14 @@
 #![allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]
 
-use crate::{GLvoid, bindings::{
-    self,
-    common_sys::{GLboolean, GLenum, GLint, GLintptr, GLsizei, GLsizeiptr, GLuint},
-}};
+use crate::{
+    GLvoid,
+    bindings::{
+        self,
+        common_sys::{GLboolean, GLenum, GLint, GLintptr, GLsizei, GLuint},
+    },
+};
 
-pub fn glBufferData<T>(
-    target: GLenum,
-    data: &[T],
-    usage: GLenum,
-) {
+pub fn glBufferData<T>(target: GLenum, data: &[T], usage: GLenum) {
     unsafe {
         bindings::glBufferData(
             target,

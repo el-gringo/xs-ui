@@ -38,7 +38,6 @@ impl WaylandDispatcher {
                     app_context.textures.insert(src.clone(), Some(image));
                 }
                 BackendResponse::TextRendered(text, text_properties, text_vertices, texture) => {
-                    eprintln!("text_vertices: {text_vertices:?}");
                     app_context
                         .texts
                         .get_mut(&(text, text_properties))

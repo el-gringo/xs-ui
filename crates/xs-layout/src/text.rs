@@ -4,5 +4,5 @@ pub struct TextVertices {
     pub texture_coordinate: (Vec<f32>, usize),
     pub num_vertices: usize,
     pub width: f32,
-    pub height: f32
+    pub height: f32,
 }

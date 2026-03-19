@@ -1,7 +1,7 @@
 #![warn(clippy::all, clippy::pedantic)]
 #![allow(clippy::similar_names)]
 
-pub use xs_math::Vector2;
+pub use xs_math::{Rectangle, Vector2};
 
 mod base;
 pub use base::*;

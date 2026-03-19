@@ -2,14 +2,15 @@ use std::collections::HashMap;
 
 use xs_core::Renderer;
 use xs_gl_sys::{
-    glActiveTexture, glBindBuffer, glBindTexture, glBlendFunc, glBufferData, glClear, glClearColor,
-    glDisable, glDrawArrays, glEnable, glEnableVertexAttribArray, glFlush, glGenTextures,
-    glGenerateMipmap, glPixelStorei, glTexImage2DByBytes, glTexImage2DByPointer, glTexParameteri,
-    glVertexAttribPointer, glViewport, GLsizei, GL_ALPHA, GL_ARRAY_BUFFER, GL_BLEND,
-    GL_CLAMP_TO_EDGE, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_DYNAMIC_DRAW, GL_FALSE, GL_FLOAT,
-    GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_ONE_MINUS_SRC_ALPHA, GL_RGBA, GL_SRC_ALPHA,
-    GL_STATIC_DRAW, GL_TEXTURE0, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER,
-    GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_TRIANGLES, GL_UNPACK_ALIGNMENT, GL_UNSIGNED_BYTE,
+    GL_ALPHA, GL_ARRAY_BUFFER, GL_BLEND, GL_CLAMP_TO_EDGE, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST,
+    GL_DYNAMIC_DRAW, GL_FALSE, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR,
+    GL_ONE_MINUS_SRC_ALPHA, GL_RGBA, GL_SRC_ALPHA, GL_STATIC_DRAW, GL_TEXTURE_2D,
+    GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T,
+    GL_TEXTURE0, GL_TRIANGLES, GL_UNPACK_ALIGNMENT, GL_UNSIGNED_BYTE, glActiveTexture,
+    glBindBuffer, glBindTexture, glBlendFunc, glBufferData, glClear, glClearColor, glDisable,
+    glDrawArrays, glEnable, glEnableVertexAttribArray, glFlush, glGenTextures, glGenerateMipmap,
+    glPixelStorei, glTexImage2DByBytes, glTexImage2DByPointer, glTexParameteri,
+    glVertexAttribPointer, glViewport,
 };
 use xs_layout::{
     BoxConstraints, LayoutBox, LayoutTree,
@@ -18,10 +19,9 @@ use xs_layout::{
 };
 use xs_math::Vector2;
 
-use crate::mesh::Mesh;
 use crate::shader::{
     ShaderGlsl,
-    ShaderGlslFormat::{Float1, Float2, Float4, Int1, Int2},
+    ShaderGlslFormat::{Float2, Float4, Int1, Int2},
 };
 
 const DEFAULT_VERTEX_SHADER: &str = include_str!("glsl/default.vert");
@@ -134,11 +134,6 @@ impl Renderer for RendererOpenGl {
             let size = Vector2::new(child.bounds.width, child.bounds.height);
             let min = offset + origin + child.margin.min();
             let max = offset + origin + size - child.margin.max();
-            let widget_min = offset + origin;
-            let widget_max = offset + origin + size;
-            // Note: padding is already accounted for in bounds from layout
-            let content_min = widget_min;
-            let content_max = widget_max;
             if child.material.is_some() || child.text_material.is_some() {
                 if let Some(material) = &child.material {
                     match material {
@@ -270,7 +265,7 @@ impl Renderer for RendererOpenGl {
                             );
                             let a_texture_coordinate =
                                 shader_text.attributes.get("a_texture_coordinate").unwrap();
-                            let (texcoords, offset) = text_vertices.texture_coordinate;
+                            let (texcoords, _offset) = text_vertices.texture_coordinate;
                             glBindBuffer(GL_ARRAY_BUFFER, a_texture_coordinate.buffer);
                             glBufferData(GL_ARRAY_BUFFER, &texcoords, GL_DYNAMIC_DRAW);
                             glEnableVertexAttribArray(a_texture_coordinate.location as _);

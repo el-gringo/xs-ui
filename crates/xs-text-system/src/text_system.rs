@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use xs_core::{Renderer, TextProperties, TextVertices};
-pub use xs_text_system_glyph::{point, Font, FontRef, PxScale, PxScaleFont, ScaleFont};
+pub use xs_text_system_glyph::{Font, FontRef, PxScale, PxScaleFont, ScaleFont, point};
 
-use crate::{layout_paragraph::layout_paragraph, FontAtlas};
+use crate::{FontAtlas, layout_paragraph::layout_paragraph};
 
 #[derive(Default)]
 pub struct TextSystem {
@@ -82,7 +82,7 @@ pub fn make_vertices_for_string(
     let scale_factor = text_properties.font_size as f32 / atlas_font_size;
 
     let ascent = scaled_font.ascent();
-    let descent = scaled_font.descent();
+    let _descent = scaled_font.descent();
 
     let mut min_x = f32::INFINITY;
     let mut max_x_pos = f32::NEG_INFINITY;

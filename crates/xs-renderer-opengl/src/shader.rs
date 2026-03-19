@@ -1,7 +1,11 @@
 use std::collections::HashMap;
 
 use xs_gl_sys::{
-    GL_COMPILE_STATUS, GL_FALSE, GL_FLOAT, GL_FRAGMENT_SHADER, GL_LINK_STATUS, GL_VERTEX_SHADER, GLenum, GLint, GLsizei, GLuint, glAttachShader, glCompileShader, glCreateProgram, glCreateShader, glEnableVertexAttribArray, glGenBuffers, glGetAttribLocation, glGetProgramInfoLog, glGetProgramParameter, glGetShaderInfoLog, glGetShaderParameter, glGetUniformLocation, glLinkProgram, glShaderSource, glUniform1f, glUniform1i, glUniform2f, glUniform4f, glUseProgram, glVertexAttribPointer
+    GL_COMPILE_STATUS, GL_FRAGMENT_SHADER, GL_LINK_STATUS, GL_VERTEX_SHADER, GLenum, GLint,
+    GLsizei, GLuint, glAttachShader, glCompileShader, glCreateProgram, glCreateShader,
+    glGenBuffers, glGetAttribLocation, glGetProgramInfoLog, glGetProgramParameter,
+    glGetShaderInfoLog, glGetShaderParameter, glGetUniformLocation, glLinkProgram, glShaderSource,
+    glUniform1f, glUniform1i, glUniform2f, glUniform4f, glUseProgram,
 };
 
 #[allow(dead_code)]
@@ -35,11 +39,12 @@ pub struct ShaderGlslUniform {
     count: GLsizei,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ShaderGlslAttribute {
     pub buffer: GLuint,
     pub location: GLint,
-    pub num_components: u8
+    pub num_components: u8,
 }
 
 pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
@@ -100,7 +105,11 @@ impl ShaderGlsl {
         for (name, (_format, count)) in attribute_descriptions {
             let buffer = glGenBuffers(1)[0];
             let location = glGetAttribLocation(program, &name);
-            let attribute = ShaderGlslAttribute { buffer, location, num_components: count as _ };
+            let attribute = ShaderGlslAttribute {
+                buffer,
+                location,
+                num_components: count as _,
+            };
             attributes.insert(name.to_string(), attribute);
         }
         ShaderGlsl {
@@ -142,6 +151,7 @@ impl ShaderGlsl {
     }
     */
 
+    #[allow(dead_code)]
     pub fn set_uniform_1f(&self, name: &str, v0: f32) {
         if let Some(uniform) = self.uniforms.get(name) {
             glUniform1f(uniform.location, v0);
@@ -193,13 +203,6 @@ impl ShaderGlsl {
         }
     }
     */
-
-    pub fn apply_attributes(&self) {
-        for (_name, attribute) in self.attributes.iter() {
-            glEnableVertexAttribArray(attribute.location as _);
-            glVertexAttribPointer(attribute.location as _, 3, GL_FLOAT, GL_FALSE as _, 0, 0);
-        }
-    }
 
     pub fn use_program(&self) {
         glUseProgram(self.program);

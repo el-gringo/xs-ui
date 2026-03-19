@@ -1,7 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
 use xs_core::{BackendRequest, Context, Element, Render};
-use xs_layout::TextVertices as Tv;
 use xs_layout::{BoxConstraints, Layout, LayoutTree, Material, SizedLayoutBox, Vector2, View};
 
 pub struct Text(pub String);
@@ -25,12 +24,13 @@ impl Render for Text {
             std::collections::hash_map::Entry::Occupied(o) => {
                 let opt = o.get();
                 match opt {
-                    &Some((ref t, texture_id)) => {
-                        width = t.width;
-                        height = t.height;
-                        let tv: Tv = t.clone();
-                        material =
-                            Some(Material::Text(ctx.text_properties.color, (tv, texture_id)));
+                    &Some((ref tv, texture_id)) => {
+                        width = tv.width;
+                        height = tv.height;
+                        material = Some(Material::Text(
+                            ctx.text_properties.color,
+                            (tv.clone(), texture_id),
+                        ));
                     }
                     &None => {
                         width = 0.0;
@@ -79,7 +79,7 @@ impl Element for TextElement {
 }
 
 impl Layout for TextElement {
-    fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
+    fn layout(&self, _tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         let max_w = self.max_width.unwrap_or(constraints.max.x);
         let width = max_w.min(self.width);
         let height = constraints.max.y.min(self.height);

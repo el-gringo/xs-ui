@@ -8,10 +8,11 @@ mod grid;
 mod sidebar;
 mod theme;
 
-use std::{any::TypeId, process::Child, rc::Rc};
+use std::{any::TypeId, rc::Rc};
 
 use xs::{
-    AlignItems, Application, BLACK, Context, Element, FocusHandle, NavigationNode, ORANGE, RED, Render, WHITE, div, run, text
+    AlignItems, Application, Context, Element, FocusHandle, NavigationNode, ORANGE, RED, Render,
+    WHITE, div, run, text,
 };
 
 use crate::{
@@ -79,26 +80,26 @@ impl Render for MyApp2 {
         div()
             .background_color(RED)
             .child(
-            div()
-                .absolute()
-                .justify_content(xs::JustifyContent::Center)
-                .align_items(AlignItems::Center)
-                .children([
-                    div()
-                        .width(100.)
-                        .height(50.)
-                        .background_color(WHITE)
-                        .font_size(45)
-                        .child(text("TEST")),
-                    div()
-                        .width(100.)
-                        .height(50.)
-                        .background_color(WHITE)
-                        .font_size(30)
-                        .child(text("TEST"))
-                ])
-
-        ).into()
+                div()
+                    .absolute()
+                    .justify_content(xs::JustifyContent::Center)
+                    .align_items(AlignItems::Center)
+                    .children([
+                        div()
+                            .width(100.)
+                            .height(50.)
+                            .background_color(WHITE)
+                            .font_size(45)
+                            .child(text("TEST")),
+                        div()
+                            .width(100.)
+                            .height(50.)
+                            .background_color(WHITE)
+                            .font_size(30)
+                            .child(text("TEST")),
+                    ]),
+            )
+            .into()
     }
 }
 
