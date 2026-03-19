@@ -2,47 +2,47 @@
 precision lowp float;
 
 in vec2 v_position;
-in vec2 v_localPosition;
+in vec2 v_local_position;
 in vec2 v_texture_coordinate;
 
-uniform highp vec2 u_rect_min;
-uniform highp vec2 u_rect_max;
-uniform highp vec4 u_color;
+uniform vec2 u_rect_min;
+uniform vec2 u_rect_max;
+uniform vec4 u_color;
 uniform bool u_texture_enabled;
 uniform sampler2D u_texture;
 
-uniform highp vec4 u_borderWidth;
-uniform highp vec4 u_borderColor;
+uniform vec4 u_border_width;
+uniform vec4 u_border_color;
 
-out vec4 fragColor;
+out vec4 frag_color;
 
 void main() {
     // Border SDF - normalize by actual dimensions per axis
     vec2 dim = u_rect_max - u_rect_min;
-    
-    // Normalize border widths by actual dimension per axis
-    float top = u_borderWidth.x / dim.y;
-    float bottom = u_borderWidth.z / dim.y;
-    float left = u_borderWidth.w / dim.x;
-    float right = u_borderWidth.y / dim.x;
 
-    float borderDist = min(
-        min(v_localPosition.y - top, 1.0 - v_localPosition.y - bottom),
-        min(v_localPosition.x - left, 1.0 - v_localPosition.x - right)
-    );
-    
-    if (borderDist < 0.0) {
-        fragColor = u_borderColor;
+    // Normalize border widths by actual dimension per axis
+    float top = u_border_width.x / dim.y;
+    float bottom = u_border_width.z / dim.y;
+    float left = u_border_width.w / dim.x;
+    float right = u_border_width.y / dim.x;
+
+    float border_dist = min(
+            min(v_local_position.y - top, 1.0 - v_local_position.y - bottom),
+            min(v_local_position.x - left, 1.0 - v_local_position.x - right)
+        );
+
+    if (border_dist < 0.0) {
+        frag_color = u_border_color;
         return;
     }
 
     // Content
     vec4 content = u_color;
     if (u_texture_enabled) {
-        vec2 uv = v_localPosition;
-        vec4 texColor = texture(u_texture, uv);
-        content = mix(u_color, texColor, texColor.a);
+        vec2 uv = v_local_position;
+        vec4 texture_color = texture(u_texture, uv);
+        content = mix(u_color, texture_color, texture_color.a);
     }
-    
-    fragColor = content;
+
+    frag_color = content;
 }

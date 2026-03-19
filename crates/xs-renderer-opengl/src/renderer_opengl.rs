@@ -56,10 +56,10 @@ impl RendererOpenGl {
             ("u_color".to_string(), (Float4, 1)),
             ("u_texture_enabled".to_string(), (Int1, 1)),
             ("u_texture".to_string(), (Int1, 1)),
-            ("u_borderWidth".to_string(), (Float4, 1)),
-            ("u_borderColor".to_string(), (Float4, 1)),
+            ("u_border_width".to_string(), (Float4, 1)),
+            ("u_border_color".to_string(), (Float4, 1)),
         ];
-        let shader = ShaderGlsl::new(
+        match ShaderGlsl::new(
             DEFAULT_VERTEX_SHADER,
             DEFAUL_TFRAGMENT_SHADER,
             uniforms,
@@ -67,8 +67,12 @@ impl RendererOpenGl {
                 ("a_position".to_string(), (Float2, 1)),
                 ("a_texture_coordinate".to_string(), (Float2, 1)),
             ],
-        );
-        self.shaders.insert("default".into(), shader);
+        ) {
+            Ok(shader) => {
+                self.shaders.insert("default".into(), shader);
+            }
+            Err(error) => panic!("Error in default shader: {}", error),
+        }
     }
 
     pub fn init_shader_text(&mut self) {
@@ -78,10 +82,10 @@ impl RendererOpenGl {
             ("u_rect_max".to_string(), (Float2, 1)),
             ("u_color".to_string(), (Float4, 1)),
             ("u_texture".to_string(), (Int1, 1)),
-            ("u_borderWidth".to_string(), (Float4, 1)),
-            ("u_borderColor".to_string(), (Float4, 1)),
+            ("u_border_width".to_string(), (Float4, 1)),
+            ("u_border_color".to_string(), (Float4, 1)),
         ];
-        let shader = ShaderGlsl::new(
+        match ShaderGlsl::new(
             DEFAULT_VERTEX_SHADER,
             TEXT_FRAGMENT_SHADER,
             uniforms,
@@ -89,8 +93,12 @@ impl RendererOpenGl {
                 ("a_position".to_string(), (Float2, 1)),
                 ("a_texture_coordinate".to_string(), (Float2, 1)),
             ],
-        );
-        self.shaders.insert("text".into(), shader);
+        ) {
+            Ok(shader) => {
+                self.shaders.insert("text".into(), shader);
+            }
+            Err(error) => panic!("Error in text shader: {}", error),
+        };
     }
 }
 
@@ -201,7 +209,7 @@ impl Renderer for RendererOpenGl {
                             let bottom = borders.bottom.map(|b| b.width).unwrap_or(0.0);
                             let left = borders.left.map(|b| b.width).unwrap_or(0.0);
                             shader_default.set_uniform_4f(
-                                "u_borderWidth",
+                                "u_border_width",
                                 top,
                                 right,
                                 bottom,

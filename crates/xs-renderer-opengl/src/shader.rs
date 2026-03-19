@@ -47,7 +47,7 @@ pub struct ShaderGlslAttribute {
     pub num_components: u8,
 }
 
-pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
+pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> Result<GLuint, String> {
     let program = glCreateProgram();
     glAttachShader(program, vertex_shader);
     glAttachShader(program, fragment_shader);
@@ -56,12 +56,12 @@ pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
     let link_status = glGetProgramParameter(program, GL_LINK_STATUS);
     if link_status == 0 {
         let error_message = glGetProgramInfoLog(program);
-        panic!("failed to link program: {:?}", error_message);
+        return Err("failed to link program: ".to_owned() + &error_message);
     }
-    program
+    Ok(program)
 }
 
-pub fn compile_shader(shader_type: GLenum, source: &str) -> GLuint {
+pub fn compile_shader(shader_type: GLenum, source: &str) -> Result<GLuint, String> {
     let shader = glCreateShader(shader_type);
 
     glShaderSource(shader, source);
@@ -69,9 +69,14 @@ pub fn compile_shader(shader_type: GLenum, source: &str) -> GLuint {
     let compile_status = glGetShaderParameter(shader, GL_COMPILE_STATUS);
     if compile_status == 0 {
         let error_message = glGetShaderInfoLog(shader);
-        panic!("failed to compile shader: {:?}\n{}", error_message, source);
+        let shader_type = match shader_type {
+            GL_VERTEX_SHADER => "vertex",
+            GL_FRAGMENT_SHADER => "fragment",
+            _ => "unknown",
+        };
+        return Err("failed to compile ".to_owned() + shader_type + " shader: " + &error_message);
     }
-    shader
+    Ok(shader)
 }
 
 pub struct ShaderGlsl {
@@ -86,10 +91,10 @@ impl ShaderGlsl {
         fragment_source: &str,
         uniform_descriptions: Vec<(String, (ShaderGlslFormat, i32))>,
         attribute_descriptions: Vec<(String, (ShaderGlslFormat, i32))>,
-    ) -> ShaderGlsl {
-        let vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_source);
-        let fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_source);
-        let program = link_program(vertex_shader, fragment_shader);
+    ) -> Result<ShaderGlsl, String> {
+        let vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_source)?;
+        let fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_source)?;
+        let program = link_program(vertex_shader, fragment_shader)?;
         glUseProgram(program);
         let mut uniforms = HashMap::new();
         for (name, (format, count)) in uniform_descriptions {
@@ -112,11 +117,11 @@ impl ShaderGlsl {
             };
             attributes.insert(name.to_string(), attribute);
         }
-        ShaderGlsl {
+        Ok(ShaderGlsl {
             program,
             uniforms,
             attributes,
-        }
+        })
     }
 
     /*
