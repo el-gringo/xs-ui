@@ -122,14 +122,6 @@ name = "test_utils"
 version = "0.1.0"
 
 [[package]]
-name = "text-system"
-version = "0.1.0"
-dependencies = [
- "xs-core",
- "xs-text-system",
-]
-
-[[package]]
 name = "tiny-skia-path"
 version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

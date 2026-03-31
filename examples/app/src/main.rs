@@ -11,8 +11,8 @@ mod theme;
 use std::{any::TypeId, rc::Rc};
 
 use xs::{
-    AlignItems, Application, Context, Element, FocusHandle, NavigationNode, ORANGE, RED, Render,
-    WHITE, div, run, text,
+    AlignItems, Application, Context, Element, FocusHandle, NavigationNode, RED, Render, WHITE,
+    div, run, text,
 };
 
 use crate::{
@@ -43,10 +43,20 @@ impl Render for MyApp {
             )
             .child(
                 body().children([
-                    div().height(50.).background_color(GRAY4),
-                    div().background_color(ORANGE).column().children([
-                        div().height(50.).color(WHITE).text("Monsieur Bidouille"),
-                        div().row().padding_top(64.).gap(32.).child(
+                    div()
+                        .height(80.)
+                        .width(1140.)
+                        .background_color(GRAY4)
+                        .justify_content(xs::JustifyContent::Center)
+                        .font_size(60)
+                        .child(text("Monsieur Bidouille")),
+                    div()
+                        .row()
+                        .width(1140.)
+                        .padding_top(64.)
+                        .gap(32.)
+                        .justify_content(xs::JustifyContent::Center)
+                        .child(
                             grid()
                                 .items(videos.clone())
                                 .columns(3)
@@ -60,7 +70,6 @@ impl Render for MyApp {
                                         .into()
                                 }),
                         ),
-                    ]),
                 ]),
             )
             .into()
@@ -86,17 +95,21 @@ impl Render for MyApp2 {
                     .align_items(AlignItems::Center)
                     .children([
                         div()
-                            .width(100.)
-                            .height(50.)
+                            .width(200.)
+                            .height(200.)
                             .background_color(WHITE)
-                            .font_size(45)
-                            .child(text("TEST")),
+                            .justify_content(xs::JustifyContent::Center)
+                            .align_items(AlignItems::Center)
+                            .font_size(40)
+                            .child(text(
+                                "Un texte long pour voir comment ca rend sur plusieurs lignss.",
+                            )),
                         div()
-                            .width(100.)
+                            .width(200.)
                             .height(50.)
                             .background_color(WHITE)
                             .font_size(30)
-                            .child(text("TEST")),
+                            .child(text("123")),
                     ]),
             )
             .into()
@@ -110,6 +123,6 @@ pub fn main() {
             .title("App")
             .width(1440)
             .height(810),
-        Rc::new(MyApp {}),
+        Rc::new(MyApp2 {}),
     );
 }

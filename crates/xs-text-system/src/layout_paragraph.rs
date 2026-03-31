@@ -1,6 +1,5 @@
 use xs_text_system_glyph::{Font, Glyph, Point, ScaleFont, point};
 
-
 /// Simple paragraph layout for glyphs into `target`.
 /// Starts at position `(0, ascent)`.
 ///
@@ -37,7 +36,6 @@ pub fn layout_paragraph<F, SF>(
         }
         last_glyph = Some(glyph.clone());
         caret.x += font.h_advance(glyph.id);
-
         target.push(glyph);
     }
 }

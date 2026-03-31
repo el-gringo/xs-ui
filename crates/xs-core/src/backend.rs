@@ -1,9 +1,6 @@
-
 use std::rc::Rc;
 
-use xs_layout::TextProperties;
-
-use crate::{AppContext, Application, Render, Renderer, TextSystem, TextVertices};
+use crate::{AppContext, Application, Render, Renderer};
 
 pub enum BackendResponse {
     /// image src
@@ -12,14 +9,11 @@ pub enum BackendResponse {
     /// width
     /// height
     ImageLoaded(String, i32, Vec<u8>, u32, u32),
-    /// text, text-properties
-    TextRendered(String, TextProperties, TextVertices, u32),
 }
 
 pub enum BackendRequest {
     /// src url
     LoadImage(String),
-    Text(String, TextProperties),
 }
 
 pub trait Backend {
@@ -28,7 +22,6 @@ pub trait Backend {
         app: Application,
         app_context: AppContext,
         renderer: Box<dyn Renderer>,
-        text_system: Box<dyn TextSystem>,
         root: Rc<dyn Render>,
     );
     fn performance_now(&self) -> u128;
@@ -43,8 +36,7 @@ impl Backend for BackendDummy {
         _app: Application,
         _app_context: AppContext,
         _renderer: Box<dyn Renderer>,
-        _text_system: Box<dyn TextSystem>,
-        _root: Rc<dyn Render>
+        _root: Rc<dyn Render>,
     ) {
     }
     fn performance_now(&self) -> u128 {

@@ -4,7 +4,7 @@ use xs_text_system::FontAtlas;
 use xs_text_system_glyph::{Font, FontRef, Glyph, PxScale, ScaleFont};
 
 pub fn main() {
-    let font_size = 48;
+    let font_size = 40;
     let binary_font = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
     let font = FontRef::try_from_slice(binary_font).unwrap();
     let (font_atlas, atlas) = FontAtlas::generate(&font, font_size as _);

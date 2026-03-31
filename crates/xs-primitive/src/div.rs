@@ -10,7 +10,6 @@ use xs_layout::{
 pub struct Div {
     pub id: Option<&'static str>,
     pub style: Style,
-    pub text: &'static str,
     pub children: Vec<Rc<dyn Render>>,
 }
 
@@ -204,15 +203,6 @@ impl Div {
         self
     }
 
-    //
-    // TEXT
-    //
-
-    pub fn text(mut self, text: &'static str) -> Self {
-        self.text = text;
-        self
-    }
-
     pub fn color(mut self, color: impl Into<Color>) -> Self {
         self.update_text_properties(|text_properties| text_properties.color = color.into());
         self
@@ -287,6 +277,12 @@ impl Render for Div {
         if let Some(text_properties) = self.style.text_properties.clone() {
             ctx.text_properties = text_properties;
         }
+        self.style.width.map(|w| {
+            ctx.constraints.max.x = w;
+        });
+        self.style.height.map(|h| {
+            ctx.constraints.max.y = h;
+        });
         Box::new(self.clone())
     }
 }

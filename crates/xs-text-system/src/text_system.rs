@@ -21,39 +21,44 @@ impl xs_core::TextSystem for TextSystem {
         &mut self,
         font_family: &'static str,
         font_weight: u16,
-        binary_font: &'static [u8],
+        binary_font: Vec<u8>,
         renderer: &mut Box<dyn Renderer>,
     ) {
-        let font = FontRef::try_from_slice(binary_font).unwrap();
+        let font = FontRef::try_from_slice(Box::leak(binary_font.into_boxed_slice())).unwrap();
         let (font_atlas, atlas_data) = FontAtlas::generate(&font, 48.);
-        let texture = renderer.load_texture(
+        let atlas_texture = renderer.load_texture(
             &atlas_data,
             -1,
             font_atlas.width as _,
             font_atlas.height as _,
             true,
         );
-        self.fonts
-            .insert((font_family, font_weight), (font, font_atlas, texture));
+        self.fonts.insert(
+            (font_family, font_weight),
+            (font, font_atlas, atlas_texture),
+        );
     }
 
     fn render_text(
         &self,
         text: &str,
         text_properties: &TextProperties,
-    ) -> (TextVertices, u32, u32, u32) {
-        let (font, font_atlas, texture) = self
+        constraints: &(f32, f32),
+    ) -> TextVertices {
+        let (font, font_atlas, atlas_texture) = self
             .fonts
             .get(&(
                 text_properties.font_family.as_str(),
                 text_properties.font_weight,
             ))
             .unwrap();
-        (
-            make_vertices_for_string(font, font_atlas, text_properties, text),
-            *texture,
-            font_atlas.width as _,
-            font_atlas.height as _,
+        make_vertices_for_string(
+            font,
+            font_atlas,
+            atlas_texture,
+            text_properties,
+            text,
+            constraints,
         )
     }
 }
@@ -61,8 +66,10 @@ impl xs_core::TextSystem for TextSystem {
 pub fn make_vertices_for_string(
     font: &FontRef<'static>,
     font_atlas: &FontAtlas,
+    atlas_texture: &u32,
     text_properties: &TextProperties,
     text: &str,
+    constraints: &(f32, f32),
 ) -> TextVertices {
     let scale = PxScale::from(text_properties.font_size as f32);
     let scaled_font = PxScaleFont {
@@ -70,7 +77,7 @@ pub fn make_vertices_for_string(
         scale,
     };
 
-    let max_width = text_properties.max_width.unwrap_or(f32::INFINITY);
+    let max_width = constraints.0;
 
     let mut glyphs = Vec::new();
     layout_paragraph(&scaled_font, point(0.0, 0.0), max_width, text, &mut glyphs);
@@ -96,15 +103,13 @@ pub fn make_vertices_for_string(
 
     for glyph in &glyphs {
         let glyph_id = glyph.id.0;
-
         let letter = text.chars().find(|c| font.glyph_id(*c).0 == glyph_id);
-
         if let Some(c) = letter {
             if let Some(glyph_info) = font_atlas.glyphs.get(&c) {
-                let x = glyph.position.x;
-                let y = glyph.position.y - ascent;
                 let glyph_width = font_atlas.scale * scale_factor;
                 let glyph_height = font_atlas.scale * scale_factor;
+                let x = glyph.position.x;
+                let y = glyph.position.y - ascent;
 
                 let x2 = x + glyph_width;
                 let y2 = y + glyph_height;
@@ -167,6 +172,7 @@ pub fn make_vertices_for_string(
 
     TextVertices {
         position: (positions, offset),
+        atlas_texture: *atlas_texture,
         texture_coordinate: (texcoords, offset),
         num_vertices: offset / 2,
         width,

@@ -2,7 +2,7 @@ use std::{any::TypeId, rc::Rc};
 
 use xs::{Context, Element, FocusHandle, NavigationNode, Render, div};
 
-use crate::theme::{GRAY1, GRAY4};
+use crate::theme::GRAY1;
 
 pub struct Body {
     pub children: Vec<Rc<dyn Render>>,
@@ -16,8 +16,12 @@ impl Body {
         self
     }
 
-    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<Rc<dyn Render>>>) -> Self {
-        self.children.extend(children.into_iter().map(|child| child.into()));
+    pub fn children(
+        mut self,
+        children: impl IntoIterator<Item = impl Into<Rc<dyn Render>>>,
+    ) -> Self {
+        self.children
+            .extend(children.into_iter().map(|child| child.into()));
         self
     }
 }
@@ -30,14 +34,8 @@ impl Render for Body {
         div()
             .id("body")
             .column()
-            .grow(1.)
             .background_color(GRAY1)
-            .child(
-                div()
-                    .height(50.)
-                    .background_color(GRAY4)
-            )
-            .child(div().grow(1.).children(self.children.clone()))
+            .children(self.children.clone())
             .into()
     }
 

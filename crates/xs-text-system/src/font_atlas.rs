@@ -12,10 +12,11 @@ pub struct FontAtlas {
     pub size: u8,
     pub scale: f32,
     pub ascent: f32,
+    pub v_advance: f32,
     pub spacing: f32,
     pub glyphs: HashMap<char, GlyphInfo>,
     pub height: f32,
-    pub width: f32
+    pub width: f32,
 }
 
 impl FontAtlas {
@@ -29,6 +30,7 @@ impl FontAtlas {
         } else {
             font_size
         };
+        let ascent = font.ascent();
         for code in 0x020..0x07e {
             if let Some(c) = char::from_u32(code) {
                 let glyph = font.scaled_glyph(c);
@@ -51,7 +53,7 @@ impl FontAtlas {
         let glyph_count = glyphs.len();
         let atlas_size = (glyph_count as f32).sqrt().ceil();
         let width = atlas_size * font_size;
-        let height = atlas_size * (font_size + 1.);
+        let height = atlas_size * font_size;
         let mut bitmap = vec![0; (width * height) as usize];
         let mut font_atlas = Self {
             size: atlas_size as _,
@@ -60,6 +62,7 @@ impl FontAtlas {
             scale: font_size,
             spacing: space_width,
             ascent: font.ascent(),
+            v_advance: font.height() + font.line_gap(),
             glyphs: Default::default(),
         };
         for row in 0..atlas_size as i32 {
@@ -68,10 +71,17 @@ impl FontAtlas {
                     let bounds = glyph.px_bounds();
                     let left = col as f32 * font_size;
                     let top = row as f32 * font_size;
-                    font_atlas.glyphs.insert(*c, GlyphInfo { x: left, y: top, bounds });
+                    font_atlas.glyphs.insert(
+                        *c,
+                        GlyphInfo {
+                            x: left,
+                            y: top,
+                            bounds,
+                        },
+                    );
                     glyph.draw(|x, y, v| {
                         let x = x as f32 + left + bounds.min.x;
-                        let y = y as f32 + top + bounds.min.y + font_size;
+                        let y = y as f32 + top + bounds.min.y + ascent.ceil();
                         let index = (x + y * width) as usize;
                         bitmap[index] = (v * 255.) as u8;
                     });

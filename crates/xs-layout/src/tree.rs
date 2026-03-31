@@ -3,9 +3,9 @@ use std::{collections::VecDeque, rc::Rc};
 
 use xs_math::{Rectangle, Vector2};
 
+use crate::AlignItems;
 use crate::base::EdgeInsets;
 use crate::decoration::Material;
-use crate::AlignItems;
 
 /// This is the essential trait of the box model. It is implemented by all
 /// components that undergo the box layout process.
@@ -62,7 +62,7 @@ pub type View = Rc<dyn Layout>;
 
 // The minimum and maximum dimensions that a [SizedLayoutBox] or a [LayoutBox]
 // can be.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Default)]
 pub struct BoxConstraints {
     pub min: Vector2,
     pub max: Vector2,
@@ -267,9 +267,9 @@ impl<'a> Iterator for LayoutTreeIterator<'a> {
 mod tests {
     use super::*;
     use crate::{
+        Color,
         colors::{GREEN, RED},
         decoration::Material,
-        Color,
     };
 
     #[test]

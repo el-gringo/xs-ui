@@ -1,11 +1,16 @@
 use std::{
-    any::{Any, TypeId}, collections::HashMap, sync::atomic::{AtomicPtr, Ordering}
+    any::{Any, TypeId},
+    collections::HashMap,
+    sync::atomic::{AtomicPtr, Ordering},
 };
 
 use xs_layout::{Image, TextProperties};
 use xs_platform_event::KeyEvent;
 
-use crate::{BackendRequest, FocusManager, TextVertices, core::NodeId, navigation::NavigationNodeId};
+use crate::{
+    BackendRequest, FocusManager, TextSystem, TextSystemDummy, TextVertices, core::NodeId,
+    navigation::NavigationNodeId,
+};
 
 // Global AppContext storage
 static APP_CONTEXT: AtomicPtr<AppContext> = AtomicPtr::new(std::ptr::null_mut());
@@ -26,8 +31,9 @@ pub struct AppContext {
     pub nodes: HashMap<NodeId, Vec<Box<dyn Any>>>,
     pub current_node_id: NodeId,
     pub current_nav_node_id: NavigationNodeId,
-    pub textures: HashMap<String, Option<Image>>,
+    pub text_system: Box<dyn TextSystem>,
     pub texts: HashMap<(String, TextProperties), Option<(TextVertices, u32)>>,
+    pub textures: HashMap<String, Option<Image>>,
     pub requests: HashMap<(String, String), Option<String>>,
     pub messages: Vec<BackendRequest>,
 }
@@ -42,6 +48,7 @@ impl Default for AppContext {
             current_node_id: (TypeId::of::<NodeId>(), 0, 0),
             current_nav_node_id: 0,
             nodes: Default::default(),
+            text_system: Box::new(TextSystemDummy),
             textures: Default::default(),
             texts: Default::default(),
             requests: Default::default(),
@@ -51,8 +58,11 @@ impl Default for AppContext {
 }
 
 impl AppContext {
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(text_system: Box<dyn TextSystem>) -> Self {
+        AppContext {
+            text_system,
+            ..Default::default()
+        }
     }
 
     pub fn dispatch(&mut self) {

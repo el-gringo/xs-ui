@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
-use xs_layout::{TextProperties, View};
+use xs_layout::{BoxConstraints, TextProperties, View};
+use xs_math::Vector2;
 
 use crate::{AppContext, Context, Element, Render, core::NodeId, navigation::NavigationNodeId};
 
@@ -14,6 +15,7 @@ struct StackItem {
     parent_index: Option<usize>,
     nav_id: NavigationNodeId,
     text_properties: TextProperties,
+    constraints: BoxConstraints,
 }
 
 pub trait Renderer {
@@ -30,6 +32,10 @@ pub trait Renderer {
         alpha: bool,
     ) -> u32;
     fn render(&mut self, app_context: &mut AppContext, widget: RcWidget) -> View {
+        let constraints = BoxConstraints {
+            min: Vector2::new(0.0, 0.0),
+            max: Vector2::new(self.screen_width() as f32, self.screen_height() as f32),
+        };
         let mut stack: Vec<StackItem> = vec![StackItem {
             widget: widget.clone(),
             depth: 0,
@@ -37,13 +43,20 @@ pub trait Renderer {
             parent_index: None,
             nav_id: app_context.current_nav_node_id,
             text_properties: TextProperties::default(),
+            constraints: constraints.clone(),
         }];
 
         // Store (parent_index, element) for each rendered element
         let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Vec::new();
         while let Some(item) = stack.pop() {
             let node_id: NodeId = (item.widget.tag(), item.depth, item.index);
-            let mut ctx = Context::new(app_context, node_id, item.nav_id, item.text_properties);
+            let mut ctx = Context::new(
+                app_context,
+                node_id,
+                item.nav_id,
+                item.text_properties,
+                item.constraints.clone(),
+            );
             let element = item.widget.render(&mut ctx);
 
             // Get children before moving element
@@ -61,6 +74,7 @@ pub trait Renderer {
                     parent_index: Some(current_index),
                     nav_id: ctx.nav_id,
                     text_properties: ctx.text_properties.clone(),
+                    constraints: ctx.constraints.clone(),
                 };
                 stack.push(new_item);
             }
