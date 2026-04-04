@@ -201,6 +201,7 @@ dependencies = [
  "xs-platform-event",
  "xs-platform-linux",
  "xs-renderer-core",
+ "zune-image",
 ]
 
 [[package]]

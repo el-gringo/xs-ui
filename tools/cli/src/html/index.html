@@ -1,40 +1,42 @@
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>APP</title>
-    <style>
-        html,
-        body,
-        canvas {
-            margin: 0px;
-            padding: 0px;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            position: absolute;
-            background: black;
-            z-index: 0;
-        }
-    </style>
-</head>
-<body>
-    <canvas id="glcanvas" tabindex="1"></canvas>
-    <script src="assets/script.js"></script>
-    <script>load(`/app.wasm?${Date.now()}`);</script>
-    <script>
-      const MODE = "development";
-      if (MODE === "development") {
-        const secure = location.protocol === 'https:';
-        const host = location.origin.replace(/^http/, 'ws');
-        const ws = new WebSocket(`${host}/ws`);
-        ws.onmessage = function(event) {
-            const { data } = event;
-            if (data.endsWith('.wasm')) {
-                load(data);
+    <head>
+        <meta charset="utf-8" />
+        <title>APP</title>
+        <style>
+            html,
+            body,
+            canvas {
+                margin: 0px;
+                padding: 0px;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                position: absolute;
+                background: black;
+                z-index: 0;
             }
-        }
-        window.ws = ws;
-      }
-    </script>
-</body>
+        </style>
+    </head>
+    <body>
+        <canvas id="glcanvas" tabindex="1"></canvas>
+        <script src="assets/script.js"></script>
+        <script>
+            load(`/examples/simple.wasm?${Date.now()}`);
+        </script>
+        <script>
+            const MODE = "development";
+            if (MODE === "development") {
+                const secure = location.protocol === "https:";
+                const host = location.origin.replace(/^http/, "ws");
+                const ws = new WebSocket(`${host}/ws`);
+                ws.onmessage = function (event) {
+                    const { data } = event;
+                    if (data.endsWith(".wasm")) {
+                        load(data);
+                    }
+                };
+                window.ws = ws;
+            }
+        </script>
+    </body>
 </html>

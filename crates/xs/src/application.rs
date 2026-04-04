@@ -3,10 +3,10 @@ use std::{
     sync::mpsc::{Receiver, Sender, channel},
 };
 
+use xs_backend::load_image;
 use xs_core::{
     AppConfig, AppContext, Backend, BackendRequest, BackendResponse, EventLoop, Render, Renderer,
 };
-use xs_http::HttpClient;
 use xs_layout::Image;
 
 #[derive(Default)]
@@ -35,7 +35,7 @@ impl AppEventLoop {
         while let Some(message) = app_context.messages.pop() {
             match message {
                 BackendRequest::LoadImage(src) => {
-                    self.load_image(src, self.tx.clone());
+                    load_image(src, self.tx.clone());
                 }
             }
         }
@@ -50,39 +50,6 @@ impl AppEventLoop {
                 }
             }
         }
-    }
-
-    pub fn load_image(&mut self, src: String, tx: Sender<BackendResponse>) {
-        use zune_image::codecs::qoi::zune_core::{colorspace::ColorSpace, options::DecoderOptions};
-
-        std::thread::spawn(move || {
-            let http = HttpClient::new();
-            http.get(
-                src.clone(),
-                move |response| match zune_image::image::Image::read(
-                    std::io::Cursor::new(response.body),
-                    DecoderOptions::default(),
-                ) {
-                    Ok(mut image) => {
-                        let (width, height) = image.dimensions();
-                        let width = width as u32;
-                        let height = height as u32;
-                        let _ = image.convert_color(ColorSpace::RGBA);
-                        let bytes = image.flatten_to_u8().first().unwrap().clone();
-                        let _ = tx.send(BackendResponse::ImageLoaded(
-                            src.clone(),
-                            -1,
-                            bytes,
-                            width,
-                            height,
-                        ));
-                    }
-                    Err(error) => {
-                        eprintln!("Backend::load_image error: {:?}", error);
-                    }
-                },
-            );
-        });
     }
 }
 
