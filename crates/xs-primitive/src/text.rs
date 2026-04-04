@@ -17,13 +17,15 @@ impl Render for Text {
             &ctx.constraints.max.into(),
         );
         let color = ctx.text_properties.color;
+        let font_family = ctx.text_properties.font_family.clone();
+        let font_weight = ctx.text_properties.font_weight;
 
         Box::new(TextElement {
             width: text_vertices.width,
             height: text_vertices.height,
             material: Some(Material::Text(
                 color,
-                (text_vertices.clone(), text_vertices.atlas_texture),
+                (font_family, font_weight, text_vertices.clone()),
             )),
         })
     }

@@ -45,10 +45,7 @@ impl FontAtlas {
         }
         let glyphs: Vec<(char, OutlinedGlyph)> = glyphs
             .into_iter()
-            .filter_map(|(c, g)| match font.outline_glyph(g) {
-                Some(g) => Some((c, g)),
-                None => None,
-            })
+            .filter_map(|(c, g)| font.outline_glyph(g).map(|g| (c, g)))
             .collect();
         let glyph_count = glyphs.len();
         let atlas_size = (glyph_count as f32).sqrt().ceil();
@@ -56,9 +53,9 @@ impl FontAtlas {
         let height = atlas_size * font_size;
         let mut bitmap = vec![0; (width * height) as usize];
         let mut font_atlas = Self {
+            width,
+            height,
             size: atlas_size as _,
-            width: width,
-            height: height,
             scale: font_size,
             spacing: space_width,
             ascent: font.ascent(),

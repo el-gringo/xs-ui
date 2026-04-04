@@ -1,0 +1,10 @@
+[package]
+name = "xs-canvas"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-core.workspace = true
+xs-backend.workspace = true
+xs-gl-sys.workspace = true

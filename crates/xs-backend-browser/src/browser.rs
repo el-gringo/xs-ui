@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc::channel};
 
 use crate::{bindings, browser_dispatcher::BrowserDispatcher};
 
-use xs_core::{AppContext, Application, Backend, Render, Renderer, TextSystem, set_app_context};
+use xs_core::{AppConfig, AppContext, Backend, Render, Renderer, TextSystem, set_app_context};
 use xs_js_sys::{Closure, request_animation_frame};
 
 pub struct BackendBrowser {
@@ -18,11 +18,11 @@ impl BackendBrowser {
 impl Backend for BackendBrowser {
     fn run(
         &mut self,
-        app: Application,
+        app: AppConfig,
         app_context: AppContext,
         mut renderer: Box<dyn Renderer>,
         mut text_system: Box<dyn TextSystem>,
-        root: Rc<dyn Render>
+        root: Rc<dyn Render>,
     ) {
         renderer.init();
         let font_family = "sans-serif";

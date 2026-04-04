@@ -227,7 +227,7 @@ impl Div {
 
     fn update_text_properties(&mut self, mutator: impl FnOnce(&mut TextProperties)) {
         match self.style.text_properties.as_mut() {
-            Some(mut v) => mutator(&mut v),
+            Some(v) => mutator(v),
             None => {
                 let v = Default::default();
                 self.style.text_properties.replace(v);
@@ -277,12 +277,12 @@ impl Render for Div {
         if let Some(text_properties) = self.style.text_properties.clone() {
             ctx.text_properties = text_properties;
         }
-        self.style.width.map(|w| {
+        if let Some(w) = self.style.width {
             ctx.constraints.max.x = w;
-        });
-        self.style.height.map(|h| {
+        };
+        if let Some(h) = self.style.height {
             ctx.constraints.max.y = h;
-        });
+        };
         Box::new(self.clone())
     }
 }

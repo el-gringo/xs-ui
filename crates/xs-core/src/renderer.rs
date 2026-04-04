@@ -31,6 +31,14 @@ pub trait Renderer {
         height: u32,
         alpha: bool,
     ) -> u32;
+    fn load_font_atlas(
+        &mut self,
+        font_family: &'static str,
+        font_weight: u16,
+        atlas_data: &[u8],
+        width: u32,
+        height: u32,
+    );
     fn render(&mut self, app_context: &mut AppContext, widget: RcWidget) -> View {
         let constraints = BoxConstraints {
             min: Vector2::new(0.0, 0.0),
@@ -95,12 +103,11 @@ pub trait Renderer {
             // Find all children of this element
             let mut children_views: Vec<View> = Vec::new();
             for j in (i + 1..rendered_elements.len()).rev() {
-                if let Some(parent_idx) = rendered_elements[j].0 {
-                    if parent_idx == i
-                        && let Some(child_view) = &views[j]
-                    {
-                        children_views.push(child_view.clone());
-                    }
+                if let Some(parent_idx) = rendered_elements[j].0
+                    && parent_idx == i
+                    && let Some(child_view) = &views[j]
+                {
+                    children_views.push(child_view.clone());
                 }
             }
 
@@ -140,5 +147,14 @@ impl Renderer for RendererDummy {
         _alpha: bool,
     ) -> u32 {
         0
+    }
+    fn load_font_atlas(
+        &mut self,
+        _font_family: &'static str,
+        _font_weight: u16,
+        _atlas_data: &[u8],
+        _width: u32,
+        _height: u32,
+    ) {
     }
 }

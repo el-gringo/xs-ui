@@ -1,11 +1,11 @@
-pub struct Application {
+pub struct AppConfig {
     pub id: &'static str,
     pub title: &'static str,
     pub width: i32,
     pub height: i32,
 }
 
-impl Default for Application {
+impl Default for AppConfig {
     fn default() -> Self {
         Self {
             id: "app",
@@ -16,8 +16,7 @@ impl Default for Application {
     }
 }
 
-
-impl Application {
+impl AppConfig {
     pub fn new() -> Self {
         Default::default()
     }

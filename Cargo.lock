@@ -145,10 +145,12 @@ dependencies = [
  "xs-backend",
  "xs-backend-core",
  "xs-core",
+ "xs-http",
  "xs-layout",
  "xs-primitive",
  "xs-renderer",
  "xs-text-system",
+ "zune-image",
 ]
 
 [[package]]
@@ -198,9 +200,7 @@ dependencies = [
  "xs-layout",
  "xs-platform-event",
  "xs-platform-linux",
- "xs-primitive",
  "xs-renderer-core",
- "zune-image",
 ]
 
 [[package]]
@@ -231,6 +231,15 @@ version = "0.1.0"
 dependencies = [
  "xs-platform-event",
  "xs-platform-linux",
+]
+
+[[package]]
+name = "xs-canvas"
+version = "0.1.0"
+dependencies = [
+ "xs-backend",
+ "xs-core",
+ "xs-gl-sys",
 ]
 
 [[package]]
@@ -448,18 +457,18 @@ dependencies = [
 
 [[package]]
 name = "zune-jpeg"
-version = "0.5.12"
+version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "410e9ecef634c709e3831c2cfdb8d9c32164fae1c67496d5b68fff728eec37fe"
+checksum = "27bc9d5b815bc103f142aa054f561d9187d191692ec7c2d1e2b4737f8dbd7296"
 dependencies = [
  "zune-core",
 ]
 
 [[package]]
 name = "zune-png"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af6dc406edc296451b9597ee98643df8606396066d8f0864682c266eda16f310"
+checksum = "5a321146329f7617ba0a5b26982cba45b7ce78163135aba78be25850aefcea80"
 dependencies = [
  "zune-core",
  "zune-inflate 0.2.54",

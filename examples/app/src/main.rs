@@ -8,11 +8,11 @@ mod grid;
 mod sidebar;
 mod theme;
 
-use std::{any::TypeId, rc::Rc};
+use std::any::TypeId;
 
 use xs::{
     AlignItems, Application, Context, Element, FocusHandle, NavigationNode, RED, Render, WHITE,
-    div, run, text,
+    div, text,
 };
 
 use crate::{
@@ -117,12 +117,10 @@ impl Render for MyApp2 {
 }
 
 pub fn main() {
-    run(
-        Application::new()
-            .id("app")
-            .title("App")
-            .width(1440)
-            .height(810),
-        Rc::new(MyApp2 {}),
-    );
+    Application::new()
+        .id("app")
+        .title("App")
+        .width(1440)
+        .height(810)
+        .run(|_ctx| MyApp2 {});
 }

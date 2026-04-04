@@ -1,14 +1,13 @@
-use std::{ptr::null_mut, rc::Rc, sync::mpsc::channel, time::Instant};
+use std::{ptr::null_mut, time::Instant};
 
 use xs_backend_wayland_client::{
     WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
 };
-use xs_core::{AppContext, Application, Backend, Render, Renderer, set_app_context};
+use xs_core::{AppConfig, AppContext, Backend, EventLoop, set_app_context};
 
 use crate::{
     config::WaylandConfig, context::WaylandContext, egl::create_egl_window,
-    registry::create_registry, seat::create_seat, wayland_dispatcher::WaylandDispatcher,
-    xdg::create_xdg,
+    registry::create_registry, seat::create_seat, xdg::create_xdg,
 };
 
 pub fn connect(ctx: &mut WaylandContext) {
@@ -49,10 +48,9 @@ impl BackendWayland {
 impl Backend for BackendWayland {
     fn run(
         &mut self,
-        app: Application,
+        app: &AppConfig,
         mut app_context: AppContext,
-        mut renderer: Box<dyn Renderer>,
-        root: Rc<dyn Render>,
+        mut event_loop: Box<dyn EventLoop>,
     ) {
         let config = WaylandConfig {
             app_id: app.id,
@@ -62,7 +60,7 @@ impl Backend for BackendWayland {
             fullscreen: false,
         };
         let mut ctx = WaylandContext::new(&mut app_context);
-        let mut message_dispatcher = WaylandDispatcher;
+        //let mut message_dispatcher = WaylandDispatcher;
         let app_id = app.id;
         let app_title = app.title;
         connect(&mut ctx);
@@ -71,22 +69,12 @@ impl Backend for BackendWayland {
         create_surface(&mut ctx);
         create_xdg(&mut ctx, app_id, app_title);
         create_egl_window(&mut ctx, config.window_width, config.window_height);
-        renderer.init();
-        let font_family = "sans-serif";
-        let data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf").to_vec();
-        ctx.app_context
-            .text_system
-            .load_font(font_family, 400, data, &mut renderer);
+        event_loop.initialize(ctx.app_context);
         set_app_context(ctx.app_context);
         let start = Instant::now();
-        let (tx, rx) = channel();
-        let rx = Rc::new(rx);
         while ctx.dispatch_pending() != -1 && ctx.app_context.running {
-            let rx = rx.clone();
-            message_dispatcher.read_messages(ctx.app_context, &mut renderer, tx.clone(), rx);
             self.elapsed = start.elapsed().as_millis();
-            let widget_tree = renderer.render(ctx.app_context, root.clone());
-            renderer.draw_frame(&widget_tree);
+            event_loop.frame(ctx.app_context);
             ctx.swap_buffers();
             //std::thread::sleep(std::time::Duration::from_secs(3));
         }

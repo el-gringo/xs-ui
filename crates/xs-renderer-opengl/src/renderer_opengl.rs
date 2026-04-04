@@ -36,6 +36,7 @@ pub struct RendererOpenGl {
     width: i32,
     height: i32,
     shaders: HashMap<String, ShaderGlsl>,
+    fonts: HashMap<(&'static str, u16), u32>,
 }
 
 impl RendererOpenGl {
@@ -45,6 +46,7 @@ impl RendererOpenGl {
             width,
             height,
             shaders,
+            fonts: Default::default(),
         }
     }
 
@@ -142,11 +144,12 @@ impl Renderer for RendererOpenGl {
             let size = Vector2::new(child.bounds.width, child.bounds.height);
             let min = offset + origin + child.margin.min();
             let max = offset + origin + size - child.margin.max();
-            if child.material.is_some() || child.text_material.is_some() {
-                if let Some(material) = &child.material {
-                    match material {
-                        Quad(borders, color, image) => {
-                            #[rustfmt::skip]
+            if (child.material.is_some() || child.text_material.is_some())
+                && let Some(material) = &child.material
+            {
+                match material {
+                    Quad(borders, color, image) => {
+                        #[rustfmt::skip]
                             let vertices = &[
                                 min.x, min.y,
                                 min.x, max.y,
@@ -155,7 +158,7 @@ impl Renderer for RendererOpenGl {
                                 max.x, min.y,
                                 max.x, max.y,
                             ];
-                            #[rustfmt::skip]
+                        #[rustfmt::skip]
                             let texture_coordinates = &[
                                 0.0, 0.0,
                                 0.0, 1.0,
@@ -164,129 +167,123 @@ impl Renderer for RendererOpenGl {
                                 1.0, 0.0,
                                 1.0, 1.0
                             ];
-                            shader_default.use_program();
+                        shader_default.use_program();
 
-                            let a_position = shader_default.attributes.get("a_position").unwrap();
-                            glBindBuffer(GL_ARRAY_BUFFER, a_position.buffer);
-                            glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
-                            glEnableVertexAttribArray(a_position.location as _);
-                            glVertexAttribPointer(
-                                a_position.location as _,
-                                2,
-                                GL_FLOAT,
-                                GL_FALSE as _,
-                                0,
-                                0,
-                            );
-                            let a_texture_coordinate = shader_default
-                                .attributes
-                                .get("a_texture_coordinate")
-                                .unwrap();
-                            glBindBuffer(GL_ARRAY_BUFFER, a_texture_coordinate.buffer);
-                            glBufferData(GL_ARRAY_BUFFER, texture_coordinates, GL_STATIC_DRAW);
-                            glEnableVertexAttribArray(a_texture_coordinate.location as _);
-                            glVertexAttribPointer(
-                                a_texture_coordinate.location as _,
-                                2,
-                                GL_FLOAT,
-                                GL_FALSE as _,
-                                0,
-                                0,
-                            );
+                        let a_position = shader_default.attributes.get("a_position").unwrap();
+                        glBindBuffer(GL_ARRAY_BUFFER, a_position.buffer);
+                        glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
+                        glEnableVertexAttribArray(a_position.location as _);
+                        glVertexAttribPointer(
+                            a_position.location as _,
+                            2,
+                            GL_FLOAT,
+                            GL_FALSE as _,
+                            0,
+                            0,
+                        );
+                        let a_texture_coordinate = shader_default
+                            .attributes
+                            .get("a_texture_coordinate")
+                            .unwrap();
+                        glBindBuffer(GL_ARRAY_BUFFER, a_texture_coordinate.buffer);
+                        glBufferData(GL_ARRAY_BUFFER, texture_coordinates, GL_STATIC_DRAW);
+                        glEnableVertexAttribArray(a_texture_coordinate.location as _);
+                        glVertexAttribPointer(
+                            a_texture_coordinate.location as _,
+                            2,
+                            GL_FLOAT,
+                            GL_FALSE as _,
+                            0,
+                            0,
+                        );
 
-                            shader_default.set_uniform_2f(
-                                "u_viewport",
-                                self.width as f32,
-                                self.height as f32,
-                            );
-                            let (r, g, b, a) = color.into();
-                            shader_default.set_uniform_4f("u_color", r, g, b, a);
-                            shader_default.set_uniform_2f("u_rect_min", min.x, min.y);
-                            shader_default.set_uniform_2f("u_rect_max", max.x, max.y);
+                        shader_default.set_uniform_2f(
+                            "u_viewport",
+                            self.width as f32,
+                            self.height as f32,
+                        );
+                        let (r, g, b, a) = color.into();
+                        shader_default.set_uniform_4f("u_color", r, g, b, a);
+                        shader_default.set_uniform_2f("u_rect_min", min.x, min.y);
+                        shader_default.set_uniform_2f("u_rect_max", max.x, max.y);
 
-                            let top = borders.top.map(|b| b.width).unwrap_or(0.0);
-                            let right = borders.right.map(|b| b.width).unwrap_or(0.0);
-                            let bottom = borders.bottom.map(|b| b.width).unwrap_or(0.0);
-                            let left = borders.left.map(|b| b.width).unwrap_or(0.0);
-                            shader_default.set_uniform_4f(
-                                "u_border_width",
-                                top,
-                                right,
-                                bottom,
-                                left,
-                            );
+                        let top = borders.top.map(|b| b.width).unwrap_or(0.0);
+                        let right = borders.right.map(|b| b.width).unwrap_or(0.0);
+                        let bottom = borders.bottom.map(|b| b.width).unwrap_or(0.0);
+                        let left = borders.left.map(|b| b.width).unwrap_or(0.0);
+                        shader_default.set_uniform_4f("u_border_width", top, right, bottom, left);
 
-                            // Use top border color (or fallback to main color)
-                            let (br, bg, bb, ba) = match borders.top {
-                                Some(b) => (&b.color).into(),
-                                None => color.into(),
-                            };
-                            shader_default.set_uniform_4f("u_borderColor", br, bg, bb, ba);
+                        // Use top border color (or fallback to main color)
+                        let (br, bg, bb, ba) = match borders.top {
+                            Some(b) => (&b.color).into(),
+                            None => color.into(),
+                        };
+                        shader_default.set_uniform_4f("u_borderColor", br, bg, bb, ba);
 
-                            if let Some(image) = image.clone() {
-                                glActiveTexture(GL_TEXTURE0);
-                                glBindTexture(GL_TEXTURE_2D, image.texture);
-                                shader_default.set_uniform_1i("u_texture_enabled", 1);
-                                shader_default.set_uniform_1i("u_texture", 0);
-                            } else {
-                                shader_default.set_uniform_1i("u_texture_enabled", 0);
-                            }
-
-                            glDrawArrays(GL_TRIANGLES, 0, 6);
-                        }
-                        Text(color, data) => {
-                            let (text_vertices, texture) = data.clone();
-                            let (vertices, _offset) = text_vertices.position;
-                            // Position at top-left of container, flip Y for OpenGL
-                            let offset_vertices: Vec<f32> = vertices
-                                .iter()
-                                .enumerate()
-                                .map(|(i, v)| if i % 2 == 0 { v + min.x } else { max.y - v })
-                                .collect();
-                            shader_text.use_program();
-                            shader_text.set_uniform_2f(
-                                "u_viewport",
-                                self.width as f32,
-                                self.height as f32,
-                            );
-                            let (r, g, b, a) = color.into();
-                            shader_text.set_uniform_4f("u_color", r, g, b, a);
-                            shader_text.set_uniform_2f("u_rect_min", min.x, min.y);
-                            shader_text.set_uniform_2f("u_rect_max", max.x, max.y);
-                            shader_text.set_uniform_4f("u_borderWidth", 0.0, 0.0, 0.0, 0.0);
-                            shader_text.set_uniform_4f("u_borderColor", 0.0, 0.0, 0.0, 0.0);
+                        if let Some(image) = image.clone() {
                             glActiveTexture(GL_TEXTURE0);
-                            glBindTexture(GL_TEXTURE_2D, texture.clone());
-                            shader_text.set_uniform_1i("u_texture", 0);
-
-                            let a_position = shader_text.attributes.get("a_position").unwrap();
-                            glBindBuffer(GL_ARRAY_BUFFER, a_position.buffer);
-                            glBufferData(GL_ARRAY_BUFFER, &offset_vertices, GL_DYNAMIC_DRAW);
-                            glEnableVertexAttribArray(a_position.location as _);
-                            glVertexAttribPointer(
-                                a_position.location as _,
-                                2,
-                                GL_FLOAT,
-                                GL_FALSE as _,
-                                0,
-                                0,
-                            );
-                            let a_texture_coordinate =
-                                shader_text.attributes.get("a_texture_coordinate").unwrap();
-                            let (texcoords, _offset) = text_vertices.texture_coordinate;
-                            glBindBuffer(GL_ARRAY_BUFFER, a_texture_coordinate.buffer);
-                            glBufferData(GL_ARRAY_BUFFER, &texcoords, GL_DYNAMIC_DRAW);
-                            glEnableVertexAttribArray(a_texture_coordinate.location as _);
-                            glVertexAttribPointer(
-                                a_texture_coordinate.location as _,
-                                2,
-                                GL_FLOAT,
-                                GL_FALSE as _,
-                                0,
-                                0,
-                            );
-                            glDrawArrays(GL_TRIANGLES, 0, text_vertices.num_vertices as _);
+                            glBindTexture(GL_TEXTURE_2D, image.texture);
+                            shader_default.set_uniform_1i("u_texture_enabled", 1);
+                            shader_default.set_uniform_1i("u_texture", 0);
+                        } else {
+                            shader_default.set_uniform_1i("u_texture_enabled", 0);
                         }
+
+                        glDrawArrays(GL_TRIANGLES, 0, 6);
+                    }
+                    Text(color, data) => {
+                        let (font_family, font_weight, text_vertices) = data.clone();
+                        let texture = self.fonts.get(&(&font_family, font_weight)).unwrap();
+                        let (vertices, _offset) = text_vertices.position;
+                        // Position at top-left of container, flip Y for OpenGL
+                        let offset_vertices: Vec<f32> = vertices
+                            .iter()
+                            .enumerate()
+                            .map(|(i, v)| if i % 2 == 0 { v + min.x } else { max.y - v })
+                            .collect();
+                        shader_text.use_program();
+                        shader_text.set_uniform_2f(
+                            "u_viewport",
+                            self.width as f32,
+                            self.height as f32,
+                        );
+                        let (r, g, b, a) = color.into();
+                        shader_text.set_uniform_4f("u_color", r, g, b, a);
+                        shader_text.set_uniform_2f("u_rect_min", min.x, min.y);
+                        shader_text.set_uniform_2f("u_rect_max", max.x, max.y);
+                        shader_text.set_uniform_4f("u_borderWidth", 0.0, 0.0, 0.0, 0.0);
+                        shader_text.set_uniform_4f("u_borderColor", 0.0, 0.0, 0.0, 0.0);
+                        glActiveTexture(GL_TEXTURE0);
+                        glBindTexture(GL_TEXTURE_2D, *texture);
+                        shader_text.set_uniform_1i("u_texture", 0);
+
+                        let a_position = shader_text.attributes.get("a_position").unwrap();
+                        glBindBuffer(GL_ARRAY_BUFFER, a_position.buffer);
+                        glBufferData(GL_ARRAY_BUFFER, &offset_vertices, GL_DYNAMIC_DRAW);
+                        glEnableVertexAttribArray(a_position.location as _);
+                        glVertexAttribPointer(
+                            a_position.location as _,
+                            2,
+                            GL_FLOAT,
+                            GL_FALSE as _,
+                            0,
+                            0,
+                        );
+                        let a_texture_coordinate =
+                            shader_text.attributes.get("a_texture_coordinate").unwrap();
+                        let (texcoords, _offset) = text_vertices.texture_coordinate;
+                        glBindBuffer(GL_ARRAY_BUFFER, a_texture_coordinate.buffer);
+                        glBufferData(GL_ARRAY_BUFFER, &texcoords, GL_DYNAMIC_DRAW);
+                        glEnableVertexAttribArray(a_texture_coordinate.location as _);
+                        glVertexAttribPointer(
+                            a_texture_coordinate.location as _,
+                            2,
+                            GL_FLOAT,
+                            GL_FALSE as _,
+                            0,
+                            0,
+                        );
+                        glDrawArrays(GL_TRIANGLES, 0, text_vertices.num_vertices as _);
                     }
                 }
             }
@@ -353,5 +350,17 @@ impl Renderer for RendererOpenGl {
             );
         }
         texture
+    }
+
+    fn load_font_atlas(
+        &mut self,
+        font_family: &'static str,
+        font_weight: u16,
+        atlas_data: &[u8],
+        width: u32,
+        height: u32,
+    ) {
+        let texture = self.load_texture(atlas_data, -1, width, height, true);
+        self.fonts.insert((font_family, font_weight), texture);
     }
 }

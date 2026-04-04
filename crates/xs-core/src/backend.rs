@@ -1,6 +1,4 @@
-use std::rc::Rc;
-
-use crate::{AppContext, Application, Render, Renderer};
+use crate::{AppConfig, AppContext};
 
 pub enum BackendResponse {
     /// image src
@@ -16,30 +14,27 @@ pub enum BackendRequest {
     LoadImage(String),
 }
 
+pub trait EventLoop {
+    fn initialize(&mut self, app_context: &mut AppContext);
+    fn frame(&mut self, app_context: &mut AppContext);
+}
+
 pub trait Backend {
-    fn run(
-        &mut self,
-        app: Application,
-        app_context: AppContext,
-        renderer: Box<dyn Renderer>,
-        root: Rc<dyn Render>,
-    );
+    fn run(&mut self, app: &AppConfig, app_context: AppContext, event_loop: Box<dyn EventLoop>);
     fn performance_now(&self) -> u128;
 }
 
-const BACKEND_DUMMY_WARNING: &str =
-    "BackendDummy::load_image: thre right backend is not loaded corectly";
 pub struct BackendDummy;
 impl Backend for BackendDummy {
     fn run(
         &mut self,
-        _app: Application,
+        _app_config: &AppConfig,
         _app_context: AppContext,
-        _renderer: Box<dyn Renderer>,
-        _root: Rc<dyn Render>,
+        _event_loop: Box<dyn EventLoop>,
     ) {
     }
+
     fn performance_now(&self) -> u128 {
-        panic!("{}", BACKEND_DUMMY_WARNING);
+        0
     }
 }

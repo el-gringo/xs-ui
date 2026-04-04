@@ -5,7 +5,7 @@ mod keyboard;
 mod keycodes;
 mod registry;
 mod seat;
-mod wayland_dispatcher;
+//mod wayland_dispatcher;
 mod xdg;
 
 pub mod backend_wayland;

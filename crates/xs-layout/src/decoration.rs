@@ -4,7 +4,7 @@ use xs_math::Vector2;
 #[derive(Clone, PartialEq, Debug)]
 pub enum Material {
     Quad(Borders, Color, Option<Image>),
-    Text(Color, (TextVertices, u32))
+    Text(Color, (String, u16, TextVertices)),
 }
 
 impl Material {

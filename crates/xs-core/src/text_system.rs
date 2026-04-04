@@ -1,15 +1,12 @@
 use xs_layout::{TextProperties, TextVertices};
 
-use crate::Renderer;
-
 pub trait TextSystem {
     fn load_font(
         &mut self,
         font_family: &'static str,
         font_weight: u16,
         binary_font: Vec<u8>,
-        renderer: &mut Box<dyn Renderer>,
-    );
+    ) -> (Vec<u8>, u32, u32);
     fn render_text(
         &self,
         text: &str,
@@ -25,8 +22,8 @@ impl TextSystem for TextSystemDummy {
         _font_family: &'static str,
         _font_weight: u16,
         _binary_font: Vec<u8>,
-        _renderer: &mut Box<dyn Renderer>,
-    ) {
+    ) -> (Vec<u8>, u32, u32) {
+        (Vec::new(), 0, 0)
     }
 
     fn render_text(

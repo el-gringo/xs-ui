@@ -1,5 +1,5 @@
+mod app_config;
 mod app_context;
-mod application;
 mod backend;
 mod context;
 mod core;
@@ -10,9 +10,9 @@ mod render;
 mod renderer;
 mod text_system;
 
+pub use app_config::AppConfig;
 pub use app_context::{AppContext, get_app_context, set_app_context};
-pub use application::Application;
-pub use backend::{Backend, BackendDummy, BackendRequest, BackendResponse};
+pub use backend::{Backend, BackendDummy, BackendRequest, BackendResponse, EventLoop};
 pub use context::{Context, StateMutator};
 pub use core::Undefined;
 pub use element::{Element, RootElement};
