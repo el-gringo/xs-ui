@@ -44,6 +44,18 @@ pub fn glDrawArrays(mode: GLenum, first: GLint, count: GLsizei) {
     }
 }
 
+pub fn glDrawElements(mode: GLenum, count: usize, r#type: GLenum, indices_byte_offset: usize) {
+    unsafe {
+        bindings::glDrawElements(
+            mode,
+            count as _,
+            r#type as _,
+            indices_byte_offset as *const _,
+            0,
+        );
+    }
+}
+
 pub fn glEnableVertexAttribArray(index: GLuint) {
     unsafe {
         bindings::glEnableVertexAttribArray(index);
@@ -86,9 +98,33 @@ pub fn glUniform2f(location: GLint, v0: GLfloat, v1: GLfloat) {
     }
 }
 
+pub fn glUniform3f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat) {
+    unsafe {
+        bindings::glUniform3f(location, v0, v1, v2);
+    }
+}
+
 pub fn glUniform4f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat, v3: GLfloat) {
     unsafe {
         bindings::glUniform4f(location, v0, v1, v2, v3);
+    }
+}
+
+pub fn glUniform4fv(location: i32, value: &[f32; 4]) {
+    unsafe {
+        bindings::glUniform4fv(location, 4, value.as_ptr());
+    }
+}
+
+pub fn glUniformMatrix3fv(location: i32, transpose: bool, value: &[f32; 9]) {
+    unsafe {
+        bindings::glUniformMatrix3fv(location, 1, transpose as _, value.as_ptr());
+    }
+}
+
+pub fn glUniformMatrix4fv(location: GLint, transpose: bool, value: &[f32; 16]) {
+    unsafe {
+        bindings::glUniformMatrix4fv(location, 1, transpose as _, value.as_ptr());
     }
 }
 

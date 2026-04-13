@@ -7,6 +7,12 @@ use crate::{AppContext, Context, Element, Render, core::NodeId, navigation::Navi
 
 type RcWidget = Rc<dyn Render>;
 
+pub enum ImageFormat {
+    Rgb,
+    Rgba,
+    Alpha,
+}
+
 #[derive(Clone)]
 struct StackItem {
     widget: RcWidget,
@@ -23,22 +29,23 @@ pub trait Renderer {
     fn screen_width(&self) -> i32;
     fn screen_height(&self) -> i32;
     fn draw_frame(&mut self, widget_tree: &View);
-    fn load_texture(
-        &mut self,
-        bytes: &[u8],
-        image_handle: i32,
-        width: u32,
-        height: u32,
-        alpha: bool,
-    ) -> u32;
     fn load_font_atlas(
         &mut self,
         font_family: &'static str,
         font_weight: u16,
+        font_size: f32,
         atlas_data: &[u8],
         width: u32,
         height: u32,
     );
+    fn load_texture(
+        &mut self,
+        bytes: &[u8],
+        image_handler: i32,
+        width: u32,
+        height: u32,
+        alpha: bool,
+    ) -> u32;
     fn render(&mut self, app_context: &mut AppContext, widget: RcWidget) -> View {
         let constraints = BoxConstraints {
             min: Vector2::new(0.0, 0.0),
@@ -138,23 +145,25 @@ impl Renderer for RendererDummy {
 
     fn draw_frame(&mut self, _widget_tree: &View) {}
 
+    fn load_font_atlas(
+        &mut self,
+        _font_family: &'static str,
+        _font_weight: u16,
+        _font_size: f32,
+        _atlas_data: &[u8],
+        _width: u32,
+        _height: u32,
+    ) {
+    }
+
     fn load_texture(
         &mut self,
         _bytes: &[u8],
-        _image_handle: i32,
+        _image_handler: i32,
         _width: u32,
         _height: u32,
         _alpha: bool,
     ) -> u32 {
         0
-    }
-    fn load_font_atlas(
-        &mut self,
-        _font_family: &'static str,
-        _font_weight: u16,
-        _atlas_data: &[u8],
-        _width: u32,
-        _height: u32,
-    ) {
     }
 }

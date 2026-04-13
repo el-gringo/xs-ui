@@ -112,7 +112,9 @@ pub fn create_egl_window(ctx: &mut WaylandContext, width: i32, height: i32) {
             ctx.egl_window as _,
             std::ptr::null_mut(),
         );
-        if ctx.egl_surface.is_null() /* EGL_NO_SURFACE  */ {
+        if ctx.egl_surface.is_null()
+        /* EGL_NO_SURFACE  */
+        {
             panic!("EGL_NO_SURFACE error");
         }
 

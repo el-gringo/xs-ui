@@ -364,7 +364,7 @@ const env = {
       border,
       format,
       type,
-      data
+      data,
     );
   },
   glTexSubImage2D: function (
@@ -512,8 +512,12 @@ const env = {
     }
     return -1;
   },
+  glUniformMatrix3fv: function (location, count, transpose, value) {
+    var view = getArray(value, Float32Array, count);
+    gl.uniformMatrix3fv(location, !!transpose, view);
+  },
   glUniformMatrix4fv: function (location, count, transpose, value) {
-    var view = getArray(value, Float32Array, 16);
+    var view = getArray(value, Float32Array, count);
     gl.uniformMatrix4fv(location, !!transpose, view);
   },
   glUseProgram: function (program) {

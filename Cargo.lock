@@ -240,7 +240,9 @@ version = "0.1.0"
 dependencies = [
  "xs-backend",
  "xs-core",
- "xs-gl-sys",
+ "xs-gl",
+ "xs-text-system",
+ "xs-text-system-glyph",
 ]
 
 [[package]]
@@ -266,6 +268,14 @@ name = "xs-egl-sys"
 version = "0.1.0"
 dependencies = [
  "xs-platform-linux",
+]
+
+[[package]]
+name = "xs-gl"
+version = "0.1.0"
+dependencies = [
+ "xs-core",
+ "xs-gl-sys",
 ]
 
 [[package]]
@@ -343,8 +353,7 @@ name = "xs-renderer-opengl"
 version = "0.1.0"
 dependencies = [
  "xs-core",
- "xs-gl-sys",
- "xs-js-sys",
+ "xs-gl",
  "xs-layout",
  "xs-math",
  "xs-platform-linux",

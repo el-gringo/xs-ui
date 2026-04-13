@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
-use xs_gl_sys::{
-    GL_COMPILE_STATUS, GL_FRAGMENT_SHADER, GL_LINK_STATUS, GL_VERTEX_SHADER, GLenum, GLint,
-    GLsizei, GLuint, glAttachShader, glCompileShader, glCreateProgram, glCreateShader,
-    glGenBuffers, glGetAttribLocation, glGetProgramInfoLog, glGetProgramParameter,
-    glGetShaderInfoLog, glGetShaderParameter, glGetUniformLocation, glLinkProgram, glShaderSource,
-    glUniform1f, glUniform1i, glUniform2f, glUniform4f, glUseProgram,
+use xs_gl::{
+    GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, GLint, GLsizei, GLuint, compile_shader, glGenBuffers,
+    glGetAttribLocation, glGetUniformLocation, glUniform1f, glUniform1i, glUniform2f, glUniform4f,
+    glUseProgram, link_program,
 };
 
 #[allow(dead_code)]
@@ -45,38 +43,6 @@ pub struct ShaderGlslAttribute {
     pub buffer: GLuint,
     pub location: GLint,
     pub num_components: u8,
-}
-
-pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> Result<GLuint, String> {
-    let program = glCreateProgram();
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
-
-    let link_status = glGetProgramParameter(program, GL_LINK_STATUS);
-    if link_status == 0 {
-        let error_message = glGetProgramInfoLog(program);
-        return Err("failed to link program: ".to_owned() + &error_message);
-    }
-    Ok(program)
-}
-
-pub fn compile_shader(shader_type: GLenum, source: &str) -> Result<GLuint, String> {
-    let shader = glCreateShader(shader_type);
-
-    glShaderSource(shader, source);
-    glCompileShader(shader);
-    let compile_status = glGetShaderParameter(shader, GL_COMPILE_STATUS);
-    if compile_status == 0 {
-        let error_message = glGetShaderInfoLog(shader);
-        let shader_type = match shader_type {
-            GL_VERTEX_SHADER => "vertex",
-            GL_FRAGMENT_SHADER => "fragment",
-            _ => "unknown",
-        };
-        return Err("failed to compile ".to_owned() + shader_type + " shader: " + &error_message);
-    }
-    Ok(shader)
 }
 
 pub struct ShaderGlsl {

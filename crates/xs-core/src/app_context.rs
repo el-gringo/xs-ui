@@ -25,6 +25,7 @@ pub fn get_app_context() -> &'static mut AppContext {
 
 pub struct AppContext {
     pub running: bool,
+    pub now: u128,
     //pub app: &'a mut Application,
     pub key_down: Option<KeyEvent>,
     pub nav: FocusManager,
@@ -43,6 +44,7 @@ impl Default for AppContext {
         AppContext {
             //app,
             running: true,
+            now: 0,
             key_down: None,
             nav: FocusManager::new(),
             current_node_id: (TypeId::of::<NodeId>(), 0, 0),

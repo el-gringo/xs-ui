@@ -22,10 +22,23 @@ pub fn glVertexAttribPointer(
     type_: GLenum,
     normalized: GLboolean,
     stride: GLsizei,
-    _pointer: GLintptr,
+    pointer: GLintptr,
 ) {
     unsafe {
-        bindings::glVertexAttribPointer(index, size, type_, normalized, stride, std::ptr::null());
+        bindings::glVertexAttribPointer(
+            index,
+            size,
+            type_,
+            normalized,
+            stride,
+            pointer as *const _,
+        );
+    }
+}
+
+pub fn glVertexAttribDivisor(index: GLuint, divisor: GLuint) {
+    unsafe {
+        bindings::glVertexAttribDivisor(index, divisor);
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::{
-    colors::BLACK, AlignContent, AlignItems, BorderSide, Borders, Color, EdgeInsets, FlexDirection,
-    FlexWrap, JustifyContent,
+    AlignContent, AlignItems, BorderSide, Borders, Color, EdgeInsets, FlexDirection, FlexWrap,
+    JustifyContent,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
@@ -11,38 +11,38 @@ pub enum FontStyle {
     Oblique,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TextProperties {
-    pub color: Color,
     pub font_family: String,
     pub font_size: u16,
     pub font_weight: u16,
     pub font_style: FontStyle,
-    pub max_width: Option<f32>,
 }
 
 impl Default for TextProperties {
     fn default() -> Self {
         Self {
-            color: BLACK,
             font_family: String::from("sans-serif"),
             font_size: 16,
             font_weight: 400,
             font_style: FontStyle::Normal,
-            max_width: None,
         }
     }
 }
 
-impl Eq for TextProperties {}
-
-impl std::hash::Hash for TextProperties {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.color.hash(state);
-        self.font_family.hash(state);
-        self.font_size.hash(state);
-        self.font_weight.hash(state);
-        self.font_style.hash(state);
+impl TextProperties {
+    pub fn new(
+        font_family: String,
+        font_size: u16,
+        font_weight: u16,
+        font_style: FontStyle,
+    ) -> Self {
+        Self {
+            font_family,
+            font_size,
+            font_weight,
+            font_style,
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 use std::{
     rc::Rc,
-    sync::mpsc::{Receiver, Sender, channel},
+    sync::mpsc::{channel, Receiver, Sender},
 };
 
 use xs_backend::load_image;
@@ -8,6 +8,7 @@ use xs_core::{
     AppConfig, AppContext, Backend, BackendRequest, BackendResponse, EventLoop, Render, Renderer,
 };
 use xs_layout::Image;
+use xs_text_system::{AtlasAlpha, TextSystem};
 
 #[derive(Default)]
 pub struct Application(AppConfig);
@@ -57,11 +58,14 @@ impl EventLoop for AppEventLoop {
     fn initialize(&mut self, ctx: &mut AppContext) {
         self.renderer.init();
         let font_family = "sans-serif";
+        let font_size = 42.;
         let font_data =
             include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf").to_vec();
-        let (atlas_data, width, height) = ctx.text_system.load_font(font_family, 400, font_data);
+        let (atlas_data, width, height) =
+            ctx.text_system
+                .load_font(font_family, 400, font_size, font_data);
         self.renderer
-            .load_font_atlas(font_family, 400, &atlas_data, width, height);
+            .load_font_atlas(font_family, 400, font_size, &atlas_data, width, height);
     }
 
     fn frame(&mut self, ctx: &mut AppContext) {
@@ -101,7 +105,7 @@ impl Application {
         I: 'static + FnOnce(&mut AppContext) -> R,
         R: 'static + Render,
     {
-        let text_system = Box::new(xs_text_system::TextSystem::new());
+        let text_system = Box::new(TextSystem::<AtlasAlpha>::new());
         let mut app_context = AppContext::new(text_system);
         let renderer = Box::new(xs_renderer::Renderer::new(self.0.width, self.0.height));
         let root = Rc::new(on_initialize(&mut app_context));

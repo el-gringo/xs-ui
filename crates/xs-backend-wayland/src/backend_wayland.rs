@@ -3,9 +3,9 @@ use xs_http::HttpClient;
 use zune_image::codecs::qoi::zune_core::{colorspace::ColorSpace, options::DecoderOptions};
 
 use xs_backend_wayland_client::{
-    WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
+    wl_proxy, wl_request_constructor, wl_surface, WL_COMPOSITOR_CREATE_SURFACE,
 };
-use xs_core::{AppConfig, AppContext, Backend, BackendResponse, EventLoop, set_app_context};
+use xs_core::{set_app_context, AppConfig, AppContext, Backend, BackendResponse, EventLoop};
 
 use crate::{
     config::WaylandConfig, context::WaylandContext, egl::create_egl_window,
@@ -62,7 +62,6 @@ impl Backend for BackendWayland {
             fullscreen: false,
         };
         let mut ctx = WaylandContext::new(&mut app_context);
-        //let mut message_dispatcher = WaylandDispatcher;
         let app_id = app.id;
         let app_title = app.title;
         connect(&mut ctx);
@@ -75,6 +74,7 @@ impl Backend for BackendWayland {
         set_app_context(ctx.app_context);
         let start = Instant::now();
         while ctx.dispatch_pending() != -1 && ctx.app_context.running {
+            ctx.app_context.now = (Instant::now() - start).as_millis();
             self.elapsed = start.elapsed().as_millis();
             event_loop.frame(ctx.app_context);
             ctx.swap_buffers();

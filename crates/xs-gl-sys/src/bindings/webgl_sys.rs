@@ -26,6 +26,13 @@ unsafe extern "C" {
         offset: GLintptr,
     );
     pub fn glDrawArrays(mode: GLenum, first: GLint, count: GLsizei);
+    pub fn glDrawElements(
+        mode: GLenum,
+        count: GLsizei,
+        type_: GLenum,
+        indices: *const GLvoid,
+        indice_count: GLsizei,
+    );
     pub fn glEnableVertexAttribArray(index: GLuint);
     pub fn glBufferData(
         target: GLenum,
@@ -40,9 +47,18 @@ unsafe extern "C" {
     pub fn glUniform1i(location: GLint, v0: GLint);
     pub fn glUniform1f(location: GLint, v0: GLfloat);
     pub fn glUniform2f(location: GLint, v0: GLfloat, v1: GLfloat);
+    pub fn glUniform3f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat);
+    pub fn glUniform4f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat, v3: GLfloat);
+    pub fn glUniform4fv(location: GLint, count: GLsizei, value: *const GLfloat);
+    pub fn glUniformMatrix3fv(
+        location: GLint,
+        count: GLsizei,
+        transpose: GLboolean,
+        value: *const GLfloat,
+    );
+    pub fn glUniformMatrix4f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat, v3: GLfloat);
     pub fn glUseProgram(program: GLuint);
     pub fn glGetUniformLocation(program: GLuint, name: *const GLchar, len: GLuint) -> GLint;
-    pub fn glUniform4f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat, v3: GLfloat);
     pub fn glCreateBuffer() -> GLuint;
     pub fn glCreateProgram() -> GLuint;
     pub fn glAttachShader(program: GLuint, shader: GLuint);

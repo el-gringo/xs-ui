@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 
 use xs_core::Renderer;
-use xs_gl_sys::{
-    GL_ALPHA, GL_ARRAY_BUFFER, GL_BLEND, GL_CLAMP_TO_EDGE, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST,
-    GL_DYNAMIC_DRAW, GL_FALSE, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR,
-    GL_ONE_MINUS_SRC_ALPHA, GL_RGBA, GL_SRC_ALPHA, GL_STATIC_DRAW, GL_TEXTURE_2D,
-    GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T,
-    GL_TEXTURE0, GL_TRIANGLES, GL_UNPACK_ALIGNMENT, GL_UNSIGNED_BYTE, glActiveTexture,
-    glBindBuffer, glBindTexture, glBlendFunc, glBufferData, glClear, glClearColor, glDisable,
-    glDrawArrays, glEnable, glEnableVertexAttribArray, glFlush, glGenTextures, glGenerateMipmap,
-    glPixelStorei, glTexImage2DByBytes, glTexImage2DByPointer, glTexParameteri,
-    glVertexAttribPointer, glViewport,
+use xs_gl::{
+    GL_ARRAY_BUFFER, GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_DYNAMIC_DRAW, GL_FALSE,
+    GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
+    GL_STATIC_DRAW, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_WRAP_S,
+    GL_TEXTURE_WRAP_T, GL_TEXTURE0, GL_TRIANGLES, GL_UNSIGNED_BYTE, glActiveTexture, glBindBuffer,
+    glBindTexture, glBlendFunc, glBufferData, glClear, glClearColor, glDisable, glDrawArrays,
+    glEnable, glEnableVertexAttribArray, glFlush, glGenerateMipmap, glTexImage2DByBytes,
+    glTexImage2DByPointer, glTexParameteri, glVertexAttribPointer, glViewport, load_texture,
 };
 use xs_layout::{
     BoxConstraints, LayoutBox, LayoutTree,
@@ -28,15 +26,11 @@ const DEFAULT_VERTEX_SHADER: &str = include_str!("glsl/default.vert");
 const DEFAUL_TFRAGMENT_SHADER: &str = include_str!("glsl/default.frag");
 const TEXT_FRAGMENT_SHADER: &str = include_str!("glsl/text.frag");
 
-fn is_power_of_2(value: i32) -> bool {
-    (value & (value - 1)) == 0
-}
-
 pub struct RendererOpenGl {
     width: i32,
     height: i32,
     shaders: HashMap<String, ShaderGlsl>,
-    fonts: HashMap<(&'static str, u16), u32>,
+    fonts: HashMap<(&'static str, u16), (u32, f32)>,
 }
 
 impl RendererOpenGl {
@@ -233,10 +227,12 @@ impl Renderer for RendererOpenGl {
                     }
                     Text(color, data) => {
                         let (font_family, font_weight, text_vertices) = data.clone();
-                        let texture = self.fonts.get(&(&font_family, font_weight)).unwrap();
-                        let (vertices, _offset) = text_vertices.position;
+                        let (atlas_texture, atlas_font_size) =
+                            self.fonts.get(&(&font_family, font_weight)).unwrap();
+
                         // Position at top-left of container, flip Y for OpenGL
-                        let offset_vertices: Vec<f32> = vertices
+                        let offset_vertices: Vec<f32> = text_vertices
+                            .vertices
                             .iter()
                             .enumerate()
                             .map(|(i, v)| if i % 2 == 0 { v + min.x } else { max.y - v })
@@ -254,7 +250,7 @@ impl Renderer for RendererOpenGl {
                         shader_text.set_uniform_4f("u_borderWidth", 0.0, 0.0, 0.0, 0.0);
                         shader_text.set_uniform_4f("u_borderColor", 0.0, 0.0, 0.0, 0.0);
                         glActiveTexture(GL_TEXTURE0);
-                        glBindTexture(GL_TEXTURE_2D, *texture);
+                        glBindTexture(GL_TEXTURE_2D, *atlas_texture);
                         shader_text.set_uniform_1i("u_texture", 0);
 
                         let a_position = shader_text.attributes.get("a_position").unwrap();
@@ -266,29 +262,41 @@ impl Renderer for RendererOpenGl {
                             2,
                             GL_FLOAT,
                             GL_FALSE as _,
-                            0,
+                            16,
                             0,
                         );
                         let a_texture_coordinate =
                             shader_text.attributes.get("a_texture_coordinate").unwrap();
-                        let (texcoords, _offset) = text_vertices.texture_coordinate;
-                        glBindBuffer(GL_ARRAY_BUFFER, a_texture_coordinate.buffer);
-                        glBufferData(GL_ARRAY_BUFFER, &texcoords, GL_DYNAMIC_DRAW);
+
                         glEnableVertexAttribArray(a_texture_coordinate.location as _);
                         glVertexAttribPointer(
                             a_texture_coordinate.location as _,
                             2,
                             GL_FLOAT,
                             GL_FALSE as _,
-                            0,
-                            0,
+                            16,
+                            8,
                         );
-                        glDrawArrays(GL_TRIANGLES, 0, text_vertices.num_vertices as _);
+                        glDrawArrays(GL_TRIANGLES, 0, (text_vertices.vertices.len() / 2) as _);
                     }
                 }
             }
         }
         glFlush();
+    }
+
+    fn load_font_atlas(
+        &mut self,
+        font_family: &'static str,
+        font_weight: u16,
+        font_size: f32,
+        atlas_data: &[u8],
+        width: u32,
+        height: u32,
+    ) {
+        let texture = self.load_texture(atlas_data, -1, width, height, false);
+        self.fonts
+            .insert((font_family, font_weight), (texture, font_size));
     }
 
     fn load_texture(
@@ -299,68 +307,6 @@ impl Renderer for RendererOpenGl {
         height: u32,
         alpha: bool,
     ) -> u32 {
-        let internal_format = if alpha { GL_ALPHA } else { GL_RGBA };
-        let format = if alpha { GL_ALPHA } else { GL_RGBA };
-        let textures = glGenTextures(1);
-        let texture = textures[0];
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-        // Always set wrap modes
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S as _, GL_CLAMP_TO_EDGE as _);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T as _, GL_CLAMP_TO_EDGE as _);
-
-        // Set filter modes
-        if is_power_of_2(width as _) && is_power_of_2(height as _) {
-            glTexParameteri(
-                GL_TEXTURE_2D,
-                GL_TEXTURE_MIN_FILTER,
-                GL_LINEAR_MIPMAP_LINEAR as _,
-            );
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR as _);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        } else {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR as _);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR as _);
-        }
-
-        if image_handler > 0 {
-            glTexImage2DByPointer(
-                GL_TEXTURE_2D,
-                0,
-                internal_format as _,
-                width as _,
-                height as _,
-                0,
-                format as _,
-                GL_UNSIGNED_BYTE,
-                image_handler as _,
-            );
-        } else if !bytes.is_empty() {
-            glTexImage2DByBytes(
-                GL_TEXTURE_2D,
-                0,
-                internal_format as _,
-                width as _,
-                height as _,
-                0,
-                format as _,
-                GL_UNSIGNED_BYTE,
-                bytes,
-            );
-        }
-        texture
-    }
-
-    fn load_font_atlas(
-        &mut self,
-        font_family: &'static str,
-        font_weight: u16,
-        atlas_data: &[u8],
-        width: u32,
-        height: u32,
-    ) {
-        let texture = self.load_texture(atlas_data, -1, width, height, true);
-        self.fonts.insert((font_family, font_weight), texture);
+        load_texture(bytes, image_handler, width, height, alpha)
     }
 }

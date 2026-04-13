@@ -74,6 +74,7 @@ gl_loader!(
     fn glUniform2f(location: GLint, v0: GLfloat, v1: GLfloat) -> (),
     fn glUniform3f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat) -> (),
     fn glUniform4f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat, v3: GLfloat) -> (),
+    fn glUniformMatrix4f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat, v3: GLfloat) -> (),
     fn glUseProgram(program: GLuint) -> (),
     fn glShaderSource(
         shader: GLuint,
@@ -181,7 +182,7 @@ gl_loader!(
         height: GLsizei
     ) -> (),
     fn glPolygonOffset(factor: GLfloat, units: GLfloat) -> (),
-    fn glDrawElements(mode: GLenum, count: GLsizei, type_: GLenum, indices: *const GLvoid) -> (),
+    fn glDrawElements(mode: GLenum, count: GLsizei, type_: GLenum, indices: *const GLvoid, indice_count: GLsizei) -> (),
     fn glDeleteFramebuffers(n: GLsizei, framebuffers: *const GLuint) -> (),
     fn glBlendEquationSeparate(modeRGB: GLenum, modeAlpha: GLenum) -> (),
     fn glDeleteTextures(n: GLsizei, textures: *const GLuint) -> (),

@@ -1,5 +1,5 @@
 use xs_backend_wayland_client::{
-    wl_proxy, wl_registry, wl_registry_listener, wl_request_constructor, WL_DISPLAY_GET_REGISTRY,
+    WL_DISPLAY_GET_REGISTRY, wl_proxy, wl_registry, wl_registry_listener, wl_request_constructor,
 };
 use xs_backend_wayland_extensions::xdg_shell::xdg_wm_base_interface;
 

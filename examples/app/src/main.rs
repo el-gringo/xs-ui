@@ -122,5 +122,5 @@ pub fn main() {
         .title("App")
         .width(1440)
         .height(810)
-        .run(|_ctx| MyApp2 {});
+        .run(|_ctx| MyApp {});
 }

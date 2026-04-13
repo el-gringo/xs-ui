@@ -1,8 +1,8 @@
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct TextVertices {
-    pub position: (Vec<f32>, usize),
-    pub texture_coordinate: (Vec<f32>, usize),
-    pub num_vertices: usize,
+    pub vertices: Vec<f32>,
     pub width: f32,
     pub height: f32,
+    pub font_scale: f32,
+    pub distance_range: f32,
 }

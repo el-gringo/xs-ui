@@ -1,6 +1,7 @@
 use std::{fs::File, io::Read};
 
-use xs_core::{Renderer, RendererDummy, TextProperties, TextSystem, TextVertices};
+use xs_core::{TextProperties, TextVertices};
+use xs_text_system::{AtlasAlpha, TextSystem};
 
 const TEXT: &str = r"Un text avec plusieurs mots
 et un retour à la ligne";
@@ -73,26 +74,24 @@ fn main() {
         font_size,
         font_weight,
     } = Cli::parse();
-    let mut text_system = xs_text_system::TextSystem::new();
-    // Use a boxed RendererDummy to satisfy the trait
-    let mut renderer: Box<dyn Renderer> = Box::new(RendererDummy);
+    let mut text_system: TextSystem<AtlasAlpha> = TextSystem::new();
     let font_family = "no-name";
-    text_system.load_font(font_family, font_weight, font, &mut renderer);
+    let font_style = xs_core::FontStyle::Normal;
+    text_system.load_font(font_family, font_weight, font_size as f32, 0.0, font);
 
-    let mut text_properties = TextProperties::default();
-    text_properties.font_family = font_family.into();
-    text_properties.font_size = font_size;
-    text_properties.font_weight = font_weight;
-    let constraints = (max_width, 200.);
+    let text_properties =
+        TextProperties::new(font_family.into(), font_size, font_weight, font_style);
     let TextVertices {
-        num_vertices,
+        vertices,
         width,
         height,
         ..
-    } = text_system.render_text(&text, &text_properties, &constraints);
+    } = text_system.render_text(&text, &text_properties, max_width, 200.);
 
     println!(
         "Text rendered: {}x{} with {} vertices",
-        width, height, num_vertices
+        width,
+        height,
+        vertices.len() / 4
     );
 }

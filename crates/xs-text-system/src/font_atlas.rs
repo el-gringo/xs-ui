@@ -1,90 +1,65 @@
 use std::collections::HashMap;
 
-use xs_text_system_glyph::{Font, FontRef, OutlinedGlyph, PxScale, Rect, ScaleFont};
+use xs_core::{ImageFormat, Rectangle};
+use xs_text_system_glyph::{Font, FontRef, GlyphId, OutlinedGlyph, ScaleFont};
 
+#[derive(Debug, Clone, Copy)]
 pub struct GlyphInfo {
-    pub x: f32,
-    pub y: f32,
-    pub bounds: Rect,
+    pub atlas_x: f32,
+    pub atlas_y: f32,
+    pub bounds: Rectangle,
 }
 
-pub struct FontAtlas {
+#[derive(Debug, Clone)]
+pub struct AtlasData {
     pub size: u8,
     pub scale: f32,
     pub ascent: f32,
     pub v_advance: f32,
     pub spacing: f32,
-    pub glyphs: HashMap<char, GlyphInfo>,
+    pub padding: f32,
+    pub glyphs: HashMap<GlyphId, GlyphInfo>,
     pub height: f32,
     pub width: f32,
 }
 
-impl FontAtlas {
-    pub fn generate(font: &FontRef<'_>, font_size: f32) -> (Self, Vec<u8>) {
-        let scale = PxScale::from(font_size);
-        let font = font.into_scaled(scale);
-        let mut glyphs = Vec::new();
-        let space_width = if let Some(space_glyph) = font.outline_glyph(font.scaled_glyph(' ')) {
-            let bounds = space_glyph.px_bounds();
-            bounds.max.x - bounds.min.x
-        } else {
-            font_size
-        };
-        let ascent = font.ascent();
-        for code in 0x020..0x07e {
-            if let Some(c) = char::from_u32(code) {
-                let glyph = font.scaled_glyph(c);
-                glyphs.push((c, glyph));
-            }
-        }
-        for code in 0x0a0..0x17f {
-            if let Some(c) = char::from_u32(code) {
-                let glyph = font.scaled_glyph(c);
-                glyphs.push((c, glyph));
-            }
-        }
-        let glyphs: Vec<(char, OutlinedGlyph)> = glyphs
-            .into_iter()
-            .filter_map(|(c, g)| font.outline_glyph(g).map(|g| (c, g)))
-            .collect();
-        let glyph_count = glyphs.len();
-        let atlas_size = (glyph_count as f32).sqrt().ceil();
-        let width = atlas_size * font_size;
-        let height = atlas_size * font_size;
-        let mut bitmap = vec![0; (width * height) as usize];
-        let mut font_atlas = Self {
-            width,
-            height,
-            size: atlas_size as _,
-            scale: font_size,
-            spacing: space_width,
-            ascent: font.ascent(),
-            v_advance: font.height() + font.line_gap(),
-            glyphs: Default::default(),
-        };
-        for row in 0..atlas_size as i32 {
-            for col in 0..atlas_size as i32 {
-                if let Some((c, glyph)) = glyphs.get((col + row * atlas_size as i32) as usize) {
-                    let bounds = glyph.px_bounds();
-                    let left = col as f32 * font_size;
-                    let top = row as f32 * font_size;
-                    font_atlas.glyphs.insert(
-                        *c,
-                        GlyphInfo {
-                            x: left,
-                            y: top,
-                            bounds,
-                        },
-                    );
-                    glyph.draw(|x, y, v| {
-                        let x = x as f32 + left + bounds.min.x;
-                        let y = y as f32 + top + bounds.min.y + ascent.ceil();
-                        let index = (x + y * width) as usize;
-                        bitmap[index] = (v * 255.) as u8;
-                    });
-                }
-            }
-        }
-        (font_atlas, bitmap)
+pub trait Atlas: Sized {
+    fn data(&self) -> &AtlasData;
+    fn width(&self) -> f32 {
+        self.data().width
     }
+    fn height(&self) -> f32 {
+        self.data().height
+    }
+    fn scale(&self) -> f32 {
+        self.data().scale
+    }
+    fn padding(&self) -> f32 {
+        self.data().padding
+    }
+    fn glyph_info(&self, glyph_id: &GlyphId) -> Option<&GlyphInfo> {
+        self.data().glyphs.get(glyph_id)
+    }
+
+    fn generate(font: &FontRef<'_>, font_size: f32, padding: f32) -> (Self, ImageFormat, Vec<u8>);
+}
+
+pub fn gather_glyphs<F: ScaleFont<impl Font>>(font: &F) -> Vec<(char, OutlinedGlyph)> {
+    let mut glyphs = Vec::new();
+    for code in 0x020..0x07e {
+        if let Some(c) = char::from_u32(code) {
+            let glyph = font.scaled_glyph(c);
+            glyphs.push((c, glyph));
+        }
+    }
+    for code in 0x0a0..0x17f {
+        if let Some(c) = char::from_u32(code) {
+            let glyph = font.scaled_glyph(c);
+            glyphs.push((c, glyph));
+        }
+    }
+    glyphs
+        .into_iter()
+        .filter_map(|(c, g)| font.outline_glyph(g).map(|g| (c, g)))
+        .collect()
 }
