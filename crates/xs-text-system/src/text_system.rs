@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+pub use ab_glyph::{FontRef, PxScale, PxScaleFont, ScaleFont, point};
 use xs_core::{ImageFormat, TextProperties, TextVertices};
-pub use xs_text_system_glyph::{point, FontRef, PxScale, PxScaleFont, ScaleFont};
 
-use crate::{layout_paragraph::layout_paragraph, Atlas};
+use crate::{Atlas, layout_paragraph::layout_paragraph};
 
 pub struct TextSystem<A: Atlas> {
     fonts: HashMap<(&'static str, u16), (FontRef<'static>, A)>,

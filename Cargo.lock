@@ -3,26 +3,39 @@
 version = 3
 
 [[package]]
+name = "ab_glyph"
+version = "0.2.32"
+dependencies = [
+ "ab_glyph_rasterizer",
+ "libm",
+ "owned_ttf_parser",
+]
+
+[[package]]
+name = "ab_glyph_rasterizer"
+version = "0.1.10"
+dependencies = [
+ "libm",
+]
+
+[[package]]
 name = "app"
 version = "0.1.0"
 dependencies = [
- "nanoserde",
+ "nanoserde 0.2.2",
  "xs",
  "xs-http",
  "xs-js-sys",
 ]
 
 [[package]]
-name = "arrayref"
-version = "0.3.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76a2e8124351fda1ef8aaaa3bbd7ebbcb486bbcd4225aca0aa0d84bb2db8fecb"
-
-[[package]]
-name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+name = "backend-image"
+version = "0.1.0"
+dependencies = [
+ "xs-core",
+ "xs-http",
+ "zune-image",
+]
 
 [[package]]
 name = "bytemuck"
@@ -73,6 +86,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "nanoserde"
+version = "0.2.2"
+dependencies = [
+ "nanoserde-derive 0.2.2",
+]
+
+[[package]]
 name = "nanoserde-derive"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -83,17 +103,20 @@ name = "nanoserde-derive"
 version = "0.2.2"
 
 [[package]]
+name = "owned_ttf_parser"
+version = "0.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36820e9051aca1014ddc75770aab4d68bc1e9e632f0f5627c4086bc216fb583b"
+dependencies = [
+ "ttf-parser",
+]
+
+[[package]]
 name = "peertube"
 version = "0.1.0"
 dependencies = [
  "xs",
 ]
-
-[[package]]
-name = "pico-args"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5be167a7af36ee22fe3115051bc51f6e6c7054c9348e28deb4f49bd6f705a315"
 
 [[package]]
 name = "pretty_assertions"
@@ -112,31 +135,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e320a6c5ad31d271ad523dcf3ad13e2767ad8b1cb8f047f75a8aeaf8da139da2"
 
 [[package]]
-name = "strict-num"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6637bab7722d379c8b41ba849228d680cc12d0a45ba1fa2b48f2a30577a06731"
-
-[[package]]
 name = "test_utils"
 version = "0.1.0"
 
 [[package]]
-name = "tiny-skia-path"
-version = "0.11.4"
+name = "ttf-parser"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c9e7fc0c2e86a30b117d0462aa261b72b7a99b7ebd7deb3a14ceda95c5bdc93"
+checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
 dependencies = [
- "arrayref",
- "bytemuck",
- "strict-num",
+ "core_maths",
 ]
 
 [[package]]
-name = "xmlwriter"
+name = "with_text"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
+dependencies = [
+ "xs-canvas",
+ "xs-gl",
+ "xs-text-system",
+]
 
 [[package]]
 name = "xs"
@@ -201,7 +219,6 @@ dependencies = [
  "xs-platform-event",
  "xs-platform-linux",
  "xs-renderer-core",
- "zune-image",
 ]
 
 [[package]]
@@ -241,15 +258,13 @@ dependencies = [
  "xs-backend",
  "xs-core",
  "xs-gl",
- "xs-text-system",
- "xs-text-system-glyph",
 ]
 
 [[package]]
 name = "xs-cli"
 version = "0.1.0"
 dependencies = [
- "nanoserde",
+ "nanoserde 0.2.1",
  "xs-http",
  "xs-websocket",
 ]
@@ -360,45 +375,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "xs-serde"
-version = "0.2.2"
-dependencies = [
- "nanoserde-derive 0.2.2",
-]
-
-[[package]]
 name = "xs-text-system"
 version = "0.1.0"
 dependencies = [
+ "ab_glyph",
  "xs-core",
- "xs-text-system-glyph",
-]
-
-[[package]]
-name = "xs-text-system-glyph"
-version = "0.1.0"
-dependencies = [
- "libm",
- "xs-text-system-rasterizer",
- "xs-text-system-ttf-parser",
-]
-
-[[package]]
-name = "xs-text-system-rasterizer"
-version = "0.1.0"
-dependencies = [
- "libm",
-]
-
-[[package]]
-name = "xs-text-system-ttf-parser"
-version = "0.1.0"
-dependencies = [
- "base64",
- "core_maths",
- "pico-args",
- "tiny-skia-path",
- "xmlwriter",
 ]
 
 [[package]]

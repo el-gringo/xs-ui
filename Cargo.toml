@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/*",
+    "crates/xs-canvas/examples/with_text",
     #"crates/xs-macro/tests",
     "examples/*",
     "tools/*"
@@ -51,16 +52,21 @@ xs-renderer-core = { path = "crates/xs-renderer-core" }
 xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
 xs-serde = { path = "crates/xs-serde" }
 xs-text-system = { path = "crates/xs-text-system" }
-xs-text-system-glyph = { path = "crates/xs-text-system-glyph" }
-xs-text-system-rasterizer = { path = "crates/xs-text-system-rasterizer" }
-xs-text-system-ttf-parser = { path = "crates/xs-text-system-ttf-parser" }
 xs-tls = { path = "crates/xs-tls" }
 xs-url = { path = "crates/xs-url" }
 xs-websocket = { path = "crates/xs-websocket" }
 
 # External dependencies
-ab_glyph = { path = "vendors/ab_glyph" }
-nanoserde = { version = "0.2", default-features = false, features = [ "json" ] }
+ab_glyph = {
+    path = "vendors/ab-glyph/glyph",
+    default-features = false,
+    features = [ "small" ]
+}
+nanoserde = {
+    path = "vendors/nanoserde",
+    default-features = false,
+    features = [ "json" ]
+}
 zune-image = {
     version = "0.5",
     default-features = false,

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+use ab_glyph::{Font, FontRef, PxScale, ScaleFont};
 use xs_core::{ImageFormat, Rectangle};
-use xs_text_system_glyph::{Font, FontRef, PxScale, ScaleFont};
 
-use super::font_atlas::{gather_glyphs, Atlas, AtlasData, GlyphInfo};
+use super::font_atlas::{Atlas, AtlasData, GlyphInfo, gather_glyphs};
 
 pub struct AtlasSdf {
     pub atlas: AtlasData,

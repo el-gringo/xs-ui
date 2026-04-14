@@ -1,0 +1,10 @@
+[package]
+name = "backend-image"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-core.workspace = true
+xs-http.workspace = true
+zune-image.workspace = true

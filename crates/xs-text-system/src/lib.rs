@@ -5,6 +5,7 @@ mod font_atlas;
 mod layout_paragraph;
 mod text_system;
 
+pub use ab_glyph::FontRef;
 pub use atlas_alpha::AtlasAlpha;
 pub use atlas_msdf::AtlasMsdf;
 pub use atlas_sdf::AtlasSdf;

@@ -18,4 +18,3 @@ xs-layout.workspace = true
 xs-platform-event.workspace = true
 xs-platform-linux.workspace = true
 xs-renderer-core.workspace = true
-zune-image.workspace = true

@@ -4,10 +4,10 @@ use xs_canvas::Canvas;
 use xs_core::{Color, EventLoop, Rectangle};
 use xs_gl::{
     GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_ELEMENT_ARRAY_BUFFER, GL_FLOAT, GL_ONE,
-    GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_STATIC_DRAW, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES,
+    GL_ONE_MINUS_SRC_ALPHA, GL_STATIC_DRAW, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES,
     GL_UNSIGNED_SHORT, ShaderGlSl, glActiveTexture, glBindBuffer, glBindTexture, glBlendFunc,
-    glBufferData, glClear, glClearColor, glDisable, glDrawArrays, glDrawElements, glEnable,
-    glGenBuffers, glViewport, load_texture,
+    glBufferData, glClear, glClearColor, glDisable, glDrawElements, glEnable, glGenBuffers,
+    glViewport, load_texture,
 };
 
 const APP_WIDTH: i32 = 1440;
@@ -32,7 +32,7 @@ impl EventLoop for QuadCanvas {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
 
-        self.tex_place_holder = load_texture(&[0, 0, 0, 0], -1, 1, 1, false);
+        self.tex_place_holder = load_texture(&[0], -1, 1, 1, xs_core::ImageFormat::Alpha);
         eprintln!("self.tex_place_holder: {}", self.tex_place_holder);
 
         let size_of_float = size_of::<f32>() as i32;

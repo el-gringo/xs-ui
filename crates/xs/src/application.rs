@@ -1,9 +1,9 @@
 use std::{
     rc::Rc,
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::mpsc::{Receiver, Sender, channel},
 };
 
-use xs_backend::load_image;
+use xs_backend_image::load_image;
 use xs_core::{
     AppConfig, AppContext, Backend, BackendRequest, BackendResponse, EventLoop, Render, Renderer,
 };
@@ -61,7 +61,7 @@ impl EventLoop for AppEventLoop {
         let font_size = 42.;
         let font_data =
             include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf").to_vec();
-        let (atlas_data, width, height) =
+        let (atlas_data, _format, width, height) =
             ctx.text_system
                 .load_font(font_family, 400, font_size, font_data);
         self.renderer

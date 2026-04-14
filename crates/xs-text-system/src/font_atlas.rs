@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
+use ab_glyph::{Font, FontRef, GlyphId, OutlinedGlyph, ScaleFont};
 use xs_core::{ImageFormat, Rectangle};
-use xs_text_system_glyph::{Font, FontRef, GlyphId, OutlinedGlyph, ScaleFont};
 
 #[derive(Debug, Clone, Copy)]
 pub struct GlyphInfo {

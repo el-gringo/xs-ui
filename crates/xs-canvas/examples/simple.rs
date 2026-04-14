@@ -1,9 +1,6 @@
 use xs_canvas::Canvas;
 use xs_core::EventLoop;
-use xs_gl::{
-    GL_COLOR_BUFFER_BIT, GL_FLOAT, GL_TRIANGLES, ShaderGlSl, glClear, glClearColor, glDrawArrays,
-    glViewport,
-};
+use xs_gl::{GL_FLOAT, GL_TRIANGLES, ShaderGlSl, glDrawArrays};
 
 const APP_WIDTH: i32 = 1440;
 const APP_HEIGHT: i32 = 810;
