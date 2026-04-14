@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write};
 
-use xs_text_system::{Atlas, AtlasAlpha, AtlasSdf};
+use xs_text_system::{Atlas, AtlasAlpha, AtlasMsdf, AtlasSdf};
 use xs_text_system_glyph::FontRef;
 
 pub fn main() {
@@ -24,6 +24,16 @@ pub fn main() {
     let mut file = File::create(filename).unwrap();
     let _ = file.write(format!("P6\n{} {}\n255\n", width, height).as_bytes());
     if let Ok(size) = file.write(&sdf_data) {
+        println!("Generated: {filename} ({width}x{height}) {size}");
+    }
+
+    let (msdf_atlas, _format, msdf_data) = AtlasMsdf::generate(&font, font_size, 4.0);
+    let filename = "atlas_msdf.ppm";
+    let width = msdf_atlas.width();
+    let height = msdf_atlas.height();
+    let mut file = File::create(filename).unwrap();
+    let _ = file.write(format!("P6\n{} {}\n255\n", width, height).as_bytes());
+    if let Ok(size) = file.write(&msdf_data) {
         println!("Generated: {filename} ({width}x{height}) {size}");
     }
 }

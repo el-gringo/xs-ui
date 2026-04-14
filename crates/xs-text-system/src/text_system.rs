@@ -95,6 +95,7 @@ pub fn make_vertices_for_string<A: Atlas>(
     let mut max_y_pos = f32::NEG_INFINITY;
     let atlas_width = font_atlas.width();
     let atlas_height = font_atlas.height();
+    let padding = font_atlas.padding() as f32;
 
     let mut vertices = Vec::new();
     for glyph in &glyphs {
@@ -107,10 +108,12 @@ pub fn make_vertices_for_string<A: Atlas>(
             let x2 = x + glyph_width;
             let y2 = y + glyph_height;
 
-            let u1 = glyph_info.atlas_x / atlas_width;
-            let u2 = (glyph_info.atlas_x + glyph_info.bounds.width) / atlas_width;
-            let v1 = glyph_info.atlas_y / atlas_height;
-            let v2 = (glyph_info.atlas_y + glyph_info.bounds.height) / atlas_height;
+            let u1 = (glyph_info.atlas_x - padding) / atlas_width;
+            let u2 = (glyph_info.atlas_x - padding + glyph_info.bounds.width + padding * 2.0)
+                / atlas_width;
+            let v1 = (glyph_info.atlas_y - padding) / atlas_height;
+            let v2 = (glyph_info.atlas_y - padding + glyph_info.bounds.height + padding * 2.0)
+                / atlas_height;
 
             let mut glyph_vertices = [0.; 24];
             glyph_vertices[0] = x;

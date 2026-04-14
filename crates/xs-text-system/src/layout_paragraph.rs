@@ -1,4 +1,4 @@
-use xs_text_system_glyph::{Font, Glyph, Point, ScaleFont, point};
+use xs_text_system_glyph::{point, Font, Glyph, Point, ScaleFont};
 
 /// Simple paragraph layout for glyphs into `target`.
 /// Starts at position `(0, ascent)`.

@@ -8,21 +8,21 @@ use xs_gl::{
     glBlendFunc, glClear, glClearColor, glDisable, glDrawArrays, glEnable, glViewport,
     load_texture,
 };
-use xs_text_system::{Atlas, AtlasAlpha, AtlasSdf, TextSystem};
+use xs_text_system::{Atlas, AtlasAlpha, AtlasMsdf, AtlasSdf, TextSystem};
 use xs_text_system_glyph::FontRef;
 
 const APP_WIDTH: i32 = 1440;
 const APP_HEIGHT: i32 = 810;
 
 struct TextCanvas {
-    alpha_atlas_texture: u32,
-    sdf_atlas_texture: u32,
     text_properties: TextProperties,
-    alpha_text_vertices: TextVertices,
-    sdf_text_vertices: TextVertices,
     shaders: HashMap<&'static str, ShaderGlSl>,
-    alpha_text_system: TextSystem<AtlasAlpha>,
-    sdf_text_system: TextSystem<AtlasSdf>,
+    alpha_atlas_texture: u32,
+    alpha_text_vertices: TextVertices,
+    sdf_atlas_texture: u32,
+    sdf_text_vertices: TextVertices,
+    msdf_atlas_texture: u32,
+    msdf_text_vertices: TextVertices,
 }
 
 impl EventLoop for TextCanvas {
@@ -39,6 +39,8 @@ impl EventLoop for TextCanvas {
             AtlasAlpha::generate(&font, atlas_font_size, 0.0);
         let (sdf_atlas, sdf_format, sdf_atlas_data) =
             AtlasSdf::generate(&font, atlas_font_size, 4.0);
+        let (msdf_atlas, msdf_format, msdf_atlas_data) =
+            AtlasMsdf::generate(&font, atlas_font_size, 4.0);
 
         self.alpha_atlas_texture = load_texture(
             &alpha_atlas_data,
@@ -54,24 +56,33 @@ impl EventLoop for TextCanvas {
             sdf_atlas.atlas.height as _,
             sdf_format,
         );
+        self.msdf_atlas_texture = load_texture(
+            &msdf_atlas_data,
+            -1,
+            msdf_atlas.atlas.width as _,
+            msdf_atlas.atlas.height as _,
+            msdf_format,
+        );
 
-        self.alpha_text_system = TextSystem::<AtlasAlpha>::new();
-        self.alpha_text_system
-            .load_font(font_family, 400, atlas_font_size, 0.0, font_data.clone());
+        let mut alpha_text_system = TextSystem::<AtlasAlpha>::new();
+        alpha_text_system.load_font(font_family, 400, atlas_font_size, 0.0, font_data.clone());
 
-        self.sdf_text_system = TextSystem::<AtlasSdf>::new();
-        self.sdf_text_system
-            .load_font(font_family, 400, atlas_font_size, 4., font_data.clone());
+        let mut sdf_text_system = TextSystem::<AtlasSdf>::new();
+        sdf_text_system.load_font(font_family, 400, atlas_font_size, 4., font_data.clone());
+
+        let mut msdf_text_system = TextSystem::<AtlasMsdf>::new();
+        msdf_text_system.load_font(font_family, 400, atlas_font_size, 4., font_data.clone());
 
         self.text_properties.font_size = 64;
 
         self.alpha_text_vertices =
-            self.alpha_text_system
-                .render_text("Alpha text", &self.text_properties, 600., 200.);
+            alpha_text_system.render_text("Alpha text", &self.text_properties, 600., 200.);
 
         self.sdf_text_vertices =
-            self.sdf_text_system
-                .render_text("SDF text", &self.text_properties, 600., 200.);
+            sdf_text_system.render_text("SDF text", &self.text_properties, 600., 200.);
+
+        self.msdf_text_vertices =
+            msdf_text_system.render_text("MSDF text", &self.text_properties, 600., 200.);
 
         match ShaderGlSl::try_new(
             include_str!("glsl/text_alpha.glsl.vert"),
@@ -127,7 +138,7 @@ impl EventLoop for TextCanvas {
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-        // Draw alpha text (blue)
+        // Draw alpha text
         let vertices = self.alpha_text_vertices.vertices.clone();
         let shader = self.shaders.get("text_alpha").unwrap();
         shader.use_program();
@@ -147,7 +158,7 @@ impl EventLoop for TextCanvas {
         shader.attribute_buffer_data("a_position", &vertices);
         glDrawArrays(GL_TRIANGLES, 0, num_vertices as _);
 
-        // Draw SDF text (bright red - should be very visible) at position 100,100
+        // Draw SDF text
         let vertices = self.sdf_text_vertices.vertices.clone();
         let shader = self.shaders.get("text_sdf").unwrap();
         shader.use_program();
@@ -158,16 +169,44 @@ impl EventLoop for TextCanvas {
         shader.uniform_matrix_3fv(
             "u_transform",
             false,
-            &[1., 0., 0., 0., 1., 0., 100., 600., 1.], // Translate to (100, 100)
+            &[1., 0., 0., 0., 1., 0., 100., 400., 1.], // Translate to (100, 100)
         );
         let sdf_dist_range = self.sdf_text_vertices.distance_range * 2.0;
         shader.uniform_1i("u_texture", 0);
         shader.uniform_1f("u_size", self.sdf_text_vertices.font_scale);
         shader.uniform_1f("u_distanceRange", sdf_dist_range);
         shader.uniform_4f("u_color", 1.0, 0.0, 0.0, 1.0); // Bright red
-
         let num_vertices = vertices.len() / 4;
         shader.attribute_buffer_data("a_position", &vertices);
+        glDrawArrays(GL_TRIANGLES, 0, num_vertices as _);
+
+        // Draw MSDF text
+        shader.use_program();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, self.msdf_atlas_texture);
+        shader.uniform_2f("u_resolution", APP_WIDTH as _, APP_HEIGHT as _);
+        shader.uniform_1f("u_pixelRatio", 1.0);
+        shader.uniform_matrix_3fv(
+            "u_transform",
+            false,
+            &[1., 0., 0., 0., 1., 0., 100., 600., 1.], // Translate to (100, 100)
+        );
+        let msdf_dist_range = self.msdf_text_vertices.distance_range * 2.0;
+        let msdf_vertices = self.msdf_text_vertices.vertices.clone();
+        shader.uniform_1i("u_texture", 0);
+        shader.uniform_1f("u_size", self.msdf_text_vertices.font_scale);
+        shader.uniform_1f("u_distanceRange", msdf_dist_range);
+        shader.uniform_4f("u_color", 1.0, 0.0, 0.0, 1.0); // Bright red
+        let num_vertices = msdf_vertices.len() / 4;
+        shader.attribute_buffer_data("a_position", &msdf_vertices);
+        glDrawArrays(GL_TRIANGLES, 0, num_vertices as _);
+
+        shader.uniform_4f("u_color", 0.0, 1.0, 0.0, 1.0); // Bright red
+        shader.uniform_matrix_3fv(
+            "u_transform",
+            false,
+            &[1., 0., 0., 0., 1., 0., 100., 600., 1.], // Translate to (100, 100)
+        );
         glDrawArrays(GL_TRIANGLES, 0, num_vertices as _);
     }
 }
@@ -184,11 +223,11 @@ pub fn main() {
         text_properties,
         alpha_atlas_texture: 0,
         sdf_atlas_texture: 0,
+        msdf_atlas_texture: 0,
         alpha_text_vertices: TextVertices::default(),
         sdf_text_vertices: TextVertices::default(),
+        msdf_text_vertices: TextVertices::default(),
         shaders: Default::default(),
-        alpha_text_system: TextSystem::<AtlasAlpha>::new(),
-        sdf_text_system: TextSystem::<AtlasSdf>::new(),
     };
     Canvas::new().run(app);
 }
