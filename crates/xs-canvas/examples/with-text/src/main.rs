@@ -4,9 +4,9 @@ use xs_canvas::Canvas;
 use xs_core::{EventLoop, TextProperties, TextVertices};
 use xs_gl::{
     GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_FLOAT, GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
-    GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, ShaderGlSl, glActiveTexture, glBindTexture,
-    glBlendFunc, glClear, glClearColor, glDisable, glDrawArrays, glEnable, glViewport,
-    load_texture,
+    GL_SRC_ALPHA, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, ShaderGlSl, glActiveTexture,
+    glBindTexture, glBlendFunc, glClear, glClearColor, glDisable, glDrawArrays, glEnable,
+    glViewport, load_texture,
 };
 use xs_text_system::{Atlas, AtlasAlpha, AtlasMsdf, AtlasSdf, FontRef, TextSystem};
 
@@ -135,7 +135,7 @@ impl EventLoop for TextCanvas {
 
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // Draw alpha text
         let vertices = self.alpha_text_vertices.vertices.clone();

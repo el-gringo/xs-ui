@@ -109,28 +109,26 @@ impl ShaderGlSl {
     pub fn try_new(
         vertex_source: &str,
         fragment_source: &str,
-        uniform_names: &[&'static str],
         attributes_groups: &[&[AttributeInline]],
     ) -> Result<Self, String> {
         let vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_source)?;
         let fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_source)?;
         let program = link_program(vertex_shader, fragment_shader)?;
-        let mut uniforms = HashMap::new();
-        for name in uniform_names {
-            let location = glGetUniformLocation(program, name);
-            eprintln!("Uniform {} location: {}", name, location);
-            if location == -1 {
-                eprintln!("Warning: Uniform '{}' not found in shader!", name);
-            }
-            uniforms.insert(*name, location);
-        }
+        let uniforms = HashMap::new();
+        // for name in uniform_names {
+        //     let location = glGetUniformLocation(program, name);
+        //     eprintln!("Uniform {} location: {}", name, location);
+        //     if location == -1 {
+        //         eprintln!("Warning: Uniform '{}' not found in shader!", name);
+        //     }
+        //     uniforms.insert(*name, location);
+        // }
         let mut attributes = Vec::new();
         for attribute_group in attributes_groups {
             let buffer = *glGenBuffers(1).first().unwrap();
             let mut group = BTreeMap::new();
             for (name, size, r#type, normalized, stride, offset) in *attribute_group {
                 let location = glGetAttribLocation(program, name);
-                glEnableVertexAttribArray(location as _);
                 group.insert(
                     *name,
                     AttributeInfo::new(
@@ -153,6 +151,18 @@ impl ShaderGlSl {
         })
     }
 
+    fn get_uniform_location(&mut self, name: &'static str) -> i32 {
+        *self.uniforms.entry(name).or_insert_with(|| {
+            let location = glGetUniformLocation(self.program, name);
+            if location == -1 {
+                eprintln!("ERROR: Uniform '{}' not found in shader!", name);
+            } else {
+                eprintln!("Uniform {} location: {}", name, location);
+            }
+            location
+        })
+    }
+
     pub fn attribute_buffer_data(&self, attribute_name: &'static str, data: &[f32]) {
         let group = self
             .attributes
@@ -163,6 +173,7 @@ impl ShaderGlSl {
         glBindBuffer(GL_ARRAY_BUFFER, first_attribute.buffer);
         glBufferData(GL_ARRAY_BUFFER, data, GL_STATIC_DRAW);
         for attr in group.values() {
+            glEnableVertexAttribArray(attr.location as _);
             glVertexAttribPointer(
                 attr.location,
                 attr.size,
@@ -178,69 +189,53 @@ impl ShaderGlSl {
         glUseProgram(self.program);
     }
 
-    pub fn uniform_1f(&self, name: &str, v0: f32) {
-        let location = self
-            .uniforms
-            .get(name)
-            .unwrap_or_else(|| panic!("ERROR: Uniform not found: {name}"));
-        glUniform1f(*location, v0);
+    pub fn uniform_1f(&mut self, name: &'static str, v0: f32) {
+        let location = self.get_uniform_location(name);
+        glUniform1f(location, v0);
     }
 
-    pub fn uniform_1i(&self, name: &str, v0: i32) {
-        let location = self
-            .uniforms
-            .get(name)
-            .unwrap_or_else(|| panic!("ERROR: Uniform not found: {name}"));
-        glUniform1i(*location, v0);
+    pub fn uniform_1i(&mut self, name: &'static str, v0: i32) {
+        let location = self.get_uniform_location(name);
+        glUniform1i(location, v0);
     }
 
-    pub fn uniform_2f(&self, name: &str, v0: f32, v1: f32) {
-        let location = self
-            .uniforms
-            .get(name)
-            .unwrap_or_else(|| panic!("ERROR: Uniform not found: {name}"));
-        glUniform2f(*location, v0, v1);
+    pub fn uniform_2f(&mut self, name: &'static str, v0: f32, v1: f32) {
+        let location = self.get_uniform_location(name);
+        glUniform2f(location, v0, v1);
     }
 
-    pub fn uniform_3f(&self, name: &str, v0: f32, v1: f32, v2: f32) {
-        let location = self
-            .uniforms
-            .get(name)
-            .unwrap_or_else(|| panic!("ERROR: Uniform not found: {name}"));
-        glUniform3f(*location, v0, v1, v2);
+    pub fn uniform_3f(&mut self, name: &'static str, v0: f32, v1: f32, v2: f32) {
+        let location = self.get_uniform_location(name);
+        glUniform3f(location, v0, v1, v2);
     }
 
-    pub fn uniform_4f(&self, name: &str, v0: f32, v1: f32, v2: f32, v3: f32) {
-        let location = self
-            .uniforms
-            .get(name)
-            .unwrap_or_else(|| panic!("ERROR: Uniform not found: {name}"));
-        glUniform4f(*location, v0, v1, v2, v3);
+    pub fn uniform_4f(&mut self, name: &'static str, v0: f32, v1: f32, v2: f32, v3: f32) {
+        let location = self.get_uniform_location(name);
+        glUniform4f(location, v0, v1, v2, v3);
     }
 
-    pub fn uniform_4fv(&self, name: &str, value: impl Into<[f32; 4]>) {
-        let location = self
-            .uniforms
-            .get(name)
-            .unwrap_or_else(|| panic!("ERROR: Uniform not found: {name}"));
-        glUniform4fv(*location, &value.into());
+    pub fn uniform_4fv(&mut self, name: &'static str, value: impl Into<[f32; 4]>) {
+        let location = self.get_uniform_location(name);
+        glUniform4fv(location, &value.into());
     }
 
     pub fn uniform_matrix_3fv<'a>(
-        &self,
-        name: &str,
+        &mut self,
+        name: &'static str,
         transpose: bool,
         value: impl Into<&'a [f32; 9]>,
     ) {
-        let location = self
-            .uniforms
-            .get(name)
-            .unwrap_or_else(|| panic!("ERROR: Uniform not found: {name}"));
-        glUniformMatrix3fv(*location, transpose, value.into());
+        let location = self.get_uniform_location(name);
+        glUniformMatrix3fv(location, transpose, value.into());
     }
 
-    pub fn uniform_matrix_4fv(&self, name: &str, transpose: bool, value: impl Into<[f32; 16]>) {
-        let location = self.uniforms.get(name).unwrap();
-        glUniformMatrix4fv(*location, transpose, &value.into());
+    pub fn uniform_matrix_4fv(
+        &mut self,
+        name: &'static str,
+        transpose: bool,
+        value: impl Into<[f32; 16]>,
+    ) {
+        let location = self.get_uniform_location(name);
+        glUniformMatrix4fv(location, transpose, &value.into());
     }
 }

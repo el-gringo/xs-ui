@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "crates/*",
-    "crates/xs-canvas/examples/with_text",
+    "crates/xs-canvas/examples/with-text",
     #"crates/xs-macro/tests",
     "examples/*",
     "tools/*"
@@ -57,27 +57,23 @@ xs-url = { path = "crates/xs-url" }
 xs-websocket = { path = "crates/xs-websocket" }
 
 # External dependencies
-ab_glyph = {
-    path = "vendors/ab-glyph/glyph",
-    default-features = false,
-    features = [ "small" ]
-}
-nanoserde = {
-    path = "vendors/nanoserde",
-    default-features = false,
-    features = [ "json" ]
-}
-zune-image = {
-    version = "0.5",
-    default-features = false,
-    features = [
-        "jpeg",
-        #"jpeg-xl",
-        "png",
-        #"webp",
-        "qoi"
-    ]
-}
+ab_glyph.path = "vendors/ab-glyph/glyph"
+ab_glyph.default-features = false
+ab_glyph.features = [ "small" ]
+
+nanoserde.path = "vendors/nanoserde"
+nanoserde.default-features = false
+nanoserde.features = [ "json" ]
+
+zune-image.version = "0.5"
+zune-image.default-features = false
+zune-image.features = [
+    "jpeg",
+    #"jpeg-xl",
+    "png",
+    #"webp",
+    "qoi"
+]
 
 test_utils = { path = "tools/test_utils" }
 pretty_assertions = { version = "1.4" }

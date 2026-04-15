@@ -112,7 +112,7 @@ pub fn glUniform4f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat, v3: G
 
 pub fn glUniform4fv(location: i32, value: &[f32; 4]) {
     unsafe {
-        bindings::glUniform4fv(location, 4, value.as_ptr());
+        bindings::glUniform4fv(location, 1, value.as_ptr());
     }
 }
 

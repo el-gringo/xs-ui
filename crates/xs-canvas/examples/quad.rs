@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::mem::size_of;
 
 use xs_canvas::Canvas;
 use xs_core::{Color, EventLoop, Rectangle};
@@ -41,19 +42,6 @@ impl EventLoop for QuadCanvas {
         match ShaderGlSl::try_new(
             include_str!("glsl/quad.glsl.vert"),
             include_str!("glsl/quad.glsl.frag"),
-            &[
-                "u_resolution",
-                "u_pixelRatio",
-                "u_alpha",
-                "u_dimensions",
-                "u_texture",
-                "u_radius",
-                "u_borderWidth",
-                "u_shadow",
-                "u_shadowColor",
-                "u_borderColor",
-                "u_color",
-            ],
             &[&[
                 ("a_position", 2, GL_FLOAT, false, stride, 0),
                 (
@@ -114,7 +102,7 @@ impl EventLoop for QuadCanvas {
         let max_x = rect.x + rect.width;
         let max_y = rect.y + rect.height;
 
-        let shader = self.shaders.get("quad").unwrap();
+        let shader = self.shaders.get_mut("quad").unwrap();
         shader.use_program();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, self.tex_place_holder);
@@ -123,8 +111,8 @@ impl EventLoop for QuadCanvas {
         shader.uniform_1f("u_alpha", 1.);
         shader.uniform_2f("u_dimensions", 300., 100.);
         shader.uniform_1i("u_texture", 0);
-        shader.uniform_4f("u_radius", 0., 0., 0., 0.);
-        shader.uniform_4f("u_borderWidth", 4., 4., 4., 4.);
+        shader.uniform_4f("u_radius", 20., 20., 20., 20.);
+        shader.uniform_4f("u_borderWidth", 10., 10., 10., 10.);
         shader.uniform_4fv("u_borderColor", border_color);
         shader.uniform_4f("u_shadow", 0., 0., 0., 0.);
         shader.uniform_4f("u_shadowColor", 0., 0., 0., 1.);

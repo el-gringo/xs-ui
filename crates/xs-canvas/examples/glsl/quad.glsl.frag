@@ -45,7 +45,7 @@ float shadowBox(vec2 p, vec2 s, vec4 r) {
 }
 
 void main() {
-    vec4 color = texture2D(u_texture, v_textureCoords) + v_color;
+    vec4 color = texture2D(u_texture, v_textureCoords) * v_color;
     vec4 resultColor = vec4(0.0);
     vec2 boxUv = v_nodeCoords.xy * u_dimensions - v_halfDimensions;
     float borderZero = 1.0 - step(0.001, dot(abs(u_borderWidth), vec4(1.0)));
