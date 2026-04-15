@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use xs_canvas::Canvas;
 use xs_core::{EventLoop, TextProperties, TextVertices};
 use xs_gl::{
-    GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_FLOAT, GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
-    GL_SRC_ALPHA, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, ShaderGlSl, glActiveTexture,
-    glBindTexture, glBlendFunc, glClear, glClearColor, glDisable, glDrawArrays, glEnable,
-    glViewport, load_texture,
+    GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_FLOAT, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
+    GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, ShaderGlSl, glActiveTexture, glBindTexture,
+    glBlendFunc, glClear, glClearColor, glDisable, glDrawArrays, glEnable, glViewport,
+    load_texture,
 };
 use xs_text_system::{Atlas, AtlasAlpha, AtlasMsdf, AtlasSdf, FontRef, TextSystem};
 
@@ -86,13 +86,6 @@ impl EventLoop for TextCanvas {
         match ShaderGlSl::try_new(
             include_str!("glsl/text_alpha.glsl.vert"),
             include_str!("glsl/text_alpha.glsl.frag"),
-            &[
-                "u_resolution",
-                "u_pixelRatio",
-                "u_transform",
-                "u_texture",
-                "u_color",
-            ],
             &[&[
                 ("a_position", 2, GL_FLOAT, false, 16, 0),
                 ("a_textureCoords", 2, GL_FLOAT, false, 16, 8),
@@ -107,15 +100,6 @@ impl EventLoop for TextCanvas {
         match ShaderGlSl::try_new(
             include_str!("glsl/sdf.glsl.vert"),
             include_str!("glsl/sdf.glsl.frag"),
-            &[
-                "u_resolution",
-                "u_pixelRatio",
-                "u_transform",
-                "u_size",
-                "u_distanceRange",
-                "u_texture",
-                "u_color",
-            ],
             &[&[
                 ("a_position", 2, GL_FLOAT, false, 16, 0),
                 ("a_textureCoords", 2, GL_FLOAT, false, 16, 8),
@@ -139,7 +123,7 @@ impl EventLoop for TextCanvas {
 
         // Draw alpha text
         let vertices = self.alpha_text_vertices.vertices.clone();
-        let shader = self.shaders.get("text_alpha").unwrap();
+        let shader = self.shaders.get_mut("text_alpha").unwrap();
         shader.use_program();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, self.alpha_atlas_texture);
@@ -159,7 +143,7 @@ impl EventLoop for TextCanvas {
 
         // Draw SDF text
         let vertices = self.sdf_text_vertices.vertices.clone();
-        let shader = self.shaders.get("text_sdf").unwrap();
+        let shader = self.shaders.get_mut("text_sdf").unwrap();
         shader.use_program();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, self.sdf_atlas_texture);

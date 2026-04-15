@@ -1,7 +1,6 @@
 use std::{fs::File, io::Write};
 
-use xs_text_system::{Atlas, AtlasAlpha, AtlasMsdf, AtlasSdf};
-use xs_text_system_glyph::FontRef;
+use xs_text_system::{Atlas, AtlasAlpha, AtlasMsdf, AtlasSdf, FontRef};
 
 pub fn main() {
     let font_size = 32.0;

@@ -1,6 +1,6 @@
 use xs_core::ImageFormat;
 use xs_gl_sys::{
-    GL_ALPHA, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_RGBA, GL_TEXTURE_2D,
+    GL_ALPHA, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_RGB, GL_RGBA, GL_TEXTURE_2D,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T,
     GL_TEXTURE0, GL_UNPACK_ALIGNMENT, GL_UNSIGNED_BYTE, glActiveTexture, glBindTexture,
     glGenTextures, glGenerateMipmap, glPixelStorei, glTexImage2DByBytes, glTexImage2DByPointer,
@@ -18,12 +18,11 @@ pub fn load_texture(
     height: u32,
     image_format: ImageFormat,
 ) -> u32 {
-    let internal_format = match image_format {
+    let format = match image_format {
         ImageFormat::Alpha => GL_ALPHA,
-        ImageFormat::Rgb => GL_RGBA,
+        ImageFormat::Rgb => GL_RGB,
         ImageFormat::Rgba => GL_RGBA,
     };
-    let format = GL_RGBA;
     let textures = glGenTextures(1);
     let texture = textures[0];
 
@@ -52,7 +51,7 @@ pub fn load_texture(
         glTexImage2DByPointer(
             GL_TEXTURE_2D,
             0,
-            internal_format as _,
+            format as _,
             width as _,
             height as _,
             0,
@@ -64,7 +63,7 @@ pub fn load_texture(
         glTexImage2DByBytes(
             GL_TEXTURE_2D,
             0,
-            internal_format as _,
+            format as _,
             width as _,
             height as _,
             0,
