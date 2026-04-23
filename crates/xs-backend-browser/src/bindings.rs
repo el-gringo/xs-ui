@@ -3,16 +3,17 @@ use xs_js_sys::Closure;
 use xs_js_sys::{AnyClosure, drop_closure, invoke_closure, store_closure};
 
 mod js {
+    #[link(wasm_import_module = "env")]
     unsafe extern "C" {
-        pub fn init(width: i32, height: i32);
+        pub fn initialize(width: i32, height: i32);
         pub fn load_image(handle: usize, ptr_src: u32, ptr_len: u32);
         pub fn new_image(ptr: u32, len: u32, width: u32, height: u32) -> u32;
     }
 }
 
-pub fn init(width: i32, height: i32) {
+pub fn initialize(width: i32, height: i32) {
     unsafe {
-        js::init(width, height);
+        js::initialize(width, height);
     }
 }
 

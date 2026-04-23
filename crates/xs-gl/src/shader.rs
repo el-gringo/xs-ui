@@ -114,7 +114,7 @@ impl Shader {
                     attr.r#type,
                     attr.normalized as _,
                     attr.stride,
-                    attr.offset,
+                    attr.offset as _,
                 );
             });
         }

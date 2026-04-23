@@ -7,9 +7,10 @@
 
 use crate::{
     GLbitfield, GLboolean, GLchar, GLenum, GLfloat, GLint, GLintptr, GLsizei, GLsizeiptr, GLubyte,
-    GLuint,
+    GLuint, GLvoid,
 };
 
+#[link(wasm_import_module = "env")]
 unsafe extern "C" {
     pub fn glActiveTexture(texture: GLuint);
     pub fn glClear(mask: GLbitfield);
@@ -56,7 +57,12 @@ unsafe extern "C" {
         transpose: GLboolean,
         value: *const GLfloat,
     );
-    pub fn glUniformMatrix4f(location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat, v3: GLfloat);
+    pub fn glUniformMatrix4fv(
+        location: GLint,
+        count: GLsizei,
+        transpose: GLboolean,
+        value: *const GLfloat,
+    );
     pub fn glUseProgram(program: GLuint);
     pub fn glGetUniformLocation(program: GLuint, name: *const GLchar, len: GLuint) -> GLint;
     pub fn glCreateBuffer() -> GLuint;

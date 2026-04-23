@@ -1,6 +1,7 @@
 use crate::Closure;
 
 mod js {
+    #[link(wasm_import_module = "env")]
     unsafe extern "C" {
         pub fn console_log(ptr: u32, len: u32);
         pub fn request_animation_frame(closure: *mut (), vcall: usize);

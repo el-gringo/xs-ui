@@ -4,6 +4,7 @@ use crate::{
 };
 
 mod js {
+    #[link(wasm_import_module = "env")]
     unsafe extern "C" {
         pub fn fetch(handle: usize, ptr: u32, len: u32);
     }

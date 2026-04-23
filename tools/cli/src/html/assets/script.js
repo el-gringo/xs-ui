@@ -219,7 +219,7 @@ const env = {
     let image_ptr = add_heap_object(imageData);
     return image_ptr;
   },
-  init: function (width, height) {
+  initialize: function (width, height) {
     const pixelRatio = window.devicePixelRatio || 1.0;
     canvas.width = width;
     canvas.height = height;
@@ -411,7 +411,7 @@ const env = {
     gl.uniform2f(get_object(location), v0, v1);
   },
   glUniform2fv: function (location, count, value) {
-    var view = getArray(value, Float32Array, count);
+    var view = getArray(value, Float32Array, 2 * count);
     gl.uniform2fv(get_object(location), view);
   },
   glUniform3fv: function (location, count, value) {
@@ -422,7 +422,7 @@ const env = {
     gl.uniform4f(get_object(location), v0, v1, v2, v3);
   },
   glUniform4fv: function (location, count, value) {
-    var view = getArray(value, Float32Array, count);
+    var view = getArray(value, Float32Array, 4 * count);
     gl.uniform4fv(get_object(location), view);
   },
   glUniform1f: function (location, value) {
@@ -513,12 +513,12 @@ const env = {
     return -1;
   },
   glUniformMatrix3fv: function (location, count, transpose, value) {
-    var view = getArray(value, Float32Array, count);
-    gl.uniformMatrix3fv(location, !!transpose, view);
+    var view = getArray(value, Float32Array, 9 * count);
+    gl.uniformMatrix3fv(get_object(location), !!transpose, view);
   },
   glUniformMatrix4fv: function (location, count, transpose, value) {
-    var view = getArray(value, Float32Array, count);
-    gl.uniformMatrix4fv(location, !!transpose, view);
+    var view = getArray(value, Float32Array, 12 * count);
+    gl.uniformMatrix4fv(get_object(location), !!transpose, view);
   },
   glUseProgram: function (program) {
     gl.useProgram(get_object(program));
@@ -597,7 +597,6 @@ const env = {
   },
   glGetProgramParameter: function (program, pname) {
     const ret = gl.getProgramParameter(get_object(program), pname);
-    console.log("glGetProgramParameter", ret);
     return ret;
   },
   glCreateShader: function (shaderType) {

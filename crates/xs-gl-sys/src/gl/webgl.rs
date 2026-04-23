@@ -1,11 +1,11 @@
 #![allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]
 
 use crate::{
+    GLvoid,
     bindings::{
         self,
         common_sys::{GLboolean, GLenum, GLint, GLintptr, GLsizei, GLuint},
     },
-    GLvoid,
 };
 
 pub fn glBufferData<T>(target: GLenum, data: &[T], usage: GLenum) {
@@ -152,17 +152,5 @@ pub fn glGetProgramInfoLog(program: GLuint) -> String {
             .unwrap()
             .to_string();
         ret
-    }
-}
-
-pub fn glDrawElements(mode: GLenum, count: usize, r#type: GLenum, indices_byte_offset: usize) {
-    unsafe {
-        bindings::glDrawElements(
-            mode,
-            count as _,
-            r#type as _,
-            indices_byte_offset as *const _,
-            count as _,
-        );
     }
 }

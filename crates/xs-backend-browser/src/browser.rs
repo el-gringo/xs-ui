@@ -24,9 +24,11 @@ impl Backend for BackendBrowser {
         mut event_loop: Box<dyn EventLoop>,
     ) {
         event_loop.initialize(&mut app_context);
+        app_context.screen.width = app.width as _;
+        app_context.screen.height = app.height as _;
         set_app_context(&mut app_context);
         let app_context = Rc::new(RefCell::new(app_context));
-        bindings::init(app.width, app.height);
+        bindings::initialize(app.width, app.height);
         let f = Rc::new(RefCell::new(None));
         let g = f.clone();
         *g.borrow_mut() = Some(Closure::new(move |_now| {
