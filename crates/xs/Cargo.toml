@@ -7,6 +7,7 @@ edition.workspace = true
 [dependencies]
 xs-core.workspace = true
 xs-backend.workspace = true
+xs-backend-image.workspace = true
 xs-backend-core.workspace = true
 xs-http.workspace = true
 xs-layout.workspace = true

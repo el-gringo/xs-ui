@@ -1,16 +1,22 @@
-use crate::{Color, Image, TextVertices, colors::TRANSPARENT};
+use std::rc::Rc;
+
+use crate::{Color, Image, Style, TextProperties, TextVertices, colors::TRANSPARENT};
 use xs_math::Vector2;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Material {
-    Quad(Borders, Color, Option<Image>),
-    Text(Color, (String, u16, TextVertices)),
+    Quad(Rc<Style>, Option<Image>),
+    Text(Color, TextProperties, TextVertices),
 }
 
 impl Material {
     #[must_use]
-    pub fn filled(color: Color) -> Material {
-        Material::Quad(Borders::none(), color, None)
+    pub fn filled(background_color: Color) -> Material {
+        let style = Style {
+            background_color,
+            ..Default::default()
+        };
+        Material::Quad(Rc::new(style), None)
     }
 }
 
@@ -33,6 +39,70 @@ impl BorderSide {
     }
 }
 
+#[derive(Clone, Copy, Default, PartialEq, Debug)]
+pub struct BorderRadius {
+    top_left: f32,
+    top_right: f32,
+    bottom_right: f32,
+    bottom_left: f32,
+}
+
+impl From<BorderRadius> for [f32; 4] {
+    fn from(value: BorderRadius) -> Self {
+        [
+            value.top_left,
+            value.top_right,
+            value.bottom_right,
+            value.bottom_left,
+        ]
+    }
+}
+
+#[derive(Clone, Copy, Default, PartialEq, Debug)]
+pub struct BoxShadow {
+    pub offset_left: f32,
+    pub offset_top: f32,
+    pub blur: f32,
+    pub spread: f32,
+    pub color: Color,
+}
+
+impl From<BoxShadow> for [f32; 4] {
+    fn from(value: BoxShadow) -> Self {
+        [
+            value.offset_left,
+            value.offset_top,
+            value.blur,
+            value.spread,
+        ]
+    }
+}
+
+impl BoxShadow {
+    #[must_use]
+    pub fn new(offset_left: f32, offset_top: f32, blur: f32, spread: f32, color: Color) -> Self {
+        Self {
+            offset_left,
+            offset_top,
+            blur,
+            spread,
+            color,
+        }
+    }
+}
+
+impl BorderRadius {
+    #[must_use]
+    pub fn new(top_left: f32, top_right: f32, bottom_right: f32, bottom_left: f32) -> Self {
+        Self {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        }
+    }
+}
+
 #[derive(Default, Clone, Copy, PartialEq, Debug)]
 pub struct Borders {
     pub top: Option<BorderSide>,
@@ -45,10 +115,10 @@ impl Borders {
     #[must_use]
     pub fn all(color: Color, width: f32) -> Borders {
         Borders {
-            top: Some(BorderSide::new(color.clone(), width)),
-            bottom: Some(BorderSide::new(color.clone(), width)),
-            left: Some(BorderSide::new(color.clone(), width)),
-            right: Some(BorderSide::new(color.clone(), width)),
+            top: Some(BorderSide::new(color, width)),
+            bottom: Some(BorderSide::new(color, width)),
+            left: Some(BorderSide::new(color, width)),
+            right: Some(BorderSide::new(color, width)),
         }
     }
 

@@ -4,7 +4,7 @@ use xs_canvas::Canvas;
 use xs_core::{EventLoop, TextProperties, TextVertices};
 use xs_gl::{
     GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_FLOAT, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
-    GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, ShaderGlSl, glActiveTexture, glBindTexture,
+    GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, Shader, glActiveTexture, glBindTexture,
     glBlendFunc, glClear, glClearColor, glDisable, glDrawArrays, glEnable, glViewport,
     load_texture,
 };
@@ -15,7 +15,7 @@ const APP_HEIGHT: i32 = 810;
 
 struct TextCanvas {
     text_properties: TextProperties,
-    shaders: HashMap<&'static str, ShaderGlSl>,
+    shaders: HashMap<&'static str, Shader>,
     alpha_atlas_texture: u32,
     alpha_text_vertices: TextVertices,
     sdf_atlas_texture: u32,
@@ -83,7 +83,7 @@ impl EventLoop for TextCanvas {
         self.msdf_text_vertices =
             msdf_text_system.render_text("MSDF text", &self.text_properties, 600., 200.);
 
-        match ShaderGlSl::try_new(
+        match Shader::try_new(
             include_str!("glsl/text_alpha.glsl.vert"),
             include_str!("glsl/text_alpha.glsl.frag"),
             &[&[
@@ -97,7 +97,7 @@ impl EventLoop for TextCanvas {
             Err(error) => panic!("ERROR: {error}"),
         };
 
-        match ShaderGlSl::try_new(
+        match Shader::try_new(
             include_str!("glsl/sdf.glsl.vert"),
             include_str!("glsl/sdf.glsl.frag"),
             &[&[

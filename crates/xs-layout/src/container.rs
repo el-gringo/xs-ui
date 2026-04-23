@@ -1,9 +1,11 @@
+use std::rc::Rc;
+
 use xs_math::Vector2;
 
 use crate::base::{Alignment, EdgeInsets};
 use crate::decoration::{Borders, Material};
 use crate::tree::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
-use crate::{Color, Image, View};
+use crate::{Color, Image, Style, View};
 
 fn clamp_f32(value: f32, min: f32, max: f32) -> f32 {
     if value < min {
@@ -111,10 +113,31 @@ impl Container {
         let position = pos + self.margin.min() + self.padding.min() + self.borders.min();
         let lbox = LayoutBox::from_child(sbox, position);
         let id = tree.insert(lbox);
+        let mut style = Style::default();
+        style.left = Some(self.alignment.x);
+        style.top = Some(self.alignment.y);
+        style.width = self.width;
+        style.height = self.height;
+        style.border = self.borders;
+        style.padding = self.padding;
+        style.margin = self.margin;
+        style.padding = self.padding;
+        style.background_color = self.color;
+
+        /*
+        *     pub width: Option<f32>,
+        pub height: Option<f32>,
+        pub alignment: Alignment,
+        pub padding: EdgeInsets,
+        pub borders: Borders,
+        pub margin: EdgeInsets,
+        pub color: Color,
+        pub image: Option<Image>,
+        */
         SizedLayoutBox {
             size,
             children: vec![id],
-            material: Some(Material::Quad(self.borders, self.color, self.image.clone())),
+            material: Some(Material::Quad(Rc::new(style), self.image.clone())),
             text_material: None,
             margin: self.margin,
         }
@@ -126,10 +149,20 @@ impl Container {
         let width = Container::calculate_size(self.width, h_axis_constraints);
         let height = Container::calculate_size(self.height, v_axis_constraints);
         let size = Vector2::new(width, height) + self.margin.total();
+        let mut style = Style::default();
+        style.left = Some(self.alignment.x);
+        style.top = Some(self.alignment.y);
+        style.width = self.width;
+        style.height = self.height;
+        style.border = self.borders;
+        style.padding = self.padding;
+        style.margin = self.margin;
+        style.padding = self.padding;
+        style.background_color = self.color;
         SizedLayoutBox {
             size,
             children: vec![],
-            material: Some(Material::Quad(self.borders, self.color, self.image.clone())),
+            material: Some(Material::Quad(Rc::new(style), self.image.clone())),
             text_material: None,
             margin: self.margin,
         }

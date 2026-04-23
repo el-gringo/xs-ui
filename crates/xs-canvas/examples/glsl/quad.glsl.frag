@@ -1,79 +1,99 @@
-# ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float;
-# else
 precision mediump float;
-# endif
 
-uniform vec2 u_resolution;
-uniform float u_pixelRatio;
-uniform float u_alpha;
-uniform vec2 u_dimensions;
+varying vec2 v_pixelPos;
+varying vec2 v_texCoord;
+
 uniform sampler2D u_texture;
-uniform float u_rtt;
-
-uniform vec4 u_radius;
-uniform vec4 u_borderWidth;
-uniform vec4 u_borderColor;
-uniform vec4 u_shadowColor;
+uniform vec2 u_resolution;
+uniform vec4 u_box;
+uniform vec4 u_color;
+uniform float u_colorAlpha;
 uniform vec4 u_shadow;
+uniform vec4 u_shadowColor;
+uniform vec4 u_borderColor;
+uniform vec4 u_borderWidth;
+uniform float u_borderRadius;
 
-varying vec4 v_color;
-varying vec2 v_textureCoords;
-varying vec2 v_nodeCoords;
-
-varying vec2 v_innerSize;
-varying vec2 v_outerSize;
-varying vec2 v_outerBorderUv;
-varying vec2 v_innerBorderUv;
-varying vec4 v_innerBorderRadius;
-varying vec4 v_outerBorderRadius;
-varying vec2 v_halfDimensions;
-
-float roundedBox(vec2 p, vec2 s, vec4 r) {
-    r.xy = (p.x > 0.0) ? r.yz : r.xw;
-    r.x = (p.y > 0.0) ? r.y : r.x;
-    vec2 q = abs(p) - s + r.x;
-    return (min(max(q.x, q.y), 0.0) + length(max(q, 0.0))) - r.x;
+vec4 erf(vec4 x) {
+    vec4 s = sign(x), a = abs(x);
+    x = 1.0 + (0.278393 + (0.230389 + 0.078108 * (a * a)) * a) * a;
+    x *= x;
+    return s - s / (x * x);
 }
 
-float shadowBox(vec2 p, vec2 s, vec4 r) {
-    r.xy = (p.x > 0.0) ? r.yz : r.xw;
-    r.x = (p.y > 0.0) ? r.y : r.x;
-    vec2 q = abs(p) - s + r.x;
-    float dist = min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r.x;
-    return 1.0 - smoothstep(-u_shadow.w, u_shadow.w + u_shadow.z, dist);
+vec2 erf(vec2 x) {
+    vec2 s = sign(x), a = abs(x);
+    x = 1.0 + (0.278393 + (0.230389 + 0.078108 * (a * a)) * a) * a;
+    x *= x;
+    return s - s / (x * x);
+}
+
+float gaussian(float x, float sigma) {
+    const float pi = 3.141592653589793;
+    return exp(-(x * x) / (2.0 * sigma * sigma)) / (sqrt(2.0 * pi) * sigma);
+}
+
+float roundedBoxShadowX(float x, float y, float sigma, float corner, vec2 halfSize) {
+    float delta = min(halfSize.y - corner - abs(y), 0.0);
+    float curved = halfSize.x - corner + sqrt(max(0.0, corner * corner - delta * delta));
+    vec2 integral = 0.5 + 0.5 * erf((x + vec2(-curved, curved)) * (sqrt(0.5) / sigma));
+    return integral.y - integral.x;
+}
+
+float roundedBoxShadow(vec2 lower, vec2 upper, vec2 point, float sigma, float corner) {
+    vec2 center = (lower + upper) * 0.5;
+    vec2 halfSize = (upper - lower) * 0.5;
+    point -= center;
+
+    float low = point.y - halfSize.y;
+    float high = point.y + halfSize.y;
+    float start = clamp(-3.0 * sigma, low, high);
+    float end = clamp(3.0 * sigma, low, high);
+
+    float step = (end - start) / 4.0;
+    float y = start + step * 0.5;
+    float value = 0.0;
+    for (int i = 0; i < 4; i++) {
+        value += roundedBoxShadowX(point.x, point.y - y, sigma, corner, halfSize) * gaussian(y, sigma) * step;
+        y += step;
+    }
+
+    return value;
+}
+
+float roundedBoxSDF(vec2 p, vec2 size, float corner) {
+    vec2 d = abs(p) - (size - corner);
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - corner;
 }
 
 void main() {
-    vec4 color = texture2D(u_texture, v_textureCoords) * v_color;
-    vec4 resultColor = vec4(0.0);
-    vec2 boxUv = v_nodeCoords.xy * u_dimensions - v_halfDimensions;
-    float borderZero = 1.0 - step(0.001, dot(abs(u_borderWidth), vec4(1.0)));
-    float edgeWidth = 1.0 / u_pixelRatio;
-    float nodeDist = roundedBox(boxUv, v_halfDimensions - edgeWidth, u_radius);
-    float nodeAlpha = 1.0 - smoothstep(-0.5 * edgeWidth, 0.5 * edgeWidth, nodeDist);
-    float shadowAlpha;
+    vec2 r = u_resolution;
+    vec4 texColor = texture2D(u_texture, v_texCoord);
 
-    if (borderZero == 1.0) {
-        shadowAlpha = shadowBox(boxUv - u_shadow.xy, v_halfDimensions + u_shadow.w - edgeWidth, u_radius + u_shadow.z);
-        resultColor = mix(resultColor, u_shadowColor, shadowAlpha);
-        gl_FragColor = mix(resultColor, color, nodeAlpha) * u_alpha;
-        return;
-    }
+    vec2 vertex = v_pixelPos.xy;
+    vec2 p = u_box.xy;
+    vec2 size = u_box.zw;
+    float shadowBlur = u_shadow.z;
 
-    if (v_outerSize.x > v_halfDimensions.x || v_outerSize.y > v_halfDimensions.y) {
-        shadowAlpha = shadowBox(boxUv + v_outerBorderUv - u_shadow.xy, v_outerSize + u_shadow.w - edgeWidth, v_outerBorderRadius + u_shadow.z);
-    }
-    else {
-        shadowAlpha = shadowBox(boxUv - u_shadow.xy, v_halfDimensions + u_shadow.w - edgeWidth, u_radius + u_shadow.z);
-    }
+    vec2 boxL = p;
+    vec2 boxU = p + size;
 
-    float outerDist = roundedBox(boxUv + v_outerBorderUv, v_outerSize - edgeWidth, v_outerBorderRadius);
-    float innerDist = roundedBox(boxUv + v_innerBorderUv, v_innerSize - edgeWidth, v_innerBorderRadius);
-    float borderDist = max(-innerDist, outerDist);
-    float borderAlpha = (1.0 - smoothstep(-0.5 * edgeWidth, 0.5 * edgeWidth, borderDist)) * u_borderColor.a;
-    resultColor = mix(resultColor, u_shadowColor, shadowAlpha);
-    resultColor = mix(resultColor, color, nodeAlpha);
-    resultColor = mix(resultColor, vec4(u_borderColor.rgb, 1.0), borderAlpha);
-    gl_FragColor = resultColor * u_alpha;
+    vec2 borderL = boxL - vec2(u_borderWidth.w, u_borderWidth.z);
+    vec2 borderU = boxU + vec2(u_borderWidth.y, u_borderWidth.x);
+
+    vec2 shadowL = borderL + u_shadow.xy;
+    vec2 shadowU = borderU + u_shadow.xy;
+
+    float box = roundedBoxShadow(boxL, boxU, vertex, 0.25, u_borderRadius);
+    float border = roundedBoxShadow(borderL, borderU, vertex, 0.25, u_borderRadius);
+    float shadow = roundedBoxShadow(shadowL, shadowU, vertex, shadowBlur, u_borderRadius);
+
+    vec4 fillColor = mix(u_color, texColor, texColor.a * u_colorAlpha);
+    fillColor.a = max(fillColor.a, texColor.a);
+
+    vec4 resetColor = vec4(0.0);
+    vec4 color = mix(resetColor, u_shadowColor, shadow);
+    color = mix(color, u_borderColor, border);
+    color = mix(color, fillColor, box);
+    gl_FragColor = color;
 }

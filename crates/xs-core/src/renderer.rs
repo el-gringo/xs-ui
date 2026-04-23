@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use xs_layout::{BoxConstraints, TextProperties, View};
+use xs_layout::{BoxConstraints, Color, TextProperties, View};
 use xs_math::Vector2;
 
 use crate::{AppContext, Context, Element, Render, core::NodeId, navigation::NavigationNodeId};
@@ -21,14 +21,13 @@ struct StackItem {
     parent_index: Option<usize>,
     nav_id: NavigationNodeId,
     text_properties: TextProperties,
+    color: Color,
     constraints: BoxConstraints,
 }
 
 pub trait Renderer {
     fn init(&mut self);
-    fn screen_width(&self) -> i32;
-    fn screen_height(&self) -> i32;
-    fn draw_frame(&mut self, widget_tree: &View);
+    fn draw_frame(&mut self, ctx: &AppContext, widget_tree: &View);
     fn load_font_atlas(
         &mut self,
         font_family: &'static str,
@@ -37,6 +36,7 @@ pub trait Renderer {
         atlas_data: &[u8],
         width: u32,
         height: u32,
+        image_format: ImageFormat,
     );
     fn load_texture(
         &mut self,
@@ -44,12 +44,16 @@ pub trait Renderer {
         image_handler: i32,
         width: u32,
         height: u32,
-        alpha: bool,
+        image_format: ImageFormat,
     ) -> u32;
+
     fn render(&mut self, app_context: &mut AppContext, widget: RcWidget) -> View {
         let constraints = BoxConstraints {
             min: Vector2::new(0.0, 0.0),
-            max: Vector2::new(self.screen_width() as f32, self.screen_height() as f32),
+            max: Vector2::new(
+                app_context.screen.width as f32,
+                app_context.screen.height as f32,
+            ),
         };
         let mut stack: Vec<StackItem> = vec![StackItem {
             widget: widget.clone(),
@@ -58,6 +62,7 @@ pub trait Renderer {
             parent_index: None,
             nav_id: app_context.current_nav_node_id,
             text_properties: TextProperties::default(),
+            color: Color::rgba(0.0, 0.0, 0.0, 1.0),
             constraints: constraints.clone(),
         }];
 
@@ -70,6 +75,7 @@ pub trait Renderer {
                 node_id,
                 item.nav_id,
                 item.text_properties,
+                item.color,
                 item.constraints.clone(),
             );
             let element = item.widget.render(&mut ctx);
@@ -89,6 +95,7 @@ pub trait Renderer {
                     parent_index: Some(current_index),
                     nav_id: ctx.nav_id,
                     text_properties: ctx.text_properties.clone(),
+                    color: ctx.color,
                     constraints: ctx.constraints.clone(),
                 };
                 stack.push(new_item);
@@ -135,15 +142,7 @@ pub struct RendererDummy;
 impl Renderer for RendererDummy {
     fn init(&mut self) {}
 
-    fn screen_width(&self) -> i32 {
-        0
-    }
-
-    fn screen_height(&self) -> i32 {
-        0
-    }
-
-    fn draw_frame(&mut self, _widget_tree: &View) {}
+    fn draw_frame(&mut self, _ctx: &AppContext, _widget_tree: &View) {}
 
     fn load_font_atlas(
         &mut self,
@@ -153,6 +152,7 @@ impl Renderer for RendererDummy {
         _atlas_data: &[u8],
         _width: u32,
         _height: u32,
+        _image_format: ImageFormat,
     ) {
     }
 
@@ -162,7 +162,7 @@ impl Renderer for RendererDummy {
         _image_handler: i32,
         _width: u32,
         _height: u32,
-        _alpha: bool,
+        _image_format: ImageFormat,
     ) -> u32 {
         0
     }

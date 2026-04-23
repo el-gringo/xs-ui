@@ -1,5 +1,5 @@
 [package]
-name = "backend-image"
+name = "xs-backend-image"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

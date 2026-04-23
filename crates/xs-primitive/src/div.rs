@@ -2,8 +2,9 @@ use std::{any::TypeId, rc::Rc};
 
 use xs_core::{AppContext, Context, Element, Render, TextProperties};
 use xs_layout::{
-    AlignItems, BorderSide, Borders, Color, EdgeInsets, Flex, FlexDirection, FlexWrap,
-    JustifyContent, Material, Positioned, Style, StyleDisplay, StylePosition, View,
+    AlignItems, BorderRadius, BorderSide, Borders, BoxShadow, Color, EdgeInsets, Flex,
+    FlexDirection, FlexWrap, JustifyContent, Material, Positioned, Style, StyleDisplay,
+    StylePosition, View,
 };
 
 #[derive(Default, Clone)]
@@ -145,9 +146,47 @@ impl Div {
         self
     }
 
+    pub fn border_radius(mut self, radius: BorderRadius) -> Self {
+        self.style.border_radius = radius;
+        self
+    }
+
+    pub fn border_top_left_radius(mut self, radius: f32) -> Self {
+        self.style.border_top_left_radius = radius;
+        self
+    }
+
+    pub fn border_top_right_radius(mut self, radius: f32) -> Self {
+        self.style.border_top_right_radius = radius;
+        self
+    }
+
+    pub fn border_bottom_right_radius(mut self, radius: f32) -> Self {
+        self.style.border_bottom_right_radius = radius;
+        self
+    }
+
+    pub fn border_bottom_left_radius(mut self, radius: f32) -> Self {
+        self.style.border_bottom_left_radius = radius;
+        self
+    }
+
+    //
+    // BOX SHADOW
+    //
+    pub fn box_shadow(mut self, shadow: BoxShadow) -> Self {
+        self.style.box_shadow = shadow;
+        self
+    }
+
     //
     // COLOR
     //
+    pub fn color(mut self, color: impl Into<Color>) -> Self {
+        self.style.color = color.into();
+        self
+    }
+
     pub fn background_color(mut self, color: Color) -> Self {
         self.style.background_color = color;
         self
@@ -200,11 +239,6 @@ impl Div {
 
     pub fn wrap(mut self) -> Self {
         self.style.flex_wrap = FlexWrap::Wrap;
-        self
-    }
-
-    pub fn color(mut self, color: impl Into<Color>) -> Self {
-        self.update_text_properties(|text_properties| text_properties.color = color.into());
         self
     }
 
@@ -298,7 +332,7 @@ impl Element for Div {
 
     fn paint(&self, app_context: &mut AppContext, children: &[View]) -> View {
         let image = app_context.load_image(self.style.background_image.clone());
-        let material = Material::Quad(self.style.border, self.style.background_color, image);
+        let material = Material::Quad(Rc::new(self.style.clone()), image);
         match self.style.position {
             StylePosition::Absolute => {
                 let mut style = self.style.clone();

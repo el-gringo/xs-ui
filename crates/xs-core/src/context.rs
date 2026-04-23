@@ -1,4 +1,4 @@
-use xs_layout::{BoxConstraints, TextProperties};
+use xs_layout::{BoxConstraints, Color, TextProperties};
 
 use crate::{
     AppContext, FocusHandle, NavigationNode, core::NodeId, get_app_context,
@@ -29,6 +29,7 @@ pub struct Context<'a> {
     pub node_id: NodeId,
     pub nav_id: NavigationNodeId,
     pub text_properties: TextProperties,
+    pub color: Color,
     pub state_index: usize,
     pub constraints: BoxConstraints,
 }
@@ -39,6 +40,7 @@ impl<'a> Context<'a> {
         node_id: NodeId,
         nav_id: NavigationNodeId,
         text_properties: TextProperties,
+        color: Color,
         constraints: BoxConstraints,
     ) -> Self {
         Self {
@@ -46,6 +48,7 @@ impl<'a> Context<'a> {
             node_id,
             nav_id,
             text_properties,
+            color,
             constraints,
             state_index: Default::default(),
         }

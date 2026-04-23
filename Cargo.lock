@@ -29,15 +29,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "backend-image"
-version = "0.1.0"
-dependencies = [
- "xs-core",
- "xs-http",
- "zune-image",
-]
-
-[[package]]
 name = "bytemuck"
 version = "1.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -163,6 +154,7 @@ version = "0.1.0"
 dependencies = [
  "xs-backend",
  "xs-backend-core",
+ "xs-backend-image",
  "xs-core",
  "xs-http",
  "xs-layout",
@@ -201,6 +193,15 @@ dependencies = [
  "xs-core",
  "xs-layout",
  "xs-platform-event",
+]
+
+[[package]]
+name = "xs-backend-image"
+version = "0.1.0"
+dependencies = [
+ "xs-core",
+ "xs-http",
+ "zune-image",
 ]
 
 [[package]]

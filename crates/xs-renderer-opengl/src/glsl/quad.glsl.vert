@@ -1,10 +1,10 @@
 precision mediump float;
 
 attribute vec2 a_position;
-attribute vec2 a_texCoord;
+attribute vec2 a_textureCoords;
 
 varying vec2 v_pixelPos;
-varying vec2 v_texCoord;
+varying vec2 v_textureCoords;
 
 uniform vec2 u_resolution;
 uniform vec4 u_box;
@@ -17,5 +17,5 @@ void main() {
     float ndc_y = 1.0 - vertex.y / u_resolution.y * 2.0;
     gl_Position = vec4(ndc_x, ndc_y, 0.0, 1.0);
     v_pixelPos = vertex;
-    v_texCoord = a_texCoord;
+    v_textureCoords = a_textureCoords;
 }

@@ -23,10 +23,15 @@ pub fn get_app_context() -> &'static mut AppContext {
     unsafe { &mut *APP_CONTEXT.load(Ordering::SeqCst) }
 }
 
+pub struct Screen {
+    pub width: u32,
+    pub height: u32,
+}
+
 pub struct AppContext {
     pub running: bool,
     pub now: u128,
-    //pub app: &'a mut Application,
+    pub screen: Screen,
     pub key_down: Option<KeyEvent>,
     pub nav: FocusManager,
     pub nodes: HashMap<NodeId, Vec<Box<dyn Any>>>,
@@ -46,6 +51,10 @@ impl Default for AppContext {
             running: true,
             now: 0,
             key_down: None,
+            screen: Screen {
+                width: 0,
+                height: 0,
+            },
             nav: FocusManager::new(),
             current_node_id: (TypeId::of::<NodeId>(), 0, 0),
             current_nav_node_id: 0,

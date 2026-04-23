@@ -1,6 +1,6 @@
 use crate::{
-    AlignContent, AlignItems, BorderSide, Borders, Color, EdgeInsets, FlexDirection, FlexWrap,
-    JustifyContent,
+    AlignContent, AlignItems, BorderRadius, BorderSide, Borders, BoxShadow, Color, EdgeInsets,
+    FlexDirection, FlexWrap, JustifyContent,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
@@ -46,7 +46,7 @@ impl TextProperties {
     }
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
 pub enum StyleDisplay {
     #[default]
     Flex,
@@ -54,15 +54,16 @@ pub enum StyleDisplay {
     Inline,
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
 pub enum StylePosition {
     #[default]
     Static,
     Absolute,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct Style {
+    pub color: Color,
     pub background_color: Color,
     pub background_image: Option<String>,
 
@@ -71,6 +72,14 @@ pub struct Style {
     pub border_right: Option<BorderSide>,
     pub border_bottom: Option<BorderSide>,
     pub border_left: Option<BorderSide>,
+
+    pub border_radius: BorderRadius,
+    pub border_top_left_radius: f32,
+    pub border_top_right_radius: f32,
+    pub border_bottom_right_radius: f32,
+    pub border_bottom_left_radius: f32,
+
+    pub box_shadow: BoxShadow,
 
     pub margin: EdgeInsets,
     pub margin_top: Option<f32>,

@@ -23,6 +23,7 @@ xs = { path = "crates/xs" }
 xs-backend = { path = "crates/xs-backend" }
 xs-backend-core = { path = "crates/xs-backend-core" }
 xs-backend-browser = { path = "crates/xs-backend-browser" }
+xs-backend-image = { path = "crates/xs-backend-image" }
 xs-backend-wayland = { path = "crates/xs-backend-wayland" }
 xs-backend-wayland-egl = { path = "crates/xs-backend-wayland-egl" }
 xs-backend-wayland-extensions = { path = "crates/xs-backend-wayland-extensions" }

@@ -21,8 +21,10 @@ impl<A: Atlas> TextSystem<A> {
     pub fn new() -> Self {
         Default::default()
     }
+}
 
-    pub fn load_font(
+impl<A: Atlas> xs_core::TextSystem for TextSystem<A> {
+    fn load_font(
         &mut self,
         font_family: &'static str,
         font_weight: u16,
@@ -39,7 +41,7 @@ impl<A: Atlas> TextSystem<A> {
         (atlas_data, format, width as _, height as _)
     }
 
-    pub fn render_text(
+    fn render_text(
         &self,
         text: &str,
         text_properties: &TextProperties,
@@ -84,7 +86,7 @@ pub fn make_vertices_for_string<A: Atlas>(
     layout_paragraph(&scaled_font, point(0.0, 0.0), max_width, text, &mut glyphs);
 
     let font_scale = text_properties.font_size as f32 / font_atlas.scale();
-    let distance_range = font_scale * font_atlas.padding() as f32;
+    let distance_range = font_scale * font_atlas.padding();
 
     let ascent = scaled_font.ascent();
     let _descent = scaled_font.descent();
@@ -95,7 +97,7 @@ pub fn make_vertices_for_string<A: Atlas>(
     let mut max_y_pos = f32::NEG_INFINITY;
     let atlas_width = font_atlas.width();
     let atlas_height = font_atlas.height();
-    let padding = font_atlas.padding() as f32;
+    let padding = font_atlas.padding();
 
     let mut vertices = Vec::new();
     for glyph in &glyphs {

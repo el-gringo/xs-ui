@@ -14,18 +14,16 @@ impl Render for Text {
         let text_vertices = ctx.app_context.text_system.render_text(
             &self.0,
             &ctx.text_properties,
-            &ctx.constraints.max.into(),
+            ctx.constraints.max.x,
+            ctx.constraints.max.y,
         );
-        let color = ctx.text_properties.color;
-        let font_family = ctx.text_properties.font_family.clone();
-        let font_weight = ctx.text_properties.font_weight;
-
         Box::new(TextElement {
             width: text_vertices.width,
             height: text_vertices.height,
             material: Some(Material::Text(
-                color,
-                (font_family, font_weight, text_vertices.clone()),
+                ctx.color,
+                ctx.text_properties.clone(),
+                text_vertices.clone(),
             )),
         })
     }

@@ -1,7 +1,7 @@
 precision mediump float;
 
 varying vec2 v_pixelPos;
-varying vec2 v_texCoord;
+varying vec2 v_textureCoords;
 
 uniform sampler2D u_texture;
 uniform vec2 u_resolution;
@@ -12,7 +12,7 @@ uniform vec4 u_shadow;
 uniform vec4 u_shadowColor;
 uniform vec4 u_borderColor;
 uniform vec4 u_borderWidth;
-uniform float u_borderRadius;
+uniform vec4 u_borderRadius;
 
 vec4 erf(vec4 x) {
     vec4 s = sign(x), a = abs(x);
@@ -68,7 +68,7 @@ float roundedBoxSDF(vec2 p, vec2 size, float corner) {
 
 void main() {
     vec2 r = u_resolution;
-    vec4 texColor = texture2D(u_texture, v_texCoord);
+    vec4 texColor = texture2D(u_texture, v_textureCoords);
 
     vec2 vertex = v_pixelPos.xy;
     vec2 p = u_box.xy;
@@ -84,12 +84,11 @@ void main() {
     vec2 shadowL = borderL + u_shadow.xy;
     vec2 shadowU = borderU + u_shadow.xy;
 
-    float box = roundedBoxShadow(boxL, boxU, vertex, 0.25, u_borderRadius);
-    float border = roundedBoxShadow(borderL, borderU, vertex, 0.25, u_borderRadius);
-    float shadow = roundedBoxShadow(shadowL, shadowU, vertex, shadowBlur, u_borderRadius);
+    float box = roundedBoxShadow(boxL, boxU, vertex, 0.25, u_borderRadius.x);
+    float border = roundedBoxShadow(borderL, borderU, vertex, 0.25, u_borderRadius.x);
+    float shadow = roundedBoxShadow(shadowL, shadowU, vertex, shadowBlur + 0.25, u_borderRadius.x);
 
-    vec4 fillColor = mix(u_color, texColor, texColor.a * u_colorAlpha);
-    fillColor.a = max(fillColor.a, texColor.a);
+    vec4 fillColor = u_color;
 
     vec4 resetColor = vec4(0.0);
     vec4 color = mix(resetColor, u_shadowColor, shadow);

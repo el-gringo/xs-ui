@@ -8,6 +8,7 @@ pub trait TextSystem {
         font_family: &'static str,
         font_weight: u16,
         font_size: f32,
+        padding: f32,
         binary_font: Vec<u8>,
     ) -> (Vec<u8>, ImageFormat, u32, u32);
     fn render_text(
@@ -26,6 +27,7 @@ impl TextSystem for TextSystemDummy {
         _font_family: &'static str,
         _font_weight: u16,
         _font_size: f32,
+        _padding: f32,
         _binary_font: Vec<u8>,
     ) -> (Vec<u8>, ImageFormat, u32, u32) {
         (Vec::new(), ImageFormat::Alpha, 0, 0)

@@ -52,6 +52,8 @@ unsafe extern "C" fn xdg_toplevel_handle_configure(
         let ctx: &mut WaylandContext = &mut *(data as *mut _);
         if width != 0 && height != 0 {
             (ctx.lib_wayland_egl.wl_egl_window_resize)(ctx.egl_window, width, height, 0, 0);
+            ctx.app_context.screen.width = width as _;
+            ctx.app_context.screen.height = height as _;
         }
     }
 }

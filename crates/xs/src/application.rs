@@ -43,9 +43,13 @@ impl AppEventLoop {
         if let Ok(message) = self.rx.try_recv() {
             match message {
                 BackendResponse::ImageLoaded(src, image_handle, bytes, width, height) => {
-                    let texture =
-                        self.renderer
-                            .load_texture(&bytes, image_handle, width, height, false);
+                    let texture = self.renderer.load_texture(
+                        &bytes,
+                        image_handle,
+                        width,
+                        height,
+                        xs_core::ImageFormat::Rgba,
+                    );
                     let image = Image::new(width, height, texture, bytes, false);
                     app_context.textures.insert(src.clone(), Some(image));
                 }
@@ -59,19 +63,27 @@ impl EventLoop for AppEventLoop {
         self.renderer.init();
         let font_family = "sans-serif";
         let font_size = 42.;
+        let distance_range = 4.0;
         let font_data =
             include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf").to_vec();
-        let (atlas_data, _format, width, height) =
+        let (atlas_data, image_format, width, height) =
             ctx.text_system
-                .load_font(font_family, 400, font_size, font_data);
-        self.renderer
-            .load_font_atlas(font_family, 400, font_size, &atlas_data, width, height);
+                .load_font(font_family, 400, font_size, distance_range, font_data);
+        self.renderer.load_font_atlas(
+            font_family,
+            400,
+            font_size,
+            &atlas_data,
+            width,
+            height,
+            image_format,
+        );
     }
 
     fn frame(&mut self, ctx: &mut AppContext) {
         self.read_messages(ctx);
         let widget_tree = self.renderer.render(ctx, self.root.clone());
-        self.renderer.draw_frame(&widget_tree);
+        self.renderer.draw_frame(ctx, &widget_tree);
     }
 }
 
