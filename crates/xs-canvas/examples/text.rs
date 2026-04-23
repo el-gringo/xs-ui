@@ -1,14 +1,18 @@
 use std::collections::HashMap;
 
-use xs_canvas::Canvas;
+use xs_canvas::{Canvas, TextSystem};
 use xs_core::{EventLoop, TextProperties, TextVertices};
 use xs_gl::{
-    GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_FLOAT, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
-    GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, Shader, glActiveTexture, glBindTexture,
+    Buffer, GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_FLOAT, GL_ONE_MINUS_SRC_ALPHA,
+    GL_SRC_ALPHA, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, Shader, glActiveTexture, glBindTexture,
     glBlendFunc, glClear, glClearColor, glDisable, glDrawArrays, glEnable, glViewport,
     load_texture,
 };
-use xs_text_system::{Atlas, AtlasAlpha, AtlasMsdf, AtlasSdf, FontRef, TextSystem};
+
+#[cfg(not(feature = "text"))]
+compile_error! {"This example requires xs-canvas to feature \'text\'"}
+#[cfg(feature = "text")]
+use xs_text_system::{Atlas, AtlasAlpha, AtlasMsdf, AtlasSdf, FontRef};
 
 const APP_WIDTH: i32 = 1440;
 const APP_HEIGHT: i32 = 810;
@@ -28,7 +32,7 @@ impl EventLoop for TextCanvas {
     fn initialize(&mut self, _ctx: &mut xs_core::AppContext) {
         let font_family = "sans-serif";
         let font_data =
-            include_bytes!("../../../../../ressources/fonts/IBMPlexSans-Regular.ttf").to_vec();
+            include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf").to_vec();
 
         let atlas_font_size = 42.;
 
@@ -63,13 +67,13 @@ impl EventLoop for TextCanvas {
             msdf_format,
         );
 
-        let mut alpha_text_system = TextSystem::<AtlasAlpha>::new();
+        let mut alpha_text_system = xs_text_system::TextSystem::<AtlasAlpha>::new();
         alpha_text_system.load_font(font_family, 400, atlas_font_size, 0.0, font_data.clone());
 
-        let mut sdf_text_system = TextSystem::<AtlasSdf>::new();
+        let mut sdf_text_system = xs_text_system::TextSystem::<AtlasSdf>::new();
         sdf_text_system.load_font(font_family, 400, atlas_font_size, 4., font_data.clone());
 
-        let mut msdf_text_system = TextSystem::<AtlasMsdf>::new();
+        let mut msdf_text_system = xs_text_system::TextSystem::<AtlasMsdf>::new();
         msdf_text_system.load_font(font_family, 400, atlas_font_size, 4., font_data.clone());
 
         self.text_properties.font_size = 64;
@@ -86,12 +90,12 @@ impl EventLoop for TextCanvas {
         match Shader::try_new(
             include_str!("glsl/text_alpha.glsl.vert"),
             include_str!("glsl/text_alpha.glsl.frag"),
-            &[&[
-                ("a_position", 2, GL_FLOAT, false, 16, 0),
-                ("a_textureCoords", 2, GL_FLOAT, false, 16, 8),
-            ]],
         ) {
-            Ok(shader) => {
+            Ok(mut shader) => {
+                let buffer = Buffer::new()
+                    .add_attribute("a_position", 2, GL_FLOAT, false, 16, 0)
+                    .add_attribute("a_textureCoords", 2, GL_FLOAT, false, 16, 8);
+                shader.add_buffer(buffer);
                 self.shaders.insert("text_alpha", shader);
             }
             Err(error) => panic!("ERROR: {error}"),
@@ -100,12 +104,12 @@ impl EventLoop for TextCanvas {
         match Shader::try_new(
             include_str!("glsl/sdf.glsl.vert"),
             include_str!("glsl/sdf.glsl.frag"),
-            &[&[
-                ("a_position", 2, GL_FLOAT, false, 16, 0),
-                ("a_textureCoords", 2, GL_FLOAT, false, 16, 8),
-            ]],
         ) {
-            Ok(shader) => {
+            Ok(mut shader) => {
+                let buffer = Buffer::new()
+                    .add_attribute("a_position", 2, GL_FLOAT, false, 16, 0)
+                    .add_attribute("a_textureCoords", 2, GL_FLOAT, false, 16, 8);
+                shader.add_buffer(buffer);
                 self.shaders.insert("text_sdf", shader);
             }
             Err(error) => panic!("ERROR: {error}"),
@@ -138,7 +142,8 @@ impl EventLoop for TextCanvas {
         shader.uniform_4f("u_color", 0.0, 0.0, 1.0, 1.0);
 
         let num_vertices = vertices.len() / 4;
-        shader.attribute_buffer_data("a_position", &vertices);
+        let buffer = shader.get_buffer(0);
+        buffer.push_data(&vertices);
         glDrawArrays(GL_TRIANGLES, 0, num_vertices as _);
 
         // Draw SDF text
@@ -160,7 +165,8 @@ impl EventLoop for TextCanvas {
         shader.uniform_1f("u_distanceRange", sdf_dist_range);
         shader.uniform_4f("u_color", 1.0, 0.0, 0.0, 1.0); // Bright red
         let num_vertices = vertices.len() / 4;
-        shader.attribute_buffer_data("a_position", &vertices);
+        let buffer = shader.get_buffer(0);
+        buffer.push_data(&vertices);
         glDrawArrays(GL_TRIANGLES, 0, num_vertices as _);
 
         // Draw MSDF text
@@ -181,7 +187,8 @@ impl EventLoop for TextCanvas {
         shader.uniform_1f("u_distanceRange", msdf_dist_range);
         shader.uniform_4f("u_color", 1.0, 0.0, 0.0, 1.0); // Bright red
         let num_vertices = msdf_vertices.len() / 4;
-        shader.attribute_buffer_data("a_position", &msdf_vertices);
+        let buffer = shader.get_buffer(0);
+        buffer.push_data(&msdf_vertices);
         glDrawArrays(GL_TRIANGLES, 0, num_vertices as _);
 
         shader.uniform_4f("u_color", 0.0, 1.0, 0.0, 1.0); // Bright red

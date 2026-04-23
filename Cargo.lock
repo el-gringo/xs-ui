@@ -139,16 +139,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "with-text"
-version = "0.1.0"
-dependencies = [
- "xs-canvas",
- "xs-core",
- "xs-gl",
- "xs-text-system",
-]
-
-[[package]]
 name = "xs"
 version = "0.1.0"
 dependencies = [
@@ -260,6 +250,7 @@ dependencies = [
  "xs-backend",
  "xs-core",
  "xs-gl",
+ "xs-text-system",
 ]
 
 [[package]]

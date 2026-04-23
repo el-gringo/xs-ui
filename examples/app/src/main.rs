@@ -11,8 +11,7 @@ mod theme;
 use std::any::TypeId;
 
 use xs::{
-    AlignItems, Application, Context, Element, FocusHandle, NavigationNode, RED, Render, WHITE,
-    div, text,
+    AlignItems, Application, Context, Element, FocusHandle, NavigationNode, Render, div, text,
 };
 
 use crate::{
@@ -80,47 +79,11 @@ impl Render for MyApp {
     }
 }
 
-struct MyApp2;
-impl Render for MyApp2 {
-    fn tag(&self) -> std::any::TypeId {
-        TypeId::of::<Self>()
-    }
-    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
-        div()
-            .background_color(RED)
-            .child(
-                div()
-                    .absolute()
-                    .justify_content(xs::JustifyContent::Center)
-                    .align_items(AlignItems::Center)
-                    .children([
-                        div()
-                            .width(200.)
-                            .height(200.)
-                            .background_color(WHITE)
-                            .justify_content(xs::JustifyContent::Center)
-                            .align_items(AlignItems::Center)
-                            .font_size(40)
-                            .child(text(
-                                "Un texte long pour voir comment ca rend sur plusieurs lignss.",
-                            )),
-                        div()
-                            .width(200.)
-                            .height(50.)
-                            .background_color(WHITE)
-                            .font_size(30)
-                            .child(text("123")),
-                    ]),
-            )
-            .into()
-    }
-}
-
 pub fn main() {
     Application::new()
         .id("app")
         .title("App")
         .width(1440)
         .height(810)
-        .run(|_ctx| MyApp {});
+        .run(|_ctx| MyApp);
 }

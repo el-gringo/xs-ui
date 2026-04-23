@@ -2,7 +2,6 @@
 resolver = "2"
 members = [
     "crates/*",
-    "crates/xs-canvas/examples/with-text",
     #"crates/xs-macro/tests",
     "examples/*",
     "tools/*"
