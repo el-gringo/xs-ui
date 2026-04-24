@@ -5,7 +5,6 @@ pub fn main() {
         "https://httpbin.io/status/418",
         None,
         Closure::new(|response: Vec<u8>| {
-            log("response");
             let body = String::from_utf8(response).unwrap();
             log("response");
             log(body.as_str());

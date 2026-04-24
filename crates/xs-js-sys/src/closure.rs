@@ -45,20 +45,6 @@ impl<Args: 'static> Closure<Args> {
     }
 }
 
-// Store AnyClosure in table, return handle
-pub fn store_closure(closure: AnyClosure) -> usize {
-    let mut table = CLOSURE_TABLE.table.borrow_mut();
-    let handle = table
-        .iter()
-        .position(|slot| slot.is_none())
-        .unwrap_or_else(|| {
-            table.push(None);
-            table.len() - 1
-        });
-    table[handle] = Some(closure);
-    handle
-}
-
 impl<Args> ClosureElement for Closure<Args> {
     fn inner_element(&mut self) -> &mut dyn Any {
         self
@@ -83,7 +69,22 @@ impl AnyClosure {
     }
 }
 
-// Get AnyClosure from table and call with u32
+// Store AnyClosure in table, return handle
+pub fn store_closure(closure: AnyClosure) -> usize {
+    let mut table = CLOSURE_TABLE.table.borrow_mut();
+    let handle = table
+        .iter()
+        .position(|slot| slot.is_none())
+        .unwrap_or_else(|| {
+            let idx = table.len();
+            table.push(None);
+            idx
+        });
+    table[handle] = Some(closure);
+    handle
+}
+
+// Get AnyClosure from table and call with args
 pub fn invoke_closure<Args>(handle: usize, args: Args)
 where
     Args: 'static,

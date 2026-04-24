@@ -1,29 +1,34 @@
-function WasmHeap() {
+/**
+ * @import { Heap } from "./types.js";
+ *
+ * @returns {Heap}
+ */
+function Heap() {
   const heap = Array.from({ length: 128 }).fill(undefined);
   heap.push(undefined, null, true, false);
   let heapNext = heap.length;
 
   function add(obj) {
     if (heapNext === heap.length) heap.push(heap.length + 1);
-    const id = heapNext;
-    heapNext = heap[id];
-    heap[id] = obj;
-    return id;
+    const idx = heapNext;
+    heapNext = heap[idx];
+    heap[idx] = obj;
+    return idx;
   }
 
-  function drop(id) {
-    if (id < 132) return;
-    heap[id] = heapNext;
-    heapNext = id;
+  function drop(idx) {
+    if (idx < 132) return;
+    heap[idx] = heapNext;
+    heapNext = idx;
   }
 
-  function get(id) {
-    return heap[id];
+  function get(idx) {
+    return heap[idx];
   }
 
-  function take(id) {
-    const ret = get(id);
-    drop(id);
+  function take(idx) {
+    const ret = get(idx);
+    drop(idx);
     return ret;
   }
 
@@ -31,7 +36,7 @@ function WasmHeap() {
     add,
     drop,
     get,
-    take
+    take,
   };
 }
-window.WasmHeap = WasmHeap;
+define(Heap);

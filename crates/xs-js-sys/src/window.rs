@@ -1,4 +1,4 @@
-use crate::Closure;
+use crate::{Closure, EventEmitter, core::JsValue};
 
 mod js {
     #[link(wasm_import_module = "env")]
@@ -10,6 +10,27 @@ mod js {
         pub fn console_trace2(ptr_arg1: u32, len_arg1: u32, ptr_arg2: u32, len_arg2: u32);
         pub fn console_warn2(ptr_arg1: u32, len_arg1: u32, ptr_arg2: u32, len_arg2: u32);
         pub fn request_animation_frame(closure: *mut (), vcall: usize);
+        pub fn window() -> u32;
+    }
+}
+
+pub trait Window: Sized + EventEmitter {
+    fn request_animation_frame(&self, closure: &mut Closure<u32>);
+}
+
+impl Window for JsValue {
+    fn request_animation_frame(&self, closure: &mut Closure<u32>) {
+        unsafe {
+            let (ptr, len) = closure.to_js();
+            js::request_animation_frame(ptr as _, len)
+        }
+    }
+}
+
+pub fn window() -> impl Window {
+    unsafe {
+        let ptr = js::window();
+        JsValue::new(ptr)
     }
 }
 
