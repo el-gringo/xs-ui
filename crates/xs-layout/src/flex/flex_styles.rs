@@ -1,34 +1,25 @@
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum FlexDirection {
     Column,
     ColumnReverse,
+    #[default]
     Row,
     RowReverse,
 }
 
-impl Default for FlexDirection {
-    fn default() -> Self {
-        Self::Row
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum FlexWrap {
+    #[default]
     NoWrap,
     WrapReverse,
     Wrap,
 }
 
-impl Default for FlexWrap {
-    fn default() -> Self {
-        Self::NoWrap
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum AlignContent {
     Center,
     FlexEnd,
+    #[default]
     FlexStart,
     SpaceAround,
     SpaceBetween,
@@ -36,39 +27,23 @@ pub enum AlignContent {
     Stretch,
 }
 
-impl Default for AlignContent {
-    fn default() -> Self {
-        Self::FlexStart
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum AlignItems {
     Baseline,
     Center,
     FlexEnd,
+    #[default]
     FlexStart,
     Stretch,
 }
 
-impl Default for AlignItems {
-    fn default() -> Self {
-        Self::FlexStart
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum JustifyContent {
     Center,
     FlexEnd,
+    #[default]
     FlexStart,
     SpaceAround,
     SpaceBetween,
     SpaceEvenly,
-}
-
-impl Default for JustifyContent {
-    fn default() -> Self {
-        Self::FlexStart
-    }
 }

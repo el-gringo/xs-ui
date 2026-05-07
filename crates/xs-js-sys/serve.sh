@@ -9,5 +9,5 @@ cargo watch \
   --shell "
     cp index.html $TARGET && \
     sed -i \"s/{wasm-file}/$EXAMPLE/\" $TARGET/index.html && \
-    python3 -m http.server -d $TARGET
+    python3 -m http.server -d $TARGET 8421
   "

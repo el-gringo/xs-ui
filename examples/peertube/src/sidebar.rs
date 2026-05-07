@@ -53,7 +53,7 @@ impl Render for Sidebar {
                     .justify_content(JustifyContent::Center)
                     .align_items(AlignItems::Center)
                     .color(WHITE)
-                    .font_size(45)
+                    .font_size(40)
                     .child(text("PeerTube")),
             )
             .child(
@@ -62,9 +62,9 @@ impl Render for Sidebar {
                     .column()
                     .background_color(GRAY2)
                     .align_items(AlignItems::Center)
-                    .child(button(RED))
-                    .child(button(GREEN))
-                    .child(button(BLUE)),
+                    .child(button("Movies", RED))
+                    .child(button("Series", GREEN))
+                    .child(button("Settings", BLUE)),
             )
             .into()
     }

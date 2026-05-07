@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{collections::VecDeque, rc::Rc};
 
 use xs_layout::{BoxConstraints, Color, ImageFormat, TextProperties, View};
 use xs_math::Vector2;
@@ -47,7 +47,8 @@ pub trait Renderer {
                 app_context.screen.height as f32,
             ),
         };
-        let mut stack: Vec<StackItem> = vec![StackItem {
+        let mut stack: Vec<StackItem> = Default::default();
+        stack.push(StackItem {
             widget: widget.clone(),
             depth: 0,
             index: 0,
@@ -56,10 +57,11 @@ pub trait Renderer {
             text_properties: TextProperties::default(),
             color: Color::rgba(0.0, 0.0, 0.0, 1.0),
             constraints: constraints.clone(),
-        }];
+        });
 
         // Store (parent_index, element) for each rendered element
-        let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Vec::new();
+        let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>, usize)> =
+            Default::default();
         while let Some(item) = stack.pop() {
             let node_id: NodeId = (item.widget.tag(), item.depth, item.index);
             let mut ctx = Context::new(
@@ -72,19 +74,13 @@ pub trait Renderer {
             );
             let element = item.widget.render(&mut ctx);
 
-            // Get children before moving element
-            let children: Vec<Rc<dyn Render>> = element.children().to_vec();
-
-            let current_index = rendered_elements.len();
-            rendered_elements.push((item.parent_index, element));
-
             // Push children onto stack (in reverse order)
-            for (child_index, child) in children.iter().enumerate().rev() {
+            for (child_index, child) in element.children().iter().enumerate() {
                 let new_item = StackItem {
                     widget: child.clone(),
                     depth: item.depth + 1,
                     index: child_index,
-                    parent_index: Some(current_index),
+                    parent_index: Some(rendered_elements.len()),
                     nav_id: ctx.nav_id,
                     text_properties: ctx.text_properties.clone(),
                     color: ctx.color,
@@ -92,8 +88,10 @@ pub trait Renderer {
                 };
                 stack.push(new_item);
             }
+            rendered_elements.push((item.parent_index, element, item.depth));
         }
 
+        /*
         // Now build views from bottom up
         // views[i] stores the rendered view for element at index i
         let mut views: Vec<Option<View>> = Vec::with_capacity(rendered_elements.len());
@@ -123,10 +121,29 @@ pub trait Renderer {
             let view = element.paint(app_context, &children_views);
             views[i] = Some(view);
         }
+        */
+        let mut current_depth = rendered_elements.last().unwrap().2;
+        eprintln!("current_depth: {current_depth}");
+        let mut child_views = Vec::new();
+        for (_, element, depth) in rendered_elements.iter().rev() {
+            eprintln!(
+                "current_depth: {current_depth} depth: {depth} {}",
+                element.id()
+            );
+            if *depth == current_depth {
+                let view = element.paint(app_context, &[]);
+                child_views.push(view);
+            } else {
+                let view = element.paint(app_context, &child_views);
+                child_views.clear();
+                child_views.push(view);
+            }
+            current_depth = *depth;
+        }
 
         app_context.nav.update();
         // The root is the first element (index 0)
-        views[0].as_ref().unwrap().clone()
+        child_views[0].clone()
     }
 }
 

@@ -1,8 +1,8 @@
 use crate::{
-    flex::flex::Flex,
-    tree::{LayoutBox, LayoutTree},
     AlignItems, BoxConstraints, EdgeInsets, FlexWrap, JustifyContent, Layout, LayoutBoxId,
     Material, SizedLayoutBox,
+    flex::flex::Flex,
+    tree::{LayoutBox, LayoutTree},
 };
 use xs_math::{Rectangle, Vector2};
 
@@ -20,19 +20,11 @@ struct FlexItem {
 
 impl FlexItem {
     fn main(&self, is_row: bool) -> f32 {
-        if is_row {
-            self.size.x
-        } else {
-            self.size.y
-        }
+        if is_row { self.size.x } else { self.size.y }
     }
 
     fn cross(&self, is_row: bool) -> f32 {
-        if is_row {
-            self.size.y
-        } else {
-            self.size.x
-        }
+        if is_row { self.size.y } else { self.size.x }
     }
 
     fn set_main(&mut self, is_row: bool, value: f32) {
@@ -98,7 +90,7 @@ impl Layout for Flex {
         };
 
         let w = style.width.unwrap_or(constraints.max.x);
-        let h = style.height.unwrap_or(constraints.max.y);
+        let h = style.height.unwrap_or(0.);
         let pw = style.padding.left + style.padding.right + style.border.total_width();
         let ph = style.padding.top + style.padding.bottom + style.border.total_height();
         let inner = Vector2::new((w - pw).max(0.0), (h - ph).max(0.0));

@@ -1,7 +1,4 @@
-use crate::{
-    FlexDirection, Material,
-    Style, View,
-};
+use crate::{FlexDirection, Material, Style, View};
 
 #[derive(Default, Clone)]
 pub struct Flex {
@@ -39,6 +36,7 @@ impl Flex {
         )
     }
 
+    #[must_use]
     pub fn is_reverse(&self) -> bool {
         matches!(
             self.style.flex_direction,

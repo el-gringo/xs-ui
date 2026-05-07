@@ -8,8 +8,6 @@ pub struct Body {
     pub children: Vec<Rc<dyn Render>>,
 }
 
-const TITLE: &str = "PeerTube";
-
 impl Body {
     pub fn child(mut self, child: impl Into<Rc<dyn Render>>) -> Self {
         self.children.push(child.into());
