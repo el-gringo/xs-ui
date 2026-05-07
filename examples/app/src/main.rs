@@ -34,8 +34,7 @@ impl Render for MyApp {
                             .background_color(BLACK)
                             .color(WHITE)
                             .height(50.)
-                            .width(200.)
-                            .font_size(80)
+                            .font_size(36)
                             .child(text("Inc")),
                     )
                     .child(
@@ -57,7 +56,7 @@ impl Render for MyApp {
                             .background_color(BLACK)
                             .color(WHITE)
                             .height(50.)
-                            .font_size(80)
+                            .font_size(36)
                             .child(text("Dec")),
                     ),
             )

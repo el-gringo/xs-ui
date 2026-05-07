@@ -307,16 +307,7 @@ impl Render for Div {
         TypeId::of::<Self>()
     }
 
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        if let Some(text_properties) = self.style.text_properties.clone() {
-            ctx.text_properties = text_properties;
-        }
-        if let Some(w) = self.style.width {
-            ctx.constraints.max.x = w;
-        };
-        if let Some(h) = self.style.height {
-            ctx.constraints.max.y = h;
-        };
+    fn render(&self, çctx: &mut Context) -> Box<dyn Element> {
         Box::new(self.clone())
     }
 }
@@ -328,6 +319,19 @@ impl Element for Div {
 
     fn children(&self) -> &[Rc<dyn Render>] {
         &self.children
+    }
+
+    fn post_render(&self, ctx: &mut Context) {
+        if let Some(text_properties) = self.style.text_properties.clone() {
+            ctx.text_properties = text_properties;
+        }
+        ctx.color = self.style.color;
+        if let Some(w) = self.style.width {
+            ctx.constraints.max.x = w;
+        };
+        if let Some(h) = self.style.height {
+            ctx.constraints.max.y = h;
+        };
     }
 
     fn paint(&self, app_context: &mut AppContext, children: &[View]) -> View {

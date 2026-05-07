@@ -8,6 +8,7 @@ fn draw_glyph(
     glyph_info: &GlyphInfo,
     font_scale: f32,
     atlas_info: &AtlasInfo,
+    descent: f32,
 ) -> ([f32; 24], f32, f32, f32, f32) {
     let padding = atlas_info.padding;
     let atlas_width = atlas_info.image.width as f32;
@@ -15,7 +16,7 @@ fn draw_glyph(
     let glyph_width = glyph_info.bounds.width * font_scale;
     let glyph_height = glyph_info.bounds.height * font_scale;
     let x = glyph.position.x + glyph_info.bounds.x * font_scale;
-    let y = glyph.position.y + glyph_info.bounds.y * font_scale;
+    let y = glyph.position.y + (glyph_info.bounds.y + descent) * font_scale;
 
     let x2 = x + glyph_width;
     let y2 = y + glyph_height;
@@ -80,7 +81,7 @@ pub fn make_vertices_for_string<A: Atlas>(
     let distance_range = font_scale * font_atlas.padding();
 
     let _ascent = scaled_font.ascent();
-    let _descent = scaled_font.descent();
+    let descent = scaled_font.descent();
 
     let mut min_x = f32::INFINITY;
     let mut max_x_pos = f32::NEG_INFINITY;
@@ -92,7 +93,7 @@ pub fn make_vertices_for_string<A: Atlas>(
     for glyph in &glyphs {
         if let Some(glyph_info) = font_atlas.glyph_info(&glyph.id.0) {
             let (glyph_vertices, x, x2, y, y2) =
-                draw_glyph(glyph, glyph_info, font_scale, atlas_info);
+                draw_glyph(glyph, glyph_info, font_scale, atlas_info, descent);
             vertices.extend(glyph_vertices);
             min_x = min_x.min(x);
             max_x_pos = max_x_pos.max(x2);

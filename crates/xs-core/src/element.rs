@@ -11,6 +11,7 @@ pub trait Element {
     fn children(&self) -> &[Rc<dyn Render>] {
         &[]
     }
+    fn post_render(&self, _ctx: &mut Context) {}
     fn paint(&self, app_context: &mut AppContext, views: &[View]) -> View;
 }
 

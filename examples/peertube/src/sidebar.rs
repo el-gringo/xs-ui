@@ -7,7 +7,7 @@ use xs::{
 
 use crate::{
     button::{Button, button},
-    theme::{GRAY2, GRAY3},
+    theme::{GRAY2, GRAY3, GRAY4},
 };
 
 pub struct Sidebar {
@@ -62,9 +62,9 @@ impl Render for Sidebar {
                     .column()
                     .background_color(GRAY2)
                     .align_items(AlignItems::Center)
-                    .child(button("Movies", RED))
-                    .child(button("Series", GREEN))
-                    .child(button("Settings", BLUE)),
+                    .child(button("Movies", GRAY4))
+                    .child(button("Series", GRAY4))
+                    .child(button("Settings", GRAY4)),
             )
             .into()
     }

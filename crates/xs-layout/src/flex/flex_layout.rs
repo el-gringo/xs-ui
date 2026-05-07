@@ -90,7 +90,7 @@ impl Layout for Flex {
         };
 
         let w = style.width.unwrap_or(constraints.max.x);
-        let h = style.height.unwrap_or(0.);
+        let h = style.height.unwrap_or(constraints.max.y);
         let pw = style.padding.left + style.padding.right + style.border.total_width();
         let ph = style.padding.top + style.padding.bottom + style.border.total_height();
         let inner = Vector2::new((w - pw).max(0.0), (h - ph).max(0.0));

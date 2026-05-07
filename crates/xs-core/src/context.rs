@@ -1,4 +1,4 @@
-use xs_layout::{BoxConstraints, Color, TextProperties};
+use xs_layout::{BoxConstraints, Color, TextProperties, TextVertices};
 
 use crate::{
     AppContext, FocusHandle, NavigationNode, core::NodeId, get_app_context,
@@ -84,5 +84,17 @@ impl<'a> Context<'a> {
         let handle = self.app_context.nav.create_handle(self.nav_id, node);
         self.nav_id = handle.id;
         handle
+    }
+
+    pub fn render_text(
+        &self,
+        text: &str,
+        text_properties: &TextProperties,
+        max_width: f32,
+        max_height: f32,
+    ) -> TextVertices {
+        self.app_context
+            .text_system
+            .render_text(text, text_properties, max_width, max_height)
     }
 }

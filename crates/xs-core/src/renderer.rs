@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, rc::Rc};
+use std::rc::Rc;
 
 use xs_layout::{BoxConstraints, Color, ImageFormat, TextProperties, View};
 use xs_math::Vector2;
@@ -60,8 +60,7 @@ pub trait Renderer {
         });
 
         // Store (parent_index, element) for each rendered element
-        let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>, usize)> =
-            Default::default();
+        let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Default::default();
         while let Some(item) = stack.pop() {
             let node_id: NodeId = (item.widget.tag(), item.depth, item.index);
             let mut ctx = Context::new(
@@ -73,8 +72,8 @@ pub trait Renderer {
                 item.constraints.clone(),
             );
             let element = item.widget.render(&mut ctx);
+            element.post_render(&mut ctx);
 
-            // Push children onto stack (in reverse order)
             for (child_index, child) in element.children().iter().enumerate() {
                 let new_item = StackItem {
                     widget: child.clone(),
@@ -88,62 +87,30 @@ pub trait Renderer {
                 };
                 stack.push(new_item);
             }
-            rendered_elements.push((item.parent_index, element, item.depth));
+            rendered_elements.push((item.parent_index, element));
         }
 
-        /*
-        // Now build views from bottom up
-        // views[i] stores the rendered view for element at index i
-        let mut views: Vec<Option<View>> = Vec::with_capacity(rendered_elements.len());
-
-        for _ in 0..rendered_elements.len() {
-            views.push(None);
+        let elements_count = rendered_elements.len();
+        let mut children_of: Vec<Vec<usize>> = vec![vec![]; elements_count];
+        for (idx, (parent_idx, ..)) in rendered_elements.iter().enumerate() {
+            if let Some(parent) = parent_idx {
+                children_of[*parent].push(idx);
+            }
         }
 
-        // Process in reverse order (children before parents)
+        let mut view_map: Vec<Option<View>> = vec![None; rendered_elements.len()];
         for i in (0..rendered_elements.len()).rev() {
-            let (_parent_index, element) = &rendered_elements[i];
-
-            // Find all children of this element
-            let mut children_views: Vec<View> = Vec::new();
-            for j in (i + 1..rendered_elements.len()).rev() {
-                if let Some(parent_idx) = rendered_elements[j].0
-                    && parent_idx == i
-                    && let Some(child_view) = &views[j]
-                {
-                    children_views.push(child_view.clone());
-                }
-            }
-
-            // Reverse to get correct order (first child first)
-            children_views.reverse();
-
-            let view = element.paint(app_context, &children_views);
-            views[i] = Some(view);
-        }
-        */
-        let mut current_depth = rendered_elements.last().unwrap().2;
-        eprintln!("current_depth: {current_depth}");
-        let mut child_views = Vec::new();
-        for (_, element, depth) in rendered_elements.iter().rev() {
-            eprintln!(
-                "current_depth: {current_depth} depth: {depth} {}",
-                element.id()
-            );
-            if *depth == current_depth {
-                let view = element.paint(app_context, &[]);
-                child_views.push(view);
-            } else {
-                let view = element.paint(app_context, &child_views);
-                child_views.clear();
-                child_views.push(view);
-            }
-            current_depth = *depth;
+            let (_, element) = &mut rendered_elements[i];
+            let child_views: Vec<View> = children_of[i]
+                .iter()
+                .rev()
+                .map(|&child_idx| view_map[child_idx].clone().unwrap())
+                .collect();
+            view_map[i] = Some(element.paint(app_context, &child_views));
         }
 
         app_context.nav.update();
-        // The root is the first element (index 0)
-        child_views[0].clone()
+        view_map[0].clone().unwrap()
     }
 }
 
