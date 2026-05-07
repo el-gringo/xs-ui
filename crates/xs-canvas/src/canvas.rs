@@ -34,7 +34,7 @@ impl Canvas {
     where
         E: EventLoop + 'static,
     {
-        let text_system = Box::new(TextSystemDummy);
+        let text_system = Box::new(TextSystemDummy::default());
         let app_context = AppContext::new(text_system);
         let mut backend = Box::new(xs_backend::Backend::new());
         backend.run(&self.app_config, app_context, Box::new(event_loop));

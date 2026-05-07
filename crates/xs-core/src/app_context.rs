@@ -59,7 +59,7 @@ impl Default for AppContext {
             current_node_id: (TypeId::of::<NodeId>(), 0, 0),
             current_nav_node_id: 0,
             nodes: Default::default(),
-            text_system: Box::new(TextSystemDummy),
+            text_system: Box::new(TextSystemDummy::default()),
             textures: Default::default(),
             texts: Default::default(),
             requests: Default::default(),

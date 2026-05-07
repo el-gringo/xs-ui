@@ -1,20 +1,23 @@
 use std::collections::HashMap;
 
 use ab_glyph::{Font, FontRef, PxScale, ScaleFont};
-use xs_core::{ImageFormat, Rectangle};
+use xs_core::{AtlasInfo, AtlasOptions, GlyphInfo, Image, ImageFormat, Rectangle};
 
-use super::font_atlas::{Atlas, AtlasData, GlyphInfo, gather_glyphs};
+use super::font_atlas::{Atlas, gather_glyphs};
 
 pub struct AtlasAlpha {
-    pub atlas: AtlasData,
+    pub atlas: AtlasInfo,
 }
 
 impl Atlas for AtlasAlpha {
-    fn data(&self) -> &AtlasData {
+    fn info(&self) -> &AtlasInfo {
         &self.atlas
     }
 
-    fn generate(font: &FontRef<'_>, font_size: f32, padding: f32) -> (Self, ImageFormat, Vec<u8>) {
+    fn generate_with_options(font_data: &[u8], atlas_options: Option<AtlasOptions>) -> Self {
+        let font = &FontRef::try_from_slice(&font_data).unwrap();
+        let (font_size, padding) =
+            atlas_options.map_or((42., 0.0), |options| (options.font_size, options.padding));
         let scale = PxScale::from(font_size);
         let font = font.into_scaled(scale);
         let space_width = if let Some(space_glyph) = font.outline_glyph(font.scaled_glyph(' ')) {
@@ -41,7 +44,7 @@ impl Atlas for AtlasAlpha {
                     let atlas_x = left + bounds.min.x;
                     let atlas_y = top + bounds.min.y + ascent;
                     glyph_map.insert(
-                        glyph.glyph().id,
+                        glyph.glyph().id.0,
                         GlyphInfo {
                             atlas_x,
                             atlas_y,
@@ -64,31 +67,33 @@ impl Atlas for AtlasAlpha {
                 }
             }
         }
-
-        (
-            AtlasAlpha {
-                atlas: AtlasData {
-                    width: atlas_width,
-                    height: atlas_height,
-                    size: atlas_size as _,
-                    scale: font_size,
-                    spacing: space_width,
-                    ascent,
-                    v_advance: font.height() + font.line_gap(),
-                    padding,
-                    glyphs: glyph_map,
-                },
-            },
-            ImageFormat::Alpha,
+        let image = Image::new(
+            atlas_width as _,
+            atlas_height as _,
+            0,
             bitmap,
-        )
+            ImageFormat::Alpha,
+        );
+
+        AtlasAlpha {
+            atlas: AtlasInfo {
+                image,
+                size: atlas_size as _,
+                scale: font_size,
+                spacing: space_width,
+                ascent,
+                v_advance: font.height() + font.line_gap(),
+                padding,
+                glyphs: glyph_map,
+            },
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use xs_text_system_glyph::FontRef;
+    use ab_glyph::FontRef;
 
     fn get_test_font() -> FontRef<'static> {
         let font_data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
@@ -98,11 +103,10 @@ mod tests {
     #[test]
     fn test_alpha_atlas_generation() {
         let font = get_test_font();
-        let (atlas, _format, bitmap) = AtlasAlpha::generate(&font, 32.0, 0.0);
+        let atlas = AtlasAlpha::generate(&font);
 
-        assert!(atlas.atlas.width > 0.0);
-        assert!(atlas.atlas.height > 0.0);
-        assert!(!atlas.atlas.glyphs.is_empty());
+        assert!(atlas.width() > 0.0);
+        assert!(atlas.height() > 0.0);
 
         let mut non_zero_alpha = 0;
         let total_pixels = bitmap.len() / 3;

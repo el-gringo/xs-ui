@@ -2,6 +2,7 @@ mod atlas_alpha;
 mod atlas_msdf;
 mod atlas_sdf;
 mod font_atlas;
+mod glyph;
 mod layout_paragraph;
 mod text_system;
 
@@ -9,5 +10,5 @@ pub use ab_glyph::FontRef;
 pub use atlas_alpha::AtlasAlpha;
 pub use atlas_msdf::AtlasMsdf;
 pub use atlas_sdf::AtlasSdf;
-pub use font_atlas::{Atlas, AtlasData, GlyphInfo};
+pub use font_atlas::Atlas;
 pub use text_system::TextSystem;

@@ -1,17 +1,13 @@
 use std::rc::Rc;
 
-use xs_layout::{BoxConstraints, Color, TextProperties, View};
+use xs_layout::{BoxConstraints, Color, ImageFormat, TextProperties, View};
 use xs_math::Vector2;
 
-use crate::{AppContext, Context, Element, Render, core::NodeId, navigation::NavigationNodeId};
+use crate::{
+    AppContext, AtlasInfo, Context, Element, Render, core::NodeId, navigation::NavigationNodeId,
+};
 
 type RcWidget = Rc<dyn Render>;
-
-pub enum ImageFormat {
-    Rgb,
-    Rgba,
-    Alpha,
-}
 
 #[derive(Clone)]
 struct StackItem {
@@ -32,11 +28,7 @@ pub trait Renderer {
         &mut self,
         font_family: &'static str,
         font_weight: u16,
-        font_size: f32,
-        atlas_data: &[u8],
-        width: u32,
-        height: u32,
-        image_format: ImageFormat,
+        atlas_info: &AtlasInfo,
     );
     fn load_texture(
         &mut self,
@@ -148,11 +140,7 @@ impl Renderer for RendererDummy {
         &mut self,
         _font_family: &'static str,
         _font_weight: u16,
-        _font_size: f32,
-        _atlas_data: &[u8],
-        _width: u32,
-        _height: u32,
-        _image_format: ImageFormat,
+        _atlas_info: &AtlasInfo,
     ) {
     }
 

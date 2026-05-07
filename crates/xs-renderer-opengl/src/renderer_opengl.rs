@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use xs_core::{AppContext, ImageFormat, Renderer};
+use xs_core::{AppContext, AtlasInfo, ImageFormat, Renderer};
 use xs_gl::{
     GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_ELEMENT_ARRAY_BUFFER, GL_ONE_MINUS_SRC_ALPHA,
     GL_SRC_ALPHA, GL_STATIC_DRAW, Shader, glBindBuffer, glBlendFunc, glBufferData, glClear,
@@ -105,13 +105,14 @@ impl Renderer for RendererOpenGl {
         &mut self,
         font_family: &'static str,
         font_weight: u16,
-        font_size: f32,
-        atlas_data: &[u8],
-        width: u32,
-        height: u32,
-        image_format: ImageFormat,
+        atlas_info: &AtlasInfo,
     ) {
-        let texture = self.load_texture(atlas_data, -1, width, height, image_format);
+        let font_size = atlas_info.scale;
+        let bytes = &atlas_info.image.bytes;
+        let width = atlas_info.image.width;
+        let height = atlas_info.image.height;
+        let format = atlas_info.image.format.clone();
+        let texture = self.load_texture(bytes, -1, width, height, format);
         self.fonts
             .insert((font_family, font_weight), (texture, font_size));
     }

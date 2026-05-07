@@ -1,20 +1,23 @@
 use std::collections::HashMap;
 
 use ab_glyph::{Font, FontRef, PxScale, ScaleFont};
-use xs_core::{ImageFormat, Rectangle};
+use xs_core::{AtlasInfo, AtlasOptions, GlyphInfo, Image, ImageFormat, Rectangle};
 
-use super::font_atlas::{Atlas, AtlasData, GlyphInfo, gather_glyphs};
+use super::font_atlas::{Atlas, gather_glyphs};
 
 pub struct AtlasSdf {
-    pub atlas: AtlasData,
+    pub atlas: AtlasInfo,
 }
 
 impl Atlas for AtlasSdf {
-    fn data(&self) -> &AtlasData {
+    fn info(&self) -> &AtlasInfo {
         &self.atlas
     }
 
-    fn generate(font: &FontRef<'_>, font_size: f32, padding: f32) -> (Self, ImageFormat, Vec<u8>) {
+    fn generate_with_options(font_data: &[u8], atlas_options: Option<AtlasOptions>) -> Self {
+        let font = &FontRef::try_from_slice(&font_data).unwrap();
+        let (font_size, padding) =
+            atlas_options.map_or((42., 4.0), |options| (options.font_size, options.padding));
         let scale = PxScale::from(font_size);
         let font = font.into_scaled(scale);
         let space_width = if let Some(space_glyph) = font.outline_glyph(font.scaled_glyph(' ')) {
@@ -79,7 +82,7 @@ impl Atlas for AtlasSdf {
                         }
                     }
                     glyph_map.insert(
-                        glyph.glyph().id,
+                        glyph.glyph().id.0,
                         GlyphInfo {
                             atlas_x: atlas_x + padding,
                             atlas_y: atlas_y + padding,
@@ -95,23 +98,26 @@ impl Atlas for AtlasSdf {
             }
         }
 
-        (
-            AtlasSdf {
-                atlas: AtlasData {
-                    width: atlas_width,
-                    height: atlas_height,
-                    size: atlas_size as _,
-                    scale: font_size,
-                    spacing: space_width,
-                    ascent,
-                    v_advance: font.height() + font.line_gap(),
-                    padding,
-                    glyphs: glyph_map,
-                },
-            },
-            ImageFormat::Rgb,
+        let image = Image::new(
+            atlas_width as _,
+            atlas_height as _,
+            0,
             bitmap,
-        )
+            ImageFormat::Rgb,
+        );
+
+        AtlasSdf {
+            atlas: AtlasInfo {
+                image,
+                size: atlas_size as _,
+                scale: font_size,
+                spacing: space_width,
+                ascent,
+                v_advance: font.height() + font.line_gap(),
+                padding,
+                glyphs: glyph_map,
+            },
+        }
     }
 }
 

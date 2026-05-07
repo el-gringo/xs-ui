@@ -5,7 +5,8 @@ use std::{
 
 use xs_backend_image::load_image;
 use xs_core::{
-    AppConfig, AppContext, Backend, BackendRequest, BackendResponse, EventLoop, Render, Renderer,
+    AppConfig, AppContext, Backend, BackendRequest, BackendResponse, EventLoop, ImageFormat,
+    Render, Renderer,
 };
 use xs_layout::Image;
 use xs_text_system::{AtlasAlpha, TextSystem};
@@ -48,9 +49,9 @@ impl AppEventLoop {
                         image_handle,
                         width,
                         height,
-                        xs_core::ImageFormat::Rgba,
+                        ImageFormat::Rgba,
                     );
-                    let image = Image::new(width, height, texture, bytes, false);
+                    let image = Image::new(width, height, texture, bytes, ImageFormat::Rgba);
                     app_context.textures.insert(src.clone(), Some(image));
                 }
             }
@@ -62,22 +63,12 @@ impl EventLoop for AppEventLoop {
     fn initialize(&mut self, ctx: &mut AppContext) {
         self.renderer.init();
         let font_family = "sans-serif";
-        let font_size = 42.;
-        let distance_range = 4.0;
         let font_data =
             include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf").to_vec();
-        let (atlas_data, image_format, width, height) =
-            ctx.text_system
-                .load_font(font_family, 400, font_size, distance_range, font_data);
-        self.renderer.load_font_atlas(
-            font_family,
-            400,
-            font_size,
-            &atlas_data,
-            width,
-            height,
-            image_format,
-        );
+        let atlas_info = ctx
+            .text_system
+            .load_font(font_family.into(), 400, font_data);
+        self.renderer.load_font_atlas(font_family, 400, atlas_info);
     }
 
     fn frame(&mut self, ctx: &mut AppContext) {
