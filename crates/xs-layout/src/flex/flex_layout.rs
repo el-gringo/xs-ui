@@ -8,7 +8,7 @@ use xs_math::{Rectangle, Vector2};
 
 struct FlexItem {
     size: Vector2,
-    flex_grow: f32,
+    flex_grow: [f32; 2],
     min_main: f32,
     max_main: f32,
     margin: EdgeInsets,
@@ -32,6 +32,14 @@ impl FlexItem {
             self.size.x = value;
         } else {
             self.size.y = value;
+        }
+    }
+
+    fn set_cross(&mut self, is_row: bool, value: f32) {
+        if is_row {
+            self.size.y = value;
+        } else {
+            self.size.x = value;
         }
     }
 
@@ -74,7 +82,7 @@ fn align_offset(
 }
 
 impl Layout for Flex {
-    fn flex_grow(&self) -> f32 {
+    fn flex_grow(&self) -> [f32; 2] {
         self.style.flex_grow
     }
 
@@ -101,7 +109,7 @@ impl Layout for Flex {
             .children
             .iter()
             .map(|child| {
-                let child_constraints = if child.flex_grow() > 0.0 {
+                let child_constraints = if child.flex_grow()[0] > 0.0 {
                     if main_is_x {
                         BoxConstraints::from_max(Vector2::new(0.0, inner.y))
                     } else {
@@ -166,19 +174,58 @@ impl Layout for Flex {
         let total_grow: f32 = lines
             .iter()
             .flat_map(|l| l.iter())
-            .map(|i| i.flex_grow)
+            .map(|i| i.flex_grow[0])
             .sum();
 
         if total_grow > 0.0 && free_space > 0.0 {
             lines
                 .iter_mut()
                 .flat_map(|line| line.iter_mut())
-                .filter(|i| i.flex_grow > 0.0)
+                .filter(|i| i.flex_grow[0] > 0.0)
                 .for_each(|item| {
-                    let grow = free_space * item.flex_grow / total_grow;
+                    let grow = free_space * item.flex_grow[0] / total_grow;
                     let current = item.main(main_is_x);
                     let new_main = (current + grow).clamp(item.min_main, item.max_main);
                     item.set_main(main_is_x, new_main);
+                });
+        }
+
+        let container_cross = if main_is_x { inner.y } else { inner.x };
+        let total_cross_before_grow: f32 = lines
+            .iter()
+            .map(|l| {
+                l.iter()
+                    .map(|i| i.cross(main_is_x))
+                    .fold(0.0f32, |a, b| a.max(b))
+            })
+            .sum();
+        let free_cross = (container_cross - total_cross_before_grow).max(0.0);
+        let total_cross_grow: f32 = lines
+            .iter()
+            .flat_map(|l| l.iter())
+            .map(|i| i.flex_grow[1])
+            .sum();
+        if total_cross_grow > 0.0 && free_cross > 0.0 {
+            lines
+                .iter_mut()
+                .flat_map(|line| line.iter_mut())
+                .filter(|i| i.flex_grow[1] > 0.0)
+                .for_each(|item| {
+                    let grow = free_cross * item.flex_grow[1] / total_cross_grow;
+                    let current = item.cross(main_is_x);
+                    let cross_padding = if main_is_x {
+                        item.padding.top + item.padding.bottom
+                    } else {
+                        item.padding.left + item.padding.right
+                    };
+                    let cross_margin = if main_is_x {
+                        item.margin.top + item.margin.bottom
+                    } else {
+                        item.margin.left + item.margin.right
+                    };
+                    let max_cross = (container_cross - cross_padding - cross_margin).max(0.0);
+                    let new_cross = (current + grow).min(max_cross);
+                    item.set_cross(main_is_x, new_cross);
                 });
         }
 
@@ -194,7 +241,6 @@ impl Layout for Flex {
         let mut child_ids = Vec::new();
         let padding_min = style.padding.min();
         let justify_base = justify_offset(container_main, total_main, style.justify_content);
-        let container_cross = if main_is_x { inner.y } else { inner.x };
 
         let mut cross_pos = if main_is_x {
             padding_min.y
@@ -1070,7 +1116,7 @@ mod tests {
         cards_grid.style.flex_wrap = FlexWrap::Wrap;
 
         let mut app_body = column(None, None, vec![Rc::new(app_header), Rc::new(cards_grid)]);
-        app_body.style.flex_grow = 1.0;
+        app_body.style.flex_grow = [1.0, 0.0];
 
         let main_row = row(None, None, vec![Rc::new(sidebar), Rc::new(app_body)]);
 

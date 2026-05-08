@@ -1,9 +1,13 @@
 use std::any::TypeId;
 
 use xs::{
-    Application, BLACK, BLUE, BorderRadius, BoxShadow, Context, Element, GRAY, GREEN, ORANGE, RED,
-    Render, WHITE, YELLOW, div, text,
+    Application, BLACK, BLUE, Color, Context, Div, Element, GRAY, GREEN, ORANGE, RED, Render,
+    YELLOW, div,
 };
+
+fn tile(color: Color) -> Div {
+    div().width(50.).height(50.).background_color(color)
+}
 
 struct Counter;
 impl Render for Counter {
@@ -23,32 +27,14 @@ impl Render for Counter {
                 div()
                     .testid("body")
                     .column()
-                    .background_color(RED)
+                    .background_color(BLACK)
                     .width(200.)
                     .height(300.)
-                    .child(
-                        div()
-                            .testid("button")
-                            .column()
-                            .justify_content(xs::JustifyContent::Center)
-                            .align_items(xs::AlignItems::Center)
-                            .background_color(BLUE)
-                            .color(WHITE)
-                            .height(100.)
-                            .font_size(60)
-                            .margin_top(30.)
-                            .border_radius(20., 20., 20., 0.)
-                            .box_shadow(10., 10., 0., 10., BLACK)
-                            .child(
-                                //text("text")
-                                div()
-                                    .margin_top(16.)
-                                    .height(50.)
-                                    .justify_content(xs::JustifyContent::Center)
-                                    .align_items(xs::AlignItems::Center)
-                                    .child(text("text")),
-                            ),
-                    ),
+                    .child(tile(RED))
+                    .child(tile(GREEN))
+                    .child(tile(BLUE))
+                    .child(tile(YELLOW))
+                    .child(tile(ORANGE).margin_left(16.).grow(0., 1.)),
             )
             .into()
     }

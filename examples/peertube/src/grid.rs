@@ -98,7 +98,7 @@ impl<T: Default + 'static> Render for Grid<T> {
                 if self.grow {
                     div()
                         .height(self.cell_height)
-                        .grow(1.)
+                        .grow(1., 0.)
                         .child((cell_renderer.as_ref().unwrap())(index, item))
                         .into()
                 } else {
@@ -120,7 +120,7 @@ impl<T: Default + 'static> Render for Grid<T> {
             .children(cells);
 
         if self.grow {
-            grid_div = grid_div.grow(1.);
+            grid_div = grid_div.grow(1., 0.);
         }
 
         grid_div.into()

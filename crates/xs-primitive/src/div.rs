@@ -242,8 +242,8 @@ impl Div {
         self
     }
 
-    pub fn grow(mut self, grow: f32) -> Self {
-        self.style.flex_grow = grow;
+    pub fn grow(mut self, main: f32, cross: f32) -> Self {
+        self.style.flex_grow = [main, cross];
         self
     }
 

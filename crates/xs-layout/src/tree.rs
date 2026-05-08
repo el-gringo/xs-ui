@@ -26,8 +26,8 @@ use crate::decoration::Material;
 pub trait Layout {
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox;
 
-    fn flex_grow(&self) -> f32 {
-        0.0
+    fn flex_grow(&self) -> [f32; 2] {
+        [0.0, 0.0]
     }
     fn flex_shrink(&self) -> f32 {
         1.0

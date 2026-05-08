@@ -119,7 +119,7 @@ pub struct Style {
     pub order: u32,
     pub align_self: AlignItems,
     pub flex_basis: f32,
-    pub flex_grow: f32,
+    pub flex_grow: [f32; 2],
     pub flex_shrink: f32,
 
     // Text properties
