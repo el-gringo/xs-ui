@@ -1,13 +1,13 @@
 use std::{any::TypeId, rc::Rc};
 
 use xs::{
-    AlignItems, BLUE, Context, Element, FocusHandle, GREEN, JustifyContent, NavigationNode, RED,
-    Render, WHITE, div, text,
+    AlignItems, Color, Context, Element, FocusHandle, JustifyContent, NavigationNode, Render, div,
+    text,
 };
 
 use crate::{
     button::{Button, button},
-    theme::{GRAY2, GRAY3, GRAY4},
+    theme,
 };
 
 pub struct Sidebar {
@@ -49,10 +49,10 @@ impl Render for Sidebar {
                     .testid("sidebar-header")
                     .row()
                     .height(50.)
-                    .background_color(GRAY3)
+                    .background_color(theme::GRAY3)
                     .justify_content(JustifyContent::Center)
                     .align_items(AlignItems::Center)
-                    .color(WHITE)
+                    .color(Color::WHITE)
                     .font_size(40)
                     .child(text("PeerTube")),
             )
@@ -60,12 +60,12 @@ impl Render for Sidebar {
                 div()
                     .testid("sidebar-body")
                     .column()
-                    .background_color(GRAY2)
+                    .background_color(theme::GRAY2)
                     .align_items(AlignItems::Center)
                     .gap(16.)
-                    .child(button("Movies", GRAY4))
-                    .child(button("Series", GRAY4))
-                    .child(button("Settings", GRAY4)),
+                    .child(button("Movies", theme::GRAY4))
+                    .child(button("Series", theme::GRAY4))
+                    .child(button("Settings", theme::GRAY4)),
             )
             .into()
     }

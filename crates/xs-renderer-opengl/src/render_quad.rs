@@ -1,10 +1,10 @@
 use crate::RendererOpenGl;
-use xs_core::AppContext;
+use xs_core::{AppContext, Color};
 use xs_gl::{
     Buffer, GL_FLOAT, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, GL_UNSIGNED_SHORT, Shader,
     glActiveTexture, glBindTexture, glDrawElements,
 };
-use xs_layout::{Image, Style, colors::TRANSPARENT};
+use xs_layout::{Image, Style};
 use xs_math::Rectangle;
 
 #[rustfmt::skip]
@@ -55,7 +55,9 @@ impl RendererOpenGl {
         let border_color = borders
             .iter()
             .find(|b| b.is_some())
-            .map_or(TRANSPARENT, |b| b.map_or(TRANSPARENT, |b| b.color));
+            .map_or(Color::TRANSPARENT, |b| {
+                b.map_or(Color::TRANSPARENT, |b| b.color)
+            });
         let border_width = borders.map(|b| b.map_or(0.0, |b| b.width));
         let texture = image
             .clone()

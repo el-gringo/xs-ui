@@ -11,8 +11,8 @@ mod theme;
 use std::any::TypeId;
 
 use xs::{
-    AlignItems, Application, Context, Element, FocusHandle, JustifyContent, NavigationNode, Render,
-    WHITE, div, text,
+    AlignItems, Application, Color, Context, Element, FocusHandle, JustifyContent, NavigationNode,
+    Render, div, text,
 };
 
 use crate::{
@@ -47,7 +47,7 @@ impl Render for MyApp {
                         .height(80.)
                         .width(1140.)
                         .background_color(GRAY4)
-                        .color(WHITE)
+                        .color(Color::WHITE)
                         .justify_content(JustifyContent::Center)
                         .align_items(AlignItems::Center)
                         .font_size(60)
@@ -86,7 +86,5 @@ pub fn main() {
     Application::new()
         .id("peertube")
         .title("Peertube")
-        .width(1440)
-        .height(810)
         .run(|_ctx| MyApp);
 }

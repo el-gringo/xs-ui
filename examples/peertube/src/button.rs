@@ -1,8 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{
-    BLACK, Color, Context, Element, FocusHandle, GRAY, NavigationNode, Render, WHITE, div, text,
-};
+use xs::{Color, Context, Element, FocusHandle, NavigationNode, Render, div, text};
 
 pub struct Button {
     text: &'static str,
@@ -30,8 +28,15 @@ impl Render for Button {
             .height(50.)
             .margin_top(16.)
             .background_color(self.background_color)
-            .color(WHITE)
-            .border(if nav_node.has_focus() { WHITE } else { GRAY }, 4.)
+            .color(Color::WHITE)
+            .border(
+                if nav_node.has_focus() {
+                    Color::WHITE
+                } else {
+                    Color::GRAY
+                },
+                4.,
+            )
             .font_size(40)
             .child(text(self.text))
             .into()

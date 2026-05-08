@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{Color, Image, Style, TextProperties, TextVertices, colors::TRANSPARENT};
+use crate::{Color, Image, Style, TextProperties, TextVertices};
 use xs_math::Vector2;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -22,7 +22,7 @@ impl Material {
 
 impl Default for Material {
     fn default() -> Material {
-        Material::filled(TRANSPARENT)
+        Material::filled(Color::TRANSPARENT)
     }
 }
 

@@ -1,11 +1,8 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{
-    AlignItems, Context, Element, FocusHandle, NavigationNode, RED, Render, TRANSPARENT, WHITE,
-    div, text,
-};
+use xs::{AlignItems, Color, Context, Element, FocusHandle, NavigationNode, Render, div, text};
 
-use crate::theme::GRAY3;
+use crate::theme;
 
 pub struct Card {
     id: Option<&'static str>,
@@ -47,13 +44,13 @@ impl Render for Card {
             .column()
             .width(320.)
             .height(240.)
-            .background_color(WHITE)
+            .background_color(Color::WHITE)
             .align_items(AlignItems::Center)
             .border(
                 if nav_node.has_focus() {
-                    RED
+                    Color::RED
                 } else {
-                    TRANSPARENT
+                    Color::TRANSPARENT
                 },
                 4.,
             )
@@ -62,14 +59,14 @@ impl Render for Card {
                     .width(280.)
                     .height(157.)
                     .margin_top(8.)
-                    .background_color(GRAY3)
+                    .background_color(theme::GRAY3)
                     .background_image(self.thumbnail.clone()),
             )
             .child(
                 div().width(280.).height(60.).margin_top(16.).child(
                     div()
                         .font_size(26)
-                        .color(GRAY3)
+                        .color(theme::GRAY3)
                         .child(text(self.title.clone())),
                 ),
             )
