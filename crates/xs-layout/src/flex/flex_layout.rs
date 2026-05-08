@@ -243,9 +243,9 @@ impl Layout for Flex {
         let justify_base = justify_offset(container_main, total_main, style.justify_content);
 
         let mut cross_pos = if main_is_x {
-            padding_min.y
+            padding_min.y + style.border.min().y
         } else {
-            padding_min.x
+            padding_min.x + style.border.min().x
         };
 
         for (line_idx, line) in lines.iter().enumerate() {
@@ -272,14 +272,14 @@ impl Layout for Flex {
                         );
 
                         let px = if main_is_x {
-                            cursor + style.padding.left
+                            cursor + style.padding.left + style.border.min().x
                         } else {
                             cross_pos + cross_offset
                         };
                         let py = if main_is_x {
                             line_cross_start + cross_offset
                         } else {
-                            cursor + style.padding.top
+                            cursor + style.padding.top + style.border.min().y
                         };
 
                         let box_id = tree.insert(LayoutBox {

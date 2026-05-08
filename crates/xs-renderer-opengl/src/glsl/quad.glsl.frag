@@ -76,15 +76,15 @@ void main() {
     vec2 boxL = p;
     vec2 boxU = p + size;
 
-    vec2 borderL = boxL - vec2(u_borderWidth.w, u_borderWidth.z);
-    vec2 borderU = boxU + vec2(u_borderWidth.y, u_borderWidth.x);
+    vec2 contentL = boxL + vec2(u_borderWidth.w, u_borderWidth.z);
+    vec2 contentU = boxU - vec2(u_borderWidth.y, u_borderWidth.x);
 
     float spread = u_shadow.w;
-    vec2 shadowL = borderL + u_shadow.xy - spread;
-    vec2 shadowU = borderU + u_shadow.xy + spread;
+    vec2 shadowL = boxL + u_shadow.xy - spread;
+    vec2 shadowU = boxU + u_shadow.xy + spread;
 
-    float box = roundedBoxShadow(boxL, boxU, vertex, 0.25, u_borderRadius);
-    float border = roundedBoxShadow(borderL, borderU, vertex, 0.25, u_borderRadius);
+    float box = roundedBoxShadow(contentL, contentU, vertex, 0.25, u_borderRadius);
+    float border = roundedBoxShadow(boxL, boxU, vertex, 0.25, u_borderRadius);
     float shadow = roundedBoxShadow(shadowL, shadowU, vertex, shadowBlur + 0.25, u_borderRadius);
 
     vec4 fillColor = u_color;

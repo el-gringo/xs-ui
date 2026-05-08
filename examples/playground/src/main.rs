@@ -6,7 +6,11 @@ use xs::{
 };
 
 fn tile(color: Color) -> Div {
-    div().width(50.).height(50.).background_color(color)
+    div()
+        .width(50.)
+        .height(50.)
+        .background_color(color)
+        .border(BLUE, 8.)
 }
 
 struct Counter;
@@ -28,6 +32,7 @@ impl Render for Counter {
                     .testid("body")
                     .column()
                     .background_color(BLACK)
+                    .border(RED, 8.)
                     .width(200.)
                     .height(300.)
                     .child(tile(RED))
