@@ -1,9 +1,6 @@
 use std::any::TypeId;
 
-use xs::{
-    Application, BLACK, BLUE, Context, Element, GRAY, GREEN, ORANGE, RED, Render, WHITE, YELLOW,
-    div, text,
-};
+use xs::{Application, Color, Context, Element, Render, div, text};
 
 struct Counter;
 impl Render for Counter {
@@ -18,12 +15,12 @@ impl Render for Counter {
             .column()
             .justify_content(xs::JustifyContent::Center)
             .align_items(xs::AlignItems::Center)
-            .background_color(GRAY)
+            .background_color(Color::GRAY)
             .child(
                 div()
                     .testid("body")
                     .column()
-                    .background_color(RED)
+                    .background_color(Color::RED)
                     .width(200.)
                     .height(300.)
                     .child(
@@ -31,8 +28,8 @@ impl Render for Counter {
                             .testid("increment")
                             .justify_content(xs::JustifyContent::Center)
                             .align_items(xs::AlignItems::Center)
-                            .background_color(BLACK)
-                            .color(WHITE)
+                            .background_color(Color::BLACK)
+                            .color(Color::WHITE)
                             .height(50.)
                             .font_size(36)
                             .child(text("Inc")),
@@ -42,8 +39,8 @@ impl Render for Counter {
                             .testid("inner")
                             .justify_content(xs::JustifyContent::Center)
                             .align_items(xs::AlignItems::Center)
-                            .background_color(WHITE)
-                            .color(BLACK)
+                            .background_color(Color::WHITE)
+                            .color(Color::BLACK)
                             .height(200.)
                             .font_size(64)
                             .child(text("0")),
@@ -53,8 +50,8 @@ impl Render for Counter {
                             .testid("decrement")
                             .justify_content(xs::JustifyContent::Center)
                             .align_items(xs::AlignItems::Center)
-                            .background_color(BLACK)
-                            .color(WHITE)
+                            .background_color(Color::BLACK)
+                            .color(Color::WHITE)
                             .height(50.)
                             .font_size(36)
                             .child(text("Dec")),
