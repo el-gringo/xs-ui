@@ -76,8 +76,6 @@ impl RendererOpenGl {
         shader.uniform_4fv("u_borderRadius", style.border_radius);
         shader.uniform_4fv("u_borderColor", border_color);
         shader.uniform_1i("u_texture", 0);
-        eprintln!("border_width: {:?}", border_width);
-        eprintln!("border_color: {:?}", border_color);
         shader.bind_buffers();
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }

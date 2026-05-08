@@ -49,7 +49,5 @@ pub fn main() {
     Application::new()
         .id("playground")
         .title("Playground")
-        .width(1440)
-        .height(810)
         .run(|_ctx| Counter);
 }
