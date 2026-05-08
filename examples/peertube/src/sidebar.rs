@@ -40,13 +40,13 @@ impl Render for Sidebar {
         });
 
         div()
-            .id("sidebar")
+            .testid("sidebar")
             .column()
             .width(300.)
             .justify_content(xs::JustifyContent::FlexStart)
             .child(
                 div()
-                    .id("sidebar-header")
+                    .testid("sidebar-header")
                     .row()
                     .height(50.)
                     .background_color(GRAY3)
@@ -58,10 +58,11 @@ impl Render for Sidebar {
             )
             .child(
                 div()
-                    .id("sidebar-body")
+                    .testid("sidebar-body")
                     .column()
                     .background_color(GRAY2)
                     .align_items(AlignItems::Center)
+                    .gap(16.)
                     .child(button("Movies", GRAY4))
                     .child(button("Series", GRAY4))
                     .child(button("Settings", GRAY4)),

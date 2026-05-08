@@ -226,14 +226,14 @@ impl Layout for Flex {
                         );
 
                         let px = if main_is_x {
-                            cursor + margin_main_start + style.padding.left
+                            cursor + style.padding.left
                         } else {
-                            cross_pos + cross_offset + margin_cross_start
+                            cross_pos + cross_offset
                         };
                         let py = if main_is_x {
-                            line_cross_start + cross_offset + margin_cross_start
+                            line_cross_start + cross_offset
                         } else {
-                            cursor + margin_main_start + style.padding.top
+                            cursor + style.padding.top
                         };
 
                         let box_id = tree.insert(LayoutBox {

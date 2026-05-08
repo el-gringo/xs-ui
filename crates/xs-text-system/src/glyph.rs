@@ -113,6 +113,11 @@ pub fn make_vertices_for_string<A: Atlas>(
         0.0
     };
 
+    for v in vertices.chunks_exact_mut(4) {
+        v[0] -= min_x;
+        v[1] -= min_y;
+    }
+
     TextVertices {
         vertices,
         width,

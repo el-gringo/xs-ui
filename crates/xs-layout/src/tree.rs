@@ -253,7 +253,7 @@ impl<'a> Iterator for LayoutTreeIterator<'a> {
         let parent_offset = self.offsets.pop_front()?;
         let parent = self.tree.get(parent_id)?;
         let child = self.tree.get(child_id)?;
-        let offset = Vector2::new(child.bounds.x, child.bounds.y) + parent_offset;
+        let offset = Vector2::new(child.bounds.x, child.bounds.y) + parent_offset + child.margin.min();
         for child in child.children.iter().rev() {
             self.parents.push_front(child_id);
             self.remaining.push_front((*child, depth + 1));

@@ -30,7 +30,7 @@ impl Render for Body {
             ctx.focus_handle(NavigationNode::new("body").horizontal())
         });
         div()
-            .id("body")
+            .testid("body")
             .column()
             .background_color(GRAY1)
             .children(self.children.clone())

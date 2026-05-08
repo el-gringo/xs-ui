@@ -23,16 +23,16 @@ impl Render for Button {
         let nav_node =
             ctx.use_state::<FocusHandle>(|ctx, _| ctx.focus_handle(NavigationNode::new("button")));
         div()
-            .id("button")
+            .testid("button")
             .justify_content(xs::JustifyContent::Center)
-            .align_items(xs::AlignItems::FlexEnd)
+            .align_items(xs::AlignItems::Center)
             .width(200.)
             .height(50.)
             .margin_top(16.)
             .background_color(self.background_color)
             .color(WHITE)
             .border(if nav_node.has_focus() { WHITE } else { GRAY }, 4.)
-            .font_size(50)
+            .font_size(40)
             .child(text(self.text))
             .into()
     }

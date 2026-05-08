@@ -9,7 +9,7 @@ use xs_layout::{
 
 #[derive(Default, Clone)]
 pub struct Div {
-    pub id: Option<&'static str>,
+    pub testid: Option<&'static str>,
     pub style: Style,
     pub children: Vec<Rc<dyn Render>>,
 }
@@ -19,8 +19,9 @@ impl Div {
         Default::default()
     }
 
-    pub fn id(mut self, id: &'static str) -> Self {
-        self.id = Some(id);
+    /// An id that is only used for debug and tests
+    pub fn testid(mut self, testid: &'static str) -> Self {
+        self.testid = Some(testid);
         self
     }
 
@@ -146,8 +147,20 @@ impl Div {
         self
     }
 
-    pub fn border_radius(mut self, radius: BorderRadius) -> Self {
-        self.style.border_radius = radius;
+    pub fn border_radius(
+        mut self,
+        top_left: f32,
+        top_right: f32,
+        bottom_right: f32,
+        bottom_left: f32,
+    ) -> Self {
+        self.style.border_radius =
+            BorderRadius::new(top_left, top_right, bottom_right, bottom_left);
+        self
+    }
+
+    pub fn border_radius_all(mut self, radius: f32) -> Self {
+        self.style.border_radius = BorderRadius::new(radius, radius, radius, radius);
         self
     }
 
@@ -307,14 +320,14 @@ impl Render for Div {
         TypeId::of::<Self>()
     }
 
-    fn render(&self, çctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
         Box::new(self.clone())
     }
 }
 
 impl Element for Div {
     fn id(&self) -> &'static str {
-        self.id.unwrap_or("div")
+        self.testid.unwrap_or("div")
     }
 
     fn children(&self) -> &[Rc<dyn Render>] {

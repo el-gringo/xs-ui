@@ -5,14 +5,14 @@ use xs::{
     div, text,
 };
 
-struct MyApp;
-impl Render for MyApp {
+struct Counter;
+impl Render for Counter {
     fn tag(&self) -> std::any::TypeId {
         TypeId::of::<Self>()
     }
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
         div()
-            .id("root")
+            .testid("root")
             .width(ctx.app_context.screen.width as _)
             .height(ctx.app_context.screen.height as _)
             .column()
@@ -21,14 +21,14 @@ impl Render for MyApp {
             .background_color(GRAY)
             .child(
                 div()
-                    .id("body")
+                    .testid("body")
                     .column()
                     .background_color(RED)
                     .width(200.)
                     .height(300.)
                     .child(
                         div()
-                            .id("increment")
+                            .testid("increment")
                             .justify_content(xs::JustifyContent::Center)
                             .align_items(xs::AlignItems::Center)
                             .background_color(BLACK)
@@ -39,7 +39,7 @@ impl Render for MyApp {
                     )
                     .child(
                         div()
-                            .id("inner")
+                            .testid("inner")
                             .justify_content(xs::JustifyContent::Center)
                             .align_items(xs::AlignItems::Center)
                             .background_color(WHITE)
@@ -50,7 +50,7 @@ impl Render for MyApp {
                     )
                     .child(
                         div()
-                            .id("decrement")
+                            .testid("decrement")
                             .justify_content(xs::JustifyContent::Center)
                             .align_items(xs::AlignItems::Center)
                             .background_color(BLACK)
@@ -66,9 +66,9 @@ impl Render for MyApp {
 
 pub fn main() {
     Application::new()
-        .id("app")
-        .title("App")
+        .id("counter")
+        .title("Counter")
         .width(1440)
         .height(810)
-        .run(|_ctx| MyApp);
+        .run(|_ctx| Counter);
 }

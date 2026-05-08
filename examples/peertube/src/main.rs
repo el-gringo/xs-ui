@@ -11,8 +11,8 @@ mod theme;
 use std::any::TypeId;
 
 use xs::{
-    AlignItems, Application, Context, Element, FocusHandle, NavigationNode, Render, WHITE, div,
-    text,
+    AlignItems, Application, Context, Element, FocusHandle, JustifyContent, NavigationNode, Render,
+    WHITE, div, text,
 };
 
 use crate::{
@@ -34,7 +34,7 @@ impl Render for MyApp {
             videos
         });
         div()
-            .id("app")
+            .testid("app")
             .row()
             .justify_content(xs::JustifyContent::FlexStart)
             .align_items(AlignItems::FlexStart)
@@ -48,7 +48,8 @@ impl Render for MyApp {
                         .width(1140.)
                         .background_color(GRAY4)
                         .color(WHITE)
-                        .justify_content(xs::JustifyContent::Center)
+                        .justify_content(JustifyContent::Center)
+                        .align_items(AlignItems::Center)
                         .font_size(60)
                         .child(text("Monsieur Bidouille")),
                     div()
@@ -56,7 +57,7 @@ impl Render for MyApp {
                         .width(1140.)
                         .padding_top(64.)
                         .gap(32.)
-                        .justify_content(xs::JustifyContent::Center)
+                        .justify_content(JustifyContent::Center)
                         .child(
                             grid()
                                 .items(videos.clone())
