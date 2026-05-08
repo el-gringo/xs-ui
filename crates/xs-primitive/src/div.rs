@@ -187,8 +187,15 @@ impl Div {
     //
     // BOX SHADOW
     //
-    pub fn box_shadow(mut self, shadow: BoxShadow) -> Self {
-        self.style.box_shadow = shadow;
+    pub fn box_shadow(
+        mut self,
+        offset_left: f32,
+        offset_top: f32,
+        blur: f32,
+        spread: f32,
+        color: Color,
+    ) -> Self {
+        self.style.box_shadow = BoxShadow::new(offset_left, offset_top, blur, spread, color);
         self
     }
 

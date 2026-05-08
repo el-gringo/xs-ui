@@ -7,7 +7,9 @@ members = [
     "tools/*"
 ]
 default-members = [
-    "examples/app"
+    "examples/counter",
+    "examples/peertube",
+    "examples/playground"
 ]
 
 [workspace.package]

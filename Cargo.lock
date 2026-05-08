@@ -19,14 +19,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "app"
-version = "0.1.0"
-dependencies = [
- "xs",
- "xs-js-sys",
-]
-
-[[package]]
 name = "bytemuck"
 version = "1.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -39,6 +31,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77745e017f5edba1a9c1d854f6f3a52dac8a12dd5af5d2f54aecf61e43d80d30"
 dependencies = [
  "libm",
+]
+
+[[package]]
+name = "counter"
+version = "0.1.0"
+dependencies = [
+ "xs",
 ]
 
 [[package]]
@@ -107,6 +106,13 @@ dependencies = [
  "nanoserde 0.2.2",
  "xs",
  "xs-http",
+]
+
+[[package]]
+name = "playground"
+version = "0.1.0"
+dependencies = [
+ "xs",
 ]
 
 [[package]]
