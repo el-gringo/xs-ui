@@ -1,5 +1,4 @@
 use nanoserde::DeJson;
-use xs::StateMutator;
 
 use crate::api::rest_api::{RestApi, body_string};
 
@@ -36,8 +35,14 @@ impl PeerTubeClient {
         }
     }
 
-    pub fn get_videos(&self, offset: u32, count: u32, mutator: StateMutator<Vec<Video>>) {
+    pub fn get_videos(
+        &self,
+        offset: u32,
+        count: u32,
+        on_result: impl FnOnce(Vec<Video>) + Send + 'static,
+    ) {
         let api = RestApi::new(PEERTUBE_API_URL);
+        let mut on_result = Some(on_result);
         api.get(
             &format!("/videos?start={offset}&count={count}"),
             move |response| {
@@ -52,9 +57,9 @@ impl PeerTubeClient {
                                 || v.thumbnail_path.ends_with(".jpeg")
                         })
                         .collect();
-                    mutator.mutate(|videos| {
-                        videos.extend(new_videos);
-                    });
+                    if let Some(on_result) = on_result.take() {
+                        on_result(new_videos);
+                    }
                 };
             },
         );

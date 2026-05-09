@@ -16,7 +16,12 @@ use xs::{
 };
 
 use crate::{
-    api::peertube::Video, body::body, card::card, grid::grid, sidebar::sidebar, theme::GRAY4,
+    api::peertube::{PeerTubeClient, Video},
+    body::body,
+    card::card,
+    grid::grid,
+    sidebar::sidebar,
+    theme::GRAY4,
 };
 
 const PEERTUBE_API_URL: &str = "https://video.monsieurbidouille.fr/api/v1";
@@ -25,12 +30,15 @@ struct MyApp;
 impl Render for MyApp {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
         ctx.focus_handle(NavigationNode::new().horizontal().id("root"));
-        let videos = ctx.use_state::<Vec<Video>>(|_ctx, mutator| {
-            let videos = Vec::new();
-            let client = api::peertube::PeerTubeClient::new();
-            client.get_videos(0, 50, mutator);
-            videos
+        let videos = ctx.use_state::<Vec<Video>>(|ctx| {
+            let updater = ctx.updater::<Vec<Video>>();
+            let client = PeerTubeClient::new();
+            client.get_videos(0, 20, move |new_videos| {
+                updater.update(|| new_videos);
+            });
+            Vec::new()
         });
+
         div()
             .testid("app")
             .row()

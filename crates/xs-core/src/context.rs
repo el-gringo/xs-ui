@@ -5,7 +5,7 @@ use crate::{
     core::NodeId,
     get_app_context,
     navigation::NavigationNodeId,
-    state::{AnyState, State, StateId},
+    state::{AnyState, State, StateId, Updater},
 };
 use std::{any::Any, fmt::Debug, marker::PhantomData};
 
@@ -57,33 +57,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn use_state<S>(&mut self, init: impl FnOnce(&mut Context<'a>, StateMutator<S>) -> S) -> &S
-    where
-        S: Any,
-    {
-        let state_index = self.state_index;
-        self.app_context.nodes.entry(self.node_id).or_default();
-        let state_count = self.app_context.nodes.get(&self.node_id).unwrap().len();
-        if state_index >= state_count {
-            let mutator: StateMutator<S> = StateMutator {
-                node_id: self.node_id,
-                state_index: self.state_index,
-                _marker: PhantomData,
-            };
-            // push new state
-            let new_state = Box::new(init(self, mutator));
-            self.app_context
-                .nodes
-                .get_mut(&self.node_id)
-                .unwrap()
-                .push(new_state);
-        }
-        let states = self.app_context.nodes.get_mut(&self.node_id).unwrap();
-        self.state_index = state_index + 1;
-        states.get_mut(state_index).unwrap().downcast_mut().unwrap()
-    }
-
-    pub fn use_state2<S>(&mut self, init: impl FnOnce(&mut Self) -> S) -> &mut S
+    pub fn use_state<S>(&mut self, init: impl FnOnce(&mut Self) -> S) -> &mut State<S>
     where
         S: Any + 'static,
     {
@@ -107,8 +81,12 @@ impl<'a> Context<'a> {
             .unwrap()
             .get_mut(&state_id)
             .unwrap()
-            .downcast()
+            .downcast_state::<S>()
             .unwrap()
+    }
+
+    pub fn updater<S: 'static>(&self) -> Updater<S> {
+        Updater::new(self.node_id, StateId::from(std::any::type_name::<S>()))
     }
 
     fn new_focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
@@ -118,8 +96,8 @@ impl<'a> Context<'a> {
     }
 
     pub fn focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
-        let handle = self.use_state2(|ctx| ctx.new_focus_handle(node));
-        let result = handle.clone();
+        let state = self.use_state::<FocusHandle>(|ctx| ctx.new_focus_handle(node));
+        let result = (*state).clone();
         self.nav_id = result.id;
         result
     }
