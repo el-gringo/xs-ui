@@ -1,13 +1,51 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{Render, div};
+use xs::{Color, Context, Element, NavigationNode, Render, div};
 
 type CellRenderer<T> = dyn Fn(usize, &T) -> Rc<dyn Render>;
+
+pub struct GridCell {
+    child: Rc<dyn Render>,
+    width: f32,
+    height: f32,
+    grow: bool,
+}
+
+impl Render for GridCell {
+    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+        let node = ctx.focus_handle(NavigationNode::new().id("grid-cell"));
+        let mut cell = div().height(self.height).border(
+            if node.has_focus() {
+                Color::RED
+            } else {
+                Color::TRANSPARENT
+            },
+            4.,
+        );
+        if self.grow {
+            cell = cell.grow(1., 0.);
+        } else {
+            cell = cell.width(self.width);
+        }
+        cell.child(self.child.clone()).into()
+    }
+
+    fn tag(&self) -> TypeId {
+        TypeId::of::<Self>()
+    }
+}
+
+impl From<GridCell> for Rc<dyn Render> {
+    fn from(val: GridCell) -> Self {
+        Rc::new(val)
+    }
+}
 
 #[derive(Default)]
 pub struct Grid<T> {
     pub items: Vec<T>,
     pub columns: u32,
+    pub rows: u32,
     pub cell_height: f32,
     pub cell_width: f32,
     pub width: f32,
@@ -15,6 +53,32 @@ pub struct Grid<T> {
     pub gap: f32,
     pub grow: bool,
     pub cell_renderer: Option<Box<CellRenderer<T>>>,
+}
+
+pub struct GridRow {
+    children: Vec<Rc<dyn Render>>,
+    height: f32,
+}
+
+impl Render for GridRow {
+    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+        ctx.focus_handle(NavigationNode::new().horizontal().id("grid-row"));
+        div()
+            .row()
+            .height(self.height)
+            .children(self.children.clone())
+            .into()
+    }
+
+    fn tag(&self) -> TypeId {
+        TypeId::of::<Self>()
+    }
+}
+
+impl From<GridRow> for Rc<dyn Render> {
+    fn from(val: GridRow) -> Self {
+        Rc::new(val)
+    }
 }
 
 impl<T: Default + 'static> Grid<T> {
@@ -39,6 +103,11 @@ impl<T: Default + 'static> Grid<T> {
 
     pub fn columns(mut self, columns: u32) -> Self {
         self.columns = columns;
+        self
+    }
+
+    pub fn rows(mut self, rows: u32) -> Self {
+        self.rows = rows;
         self
     }
 
@@ -86,38 +155,46 @@ impl<T: Default + 'static> Render for Grid<T> {
         TypeId::of::<Self>()
     }
 
-    fn render(&self, _app: &mut xs::Context) -> Box<dyn xs::Element> {
+    fn render(&self, ctx: &mut xs::Context) -> Box<dyn xs::Element> {
+        ctx.focus_handle(NavigationNode::new().vertical().id("grid"));
         let cell_renderer = &self.cell_renderer;
         let calculated_width = self.calculate_width();
+        let columns = self.columns.max(1) as usize;
 
-        let cells: Vec<Rc<dyn Render>> = self
+        let rows: Vec<Rc<dyn Render>> = self
             .items
-            .iter()
+            .chunks(columns)
             .enumerate()
-            .map(|(index, item)| {
-                if self.grow {
-                    div()
-                        .height(self.cell_height)
-                        .grow(1., 0.)
-                        .child((cell_renderer.as_ref().unwrap())(index, item))
+            .take(self.rows as _)
+            .map(|(row_index, chunk)| {
+                let cells: Vec<Rc<dyn Render>> = chunk
+                    .iter()
+                    .enumerate()
+                    .map(|(col_index, item)| {
+                        let index = row_index * columns + col_index;
+                        GridCell {
+                            child: (cell_renderer.as_ref().unwrap())(index, item),
+                            width: self.cell_width,
+                            height: self.cell_height,
+                            grow: self.grow,
+                        }
                         .into()
-                } else {
-                    div()
-                        .width(self.cell_width)
-                        .height(self.cell_height)
-                        .child((cell_renderer.as_ref().unwrap())(index, item))
-                        .into()
+                    })
+                    .collect();
+                GridRow {
+                    children: cells,
+                    height: self.cell_height,
                 }
+                .into()
             })
             .collect();
 
         let mut grid_div = div()
             .width(calculated_width)
             .height(self.height)
-            .row()
-            .wrap()
+            .column()
             .gap(self.gap)
-            .children(cells);
+            .children(rows);
 
         if self.grow {
             grid_div = grid_div.grow(1., 0.);

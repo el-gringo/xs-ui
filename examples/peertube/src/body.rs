@@ -1,6 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{Context, Element, FocusHandle, NavigationNode, Render, div};
+use xs::{Context, Element, Render, div};
 
 use crate::theme;
 
@@ -25,10 +25,7 @@ impl Body {
 }
 
 impl Render for Body {
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let _ = ctx.use_state::<FocusHandle>(|ctx, _| {
-            ctx.focus_handle(NavigationNode::new("body").horizontal())
-        });
+    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
         div()
             .testid("body")
             .column()

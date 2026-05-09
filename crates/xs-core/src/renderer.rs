@@ -12,9 +12,8 @@ type RcWidget = Rc<dyn Render>;
 #[derive(Clone)]
 struct StackItem {
     widget: RcWidget,
-    depth: usize,
-    index: usize,
     parent_index: Option<usize>,
+    child_index: usize,
     nav_id: NavigationNodeId,
     text_properties: TextProperties,
     color: Color,
@@ -40,6 +39,7 @@ pub trait Renderer {
     ) -> u32;
 
     fn render(&mut self, app_context: &mut AppContext, widget: RcWidget) -> View {
+        app_context.nav.update();
         let constraints = BoxConstraints {
             min: Vector2::new(0.0, 0.0),
             max: Vector2::new(
@@ -50,9 +50,8 @@ pub trait Renderer {
         let mut stack: Vec<StackItem> = Default::default();
         stack.push(StackItem {
             widget: widget.clone(),
-            depth: 0,
-            index: 0,
             parent_index: None,
+            child_index: 0,
             nav_id: app_context.current_nav_node_id,
             text_properties: TextProperties::default(),
             color: Color::rgba(0.0, 0.0, 0.0, 1.0),
@@ -62,7 +61,7 @@ pub trait Renderer {
         // Store (parent_index, element) for each rendered element
         let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Default::default();
         while let Some(item) = stack.pop() {
-            let node_id: NodeId = (item.widget.tag(), item.depth, item.index);
+            let node_id: NodeId = (item.widget.tag(), item.parent_index.unwrap_or(0), item.child_index);
             let mut ctx = Context::new(
                 app_context,
                 node_id,
@@ -77,9 +76,8 @@ pub trait Renderer {
             for (child_index, child) in element.children().iter().enumerate() {
                 let new_item = StackItem {
                     widget: child.clone(),
-                    depth: item.depth + 1,
-                    index: child_index,
                     parent_index: Some(rendered_elements.len()),
+                    child_index,
                     nav_id: ctx.nav_id,
                     text_properties: ctx.text_properties.clone(),
                     color: ctx.color,

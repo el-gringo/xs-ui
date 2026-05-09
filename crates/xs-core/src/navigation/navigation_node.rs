@@ -1,18 +1,18 @@
-
 pub type NavigationNodeId = usize;
 
-
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum NavigationLayout {
     Horizontal,
     Verical,
+    #[default]
     Leaf,
 }
 
 pub use NavigationLayout::*;
 
+#[derive(Default)]
 pub struct NavigationNode {
-    pub key: &'static str,
+    pub id: Option<&'static str>,
     pub layout: NavigationLayout,
     pub selected_index: usize,
     pub has_focus: bool,
@@ -21,15 +21,13 @@ pub struct NavigationNode {
 }
 
 impl NavigationNode {
-    pub fn new(key: &'static str) -> Self {
-        NavigationNode {
-            key,
-            parent: 0,
-            layout: Leaf,
-            selected_index: 0,
-            has_focus: false,
-            children: Vec::new(),
-        }
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn id(mut self, id: &'static str) -> Self {
+        self.id = Some(id);
+        self
     }
 
     pub fn vertical(mut self) -> Self {
@@ -39,6 +37,11 @@ impl NavigationNode {
 
     pub fn horizontal(mut self) -> Self {
         self.layout = Horizontal;
+        self
+    }
+
+    pub fn leaf(mut self) -> Self {
+        self.layout = Leaf;
         self
     }
 

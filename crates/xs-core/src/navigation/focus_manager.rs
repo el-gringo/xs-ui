@@ -10,7 +10,6 @@ use crate::{
     },
 };
 
-
 pub struct FocusManager {
     pub tree: Rc<RefCell<NavigationTree>>,
     pub current_container_id: NavigationNodeId,
@@ -20,7 +19,7 @@ pub struct FocusManager {
 impl Default for FocusManager {
     fn default() -> Self {
         let mut tree = NavigationTree::new();
-        let mut root = NavigationNode::new("root").horizontal();
+        let mut root = NavigationNode::new().horizontal();
         root.has_focus = true;
         let id = tree.insert(root);
         tree.set_root(Some(id));
@@ -32,7 +31,6 @@ impl Default for FocusManager {
     }
 }
 
-
 impl FocusManager {
     pub fn new() -> Self {
         Default::default()
@@ -41,7 +39,7 @@ impl FocusManager {
     fn initialize_node(&mut self, container_id: NavigationNodeId, node: &mut NavigationNode) {
         node.parent = container_id;
         let tree = self.tree.borrow_mut();
-        let mut parent = tree.get(self.current_container_id).unwrap().borrow_mut();
+        let mut parent = tree.get(container_id).unwrap().borrow_mut();
         if node.has_focus {
             for child_id in parent.children.iter() {
                 tree.get(*child_id).unwrap().borrow_mut().has_focus = false;
@@ -55,7 +53,7 @@ impl FocusManager {
 
     fn attach(&mut self, container_id: NavigationNodeId, handle: &FocusHandle) {
         if let Some(container) = self.tree.borrow_mut().get(container_id) {
-            container.borrow_mut().children.push(handle.id);
+            container.borrow_mut().children.insert(0, handle.id);
         }
     }
 

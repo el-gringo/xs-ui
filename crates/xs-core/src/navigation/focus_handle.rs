@@ -3,6 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{NavigationNode, navigation::{navigation_node::NavigationNodeId, navigation_tree::NavigationTree}};
 
 
+#[derive(Clone)]
 pub struct FocusHandle {
     pub id: NavigationNodeId,
     tree: Rc<RefCell<NavigationTree>>,

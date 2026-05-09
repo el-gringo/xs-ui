@@ -1,8 +1,11 @@
 use xs_layout::{BoxConstraints, Color, TextProperties, TextVertices};
 
 use crate::{
-    AppContext, FocusHandle, NavigationNode, core::NodeId, get_app_context,
+    AppContext, FocusHandle, NavigationNode,
+    core::NodeId,
+    get_app_context,
     navigation::NavigationNodeId,
+    state::{AnyState, State, StateId},
 };
 use std::{any::Any, fmt::Debug, marker::PhantomData};
 
@@ -80,10 +83,45 @@ impl<'a> Context<'a> {
         states.get_mut(state_index).unwrap().downcast_mut().unwrap()
     }
 
-    pub fn focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
+    pub fn use_state2<S>(&mut self, init: impl FnOnce(&mut Self) -> S) -> &mut S
+    where
+        S: Any + 'static,
+    {
+        let state_id = StateId::from(std::any::type_name::<S>());
+        let node_id = self.node_id;
+        let needs_init = {
+            let entry = self.app_context.states.entry(node_id).or_default();
+            !entry.contains_key(&state_id)
+        };
+        if needs_init {
+            let value = init(self);
+            self.app_context
+                .states
+                .entry(node_id)
+                .or_default()
+                .insert(state_id.clone(), AnyState::new(State::new(value)));
+        }
+        self.app_context
+            .states
+            .get_mut(&node_id)
+            .unwrap()
+            .get_mut(&state_id)
+            .unwrap()
+            .downcast()
+            .unwrap()
+    }
+
+    fn new_focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
         let handle = self.app_context.nav.create_handle(self.nav_id, node);
         self.nav_id = handle.id;
         handle
+    }
+
+    pub fn focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
+        let handle = self.use_state2(|ctx| ctx.new_focus_handle(node));
+        let result = handle.clone();
+        self.nav_id = result.id;
+        result
     }
 
     pub fn render_text(

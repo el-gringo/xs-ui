@@ -1,6 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{Color, Context, Element, FocusHandle, NavigationNode, Render, div, text};
+use xs::{Color, Context, Element, NavigationNode, Render, div, text};
 
 pub struct Button {
     text: &'static str,
@@ -18,8 +18,7 @@ impl Button {
 
 impl Render for Button {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let nav_node =
-            ctx.use_state::<FocusHandle>(|ctx, _| ctx.focus_handle(NavigationNode::new("button")));
+        let nav_node = ctx.focus_handle(NavigationNode::new().id("button"));
         div()
             .testid("button")
             .justify_content(xs::JustifyContent::Center)

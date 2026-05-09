@@ -1,9 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{
-    AlignItems, Color, Context, Element, FocusHandle, JustifyContent, NavigationNode, Render, div,
-    text,
-};
+use xs::{AlignItems, Color, Context, Element, JustifyContent, NavigationNode, Render, div, text};
 
 use crate::{
     button::{Button, button},
@@ -34,10 +31,7 @@ impl Sidebar {
 
 impl Render for Sidebar {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let _ = ctx.use_state::<FocusHandle>(|ctx, _| {
-            let node = NavigationNode::new("sidebar").vertical();
-            ctx.focus_handle(node)
-        });
+        ctx.focus_handle(NavigationNode::new().vertical().id("sidebar"));
 
         div()
             .testid("sidebar")

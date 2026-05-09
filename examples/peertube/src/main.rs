@@ -11,8 +11,8 @@ mod theme;
 use std::any::TypeId;
 
 use xs::{
-    AlignItems, Application, Color, Context, Element, FocusHandle, JustifyContent, NavigationNode,
-    Render, div, text,
+    AlignItems, Application, Color, Context, Element, JustifyContent, NavigationNode, Render, div,
+    text,
 };
 
 use crate::{
@@ -24,9 +24,7 @@ const PEERTUBE_API_URL: &str = "https://video.monsieurbidouille.fr/api/v1";
 struct MyApp;
 impl Render for MyApp {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let _ = ctx.use_state::<FocusHandle>(|ctx, _| {
-            ctx.focus_handle(NavigationNode::new("app").horizontal())
-        });
+        ctx.focus_handle(NavigationNode::new().horizontal().id("root"));
         let videos = ctx.use_state::<Vec<Video>>(|_ctx, mutator| {
             let videos = Vec::new();
             let client = api::peertube::PeerTubeClient::new();
@@ -62,6 +60,7 @@ impl Render for MyApp {
                             grid()
                                 .items(videos.clone())
                                 .columns(3)
+                                .rows(4)
                                 .cell_width(320.)
                                 .cell_height(240.)
                                 .gap(16.)

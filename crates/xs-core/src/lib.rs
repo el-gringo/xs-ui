@@ -8,6 +8,7 @@ mod message;
 mod navigation;
 mod render;
 mod renderer;
+mod state;
 mod text_system;
 
 pub use app_config::AppConfig;

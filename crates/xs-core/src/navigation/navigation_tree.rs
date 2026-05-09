@@ -2,8 +2,6 @@ use std::{cell::RefCell, collections::VecDeque};
 
 use crate::{NavigationNode, navigation::navigation_node::NavigationNodeId};
 
-
-
 pub struct NavigationTree {
     pub root: Option<NavigationNodeId>,
     pub nodes: Vec<RefCell<NavigationNode>>,
@@ -36,20 +34,21 @@ impl NavigationTree {
         self.iter_from_node(self.root)
     }
 
-    pub fn iter_from_node(
-        &self,
-        root: Option<NavigationNodeId>,
-    ) -> NavigationTreeIterator<'_> {
+    pub fn iter_from_node(&self, root: Option<NavigationNodeId>) -> NavigationTreeIterator<'_> {
+        let mut parents = VecDeque::new();
+        let mut remaining = VecDeque::new();
+        if let Some(root) = root {
+            if let Some(node) = self.get(root) {
+                for (index, child) in node.borrow().children.iter().enumerate() {
+                    parents.push_back(root);
+                    remaining.push_back((index, *child));
+                }
+            }
+        }
         NavigationTreeIterator {
             tree: self,
-            parents: match root {
-                Some(root) => VecDeque::from([root]),
-                None => VecDeque::new(),
-            },
-            remaining: match root {
-                Some(root) => VecDeque::from([(0, root)]),
-                None => VecDeque::new(),
-            },
+            parents,
+            remaining,
         }
     }
 
@@ -61,7 +60,7 @@ impl NavigationTree {
                 prefix,
                 if node.has_focus { "*" } else { " " },
                 node_id,
-                node.key,
+                node.id.unwrap_or("none"),
                 node.layout,
                 node.selected_index,
                 node.children.len()

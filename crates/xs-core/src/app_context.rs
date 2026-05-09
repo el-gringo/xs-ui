@@ -8,8 +8,10 @@ use xs_layout::{Image, TextProperties};
 use xs_platform_event::KeyEvent;
 
 use crate::{
-    BackendRequest, FocusManager, TextSystem, TextSystemDummy, TextVertices, core::NodeId,
+    BackendRequest, FocusManager, TextSystem, TextSystemDummy, TextVertices,
+    core::NodeId,
     navigation::NavigationNodeId,
+    state::{AnyState, StateId},
 };
 
 // Global AppContext storage
@@ -35,6 +37,7 @@ pub struct AppContext {
     pub key_down: Option<KeyEvent>,
     pub nav: FocusManager,
     pub nodes: HashMap<NodeId, Vec<Box<dyn Any>>>,
+    pub states: HashMap<NodeId, HashMap<StateId, AnyState>>,
     pub current_node_id: NodeId,
     pub current_nav_node_id: NavigationNodeId,
     pub text_system: Box<dyn TextSystem>,
@@ -56,9 +59,10 @@ impl Default for AppContext {
                 height: 0,
             },
             nav: FocusManager::new(),
-            current_node_id: (TypeId::of::<NodeId>(), 0, 0),
+            current_node_id: (TypeId::of::<Self>(), 0, 0),
             current_nav_node_id: 0,
             nodes: Default::default(),
+            states: Default::default(),
             text_system: Box::new(TextSystemDummy::default()),
             textures: Default::default(),
             texts: Default::default(),
