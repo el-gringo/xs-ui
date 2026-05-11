@@ -1,4 +1,4 @@
-use std::{any::TypeId, rc::Rc};
+use std::rc::Rc;
 
 use xs::{AlignItems, Color, Context, Element, JustifyContent, NavigationNode, Render, div, text};
 

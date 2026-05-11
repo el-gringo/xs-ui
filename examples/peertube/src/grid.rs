@@ -1,8 +1,8 @@
-use std::{any::TypeId, rc::Rc};
+use std::rc::Rc;
 
-use xs::{Color, Context, Element, NavigationNode, Render, div};
+use xs::{Color, Context, Element, NavigationNode, Overflow, Render, div};
 
-use crate::scroller::{Scroller, scroller};
+use crate::scroller::scroller;
 
 type CellRenderer<T> = dyn Fn(usize, &T) -> Rc<dyn Render>;
 
@@ -43,8 +43,8 @@ impl Render for GridCell {
         cell.child(self.child.clone()).into()
     }
 
-    fn tag(&self) -> TypeId {
-        TypeId::of::<Self>()
+    fn tag(&self) -> std::any::TypeId {
+        std::any::TypeId::of::<Self>()
     }
 }
 
@@ -144,8 +144,8 @@ impl<T: Default + 'static> Grid<T> {
 }
 
 impl<T: Default + 'static> Render for Grid<T> {
-    fn tag(&self) -> TypeId {
-        TypeId::of::<Self>()
+    fn tag(&self) -> std::any::TypeId {
+        std::any::TypeId::of::<Self>()
     }
 
     fn render(&self, ctx: &mut xs::Context) -> Box<dyn xs::Element> {
@@ -176,7 +176,6 @@ impl<T: Default + 'static> Render for Grid<T> {
                     let cb = on_row_change.clone();
                     Some(Box::new(move || {
                         let row_index = ((index / columns) as f32).floor() as usize;
-                        eprintln!("row_index: {row_index}");
                         if let Some(ref cb) = cb {
                             cb(row_index);
                         }
@@ -207,6 +206,7 @@ impl<T: Default + 'static> Render for Grid<T> {
         }
 
         div()
+            .overflow(Overflow::Hidden)
             .child(
                 scroller()
                     .scroll_to(offset_value as f32 * cell_height)

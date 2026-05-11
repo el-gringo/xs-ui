@@ -13,6 +13,7 @@ uniform vec4 u_shadowColor;
 uniform vec4 u_borderColor;
 uniform vec4 u_borderWidth;
 uniform vec4 u_borderRadius;
+uniform vec4 u_clip;
 
 vec4 erf(vec4 x) {
     vec4 s = sign(x), a = abs(x);
@@ -93,5 +94,13 @@ void main() {
     vec4 color = mix(resetColor, u_shadowColor, shadow);
     color = mix(color, u_borderColor, border);
     color = mix(color, fillColor, box);
+
+    vec2 clipL = u_clip.xy;
+    vec2 clipU = u_clip.xy + u_clip.zw;
+    if (v_pixelPos.x < clipL.x || v_pixelPos.x > clipU.x ||
+        v_pixelPos.y < clipL.y || v_pixelPos.y > clipU.y) {
+        discard;
+    }
+
     gl_FragColor = color;
 }

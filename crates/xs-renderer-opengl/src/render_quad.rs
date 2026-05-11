@@ -42,6 +42,7 @@ impl RendererOpenGl {
         quad: &Rectangle,
         style: &Style,
         image: &Option<Image>,
+        clip: Option<Rectangle>,
     ) {
         let texture_place_holder = self.texture_place_holder;
         let shader = self.get_shader("quad");
@@ -78,6 +79,11 @@ impl RendererOpenGl {
         shader.uniform_4fv("u_borderRadius", style.border_radius);
         shader.uniform_4fv("u_borderColor", border_color);
         shader.uniform_1i("u_texture", 0);
+
+        let default_no_clip = Rectangle::new(0.0, 0.0, f32::INFINITY, f32::INFINITY);
+        let clip_rect = clip.as_ref().unwrap_or(&default_no_clip);
+        shader.uniform_4fv("u_clip", *clip_rect);
+
         shader.bind_buffers();
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }

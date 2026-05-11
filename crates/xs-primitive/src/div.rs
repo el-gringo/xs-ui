@@ -3,7 +3,7 @@ use std::{any::TypeId, rc::Rc};
 use xs_core::{AppContext, Context, Element, Render, TextProperties};
 use xs_layout::{
     AlignItems, BorderRadius, BorderSide, Borders, BoxShadow, Color, EdgeInsets, Flex,
-    FlexDirection, FlexWrap, JustifyContent, Material, Positioned, Style, StyleDisplay,
+    FlexDirection, FlexWrap, JustifyContent, Material, Overflow, Positioned, Style, StyleDisplay,
     StylePosition, View,
 };
 
@@ -259,6 +259,11 @@ impl Div {
 
     pub fn wrap(mut self) -> Self {
         self.style.flex_wrap = FlexWrap::Wrap;
+        self
+    }
+
+    pub fn overflow(mut self, overflow: Overflow) -> Self {
+        self.style.overflow = overflow;
         self
     }
 

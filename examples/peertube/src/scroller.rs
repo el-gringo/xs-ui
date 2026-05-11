@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use xs::{Element, Render, div};
+use xs::{Render, div};
 
 #[derive(Default)]
 pub struct Scroller {

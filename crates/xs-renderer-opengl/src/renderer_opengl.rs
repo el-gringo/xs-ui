@@ -7,7 +7,7 @@ use xs_gl::{
     glClearColor, glDisable, glEnable, glFlush, glGenBuffers, glViewport, load_texture,
 };
 use xs_layout::{
-    BoxConstraints, LayoutBox, LayoutTree,
+    BoxConstraints, LayoutBox, LayoutTree, Overflow,
     Material::{Quad, Text},
     View,
 };
@@ -44,6 +44,14 @@ impl RendererOpenGl {
             .get_mut(name)
             .unwrap_or_else(|| panic!("Cannot find shader {name}"))
     }
+
+    fn intersect_rect(a: &Rectangle, b: &Rectangle) -> Rectangle {
+        let x = a.x.max(b.x);
+        let y = a.y.max(b.y);
+        let right = (a.x + a.width).min(b.x + b.width);
+        let bottom = (a.y + a.height).min(b.y + b.height);
+        Rectangle::new(x, y, (right - x).max(0.0), (bottom - y).max(0.0))
+    }
 }
 
 impl Renderer for RendererOpenGl {
@@ -77,16 +85,35 @@ impl Renderer for RendererOpenGl {
         let root_lbox = LayoutBox::from_child(root_sbox, (0.0, 0.0));
         let root_id = tree.insert(root_lbox.clone());
         tree.set_root(Some(root_id));
-        for (_, _, _, _, child, offset) in tree.iter() {
+
+        let node_count = tree.boxes.len();
+        let mut clip_rects: Vec<Option<Rectangle>> = vec![None; node_count];
+
+        for (_, parent_id, _, child_id, child, offset) in tree.iter() {
             let origin = Vector2::new(child.bounds.x, child.bounds.y);
             let min = offset + origin + child.margin.min();
             let quad = Rectangle::new(min.x, min.y, child.bounds.width, child.bounds.height);
+
+            let parent_clip = clip_rects[parent_id];
+            let clip = if let Some(Quad(style, _)) = &child.material
+                && style.overflow == Overflow::Hidden
+            {
+                let box_clip = Rectangle::new(min.x, min.y, quad.width, quad.height);
+                Some(match parent_clip {
+                    Some(p) => Self::intersect_rect(&p, &box_clip),
+                    None => box_clip,
+                })
+            } else {
+                parent_clip
+            };
+            clip_rects[child_id] = clip;
+
             if (child.material.is_some() || child.text_material.is_some())
                 && let Some(material) = &child.material
             {
                 match material {
                     Quad(style, image) => {
-                        self.render_quad(ctx, &quad, style, image);
+                        self.render_quad(ctx, &quad, style, image, clip);
                     }
                     Text(color, text_properties, text_vertices) => {
                         let (atlas_texture, _atlas_font_size) = self

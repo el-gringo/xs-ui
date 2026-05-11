@@ -61,6 +61,13 @@ pub enum StylePosition {
     Absolute,
 }
 
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
+pub enum Overflow {
+    #[default]
+    Visible,
+    Hidden,
+}
+
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Style {
     pub color: Color,
@@ -106,6 +113,7 @@ pub struct Style {
     pub min_height: Option<f32>,
 
     pub display: StyleDisplay,
+    pub overflow: Overflow,
 
     // Flex properties
     pub flex_direction: FlexDirection,
