@@ -66,7 +66,7 @@ impl Render for MyApp {
                         .justify_content(JustifyContent::Center)
                         .child(
                             grid()
-                                .items(videos.clone())
+                                .items(videos.read().clone())
                                 .columns(3)
                                 .rows(4)
                                 .cell_width(320.)
@@ -77,7 +77,7 @@ impl Render for MyApp {
                                         .thumbnail(video.thumbnail_url())
                                         .title(video.name.clone())
                                         .into()
-                                }),
+                                }), //.on_row_change(|row_index| eprintln!("on_row_change: {row_index}")),
                         ),
                 ]),
             )

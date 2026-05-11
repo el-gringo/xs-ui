@@ -30,4 +30,8 @@ impl FocusHandle {
             .borrow_mut()
             .has_focus = has_focus;
     }
+
+    pub fn selected_index(&self) -> usize {
+        self.tree.borrow().get(self.id).unwrap().borrow().selected_index
+    }
 }

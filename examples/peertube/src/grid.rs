@@ -53,16 +53,27 @@ pub struct Grid<T> {
     pub gap: f32,
     pub grow: bool,
     pub cell_renderer: Option<Box<CellRenderer<T>>>,
+    pub on_row_change: Option<Rc<dyn Fn(usize) + 'static>>,
 }
 
+#[derive(Default)]
 pub struct GridRow {
     children: Vec<Rc<dyn Render>>,
     height: f32,
+    on_focus: Option<Rc<dyn Fn() + 'static>>,
 }
 
 impl Render for GridRow {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        ctx.focus_handle(NavigationNode::new().horizontal().id("grid-row"));
+        let nav = ctx.focus_handle(NavigationNode::new().horizontal().id("grid-row"));
+        if let Some(callback) = &self.on_focus {
+            let was_focused = ctx.use_state::<bool>(|_| false);
+            let is_focused = nav.has_focus();
+            if is_focused && !*was_focused.read() {
+                callback();
+            }
+            was_focused.update(|| is_focused);
+        }
         div()
             .row()
             .height(self.height)
@@ -75,10 +86,35 @@ impl Render for GridRow {
     }
 }
 
+impl GridRow {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn children(mut self, children: Vec<Rc<dyn Render>>) -> Self {
+        self.children = children;
+        self
+    }
+
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = height;
+        self
+    }
+
+    pub fn on_focus(mut self, callback: impl Fn() + 'static) -> Self {
+        self.on_focus = Some(Rc::new(callback));
+        self
+    }
+}
+
 impl From<GridRow> for Rc<dyn Render> {
     fn from(val: GridRow) -> Self {
         Rc::new(val)
     }
+}
+
+fn grid_row() -> GridRow {
+    GridRow::new()
 }
 
 impl<T: Default + 'static> Grid<T> {
@@ -108,6 +144,11 @@ impl<T: Default + 'static> Grid<T> {
 
     pub fn rows(mut self, rows: u32) -> Self {
         self.rows = rows;
+        self
+    }
+
+    pub fn on_row_change(mut self, callback: impl Fn(usize) + 'static) -> Self {
+        self.on_row_change = Some(Rc::new(callback));
         self
     }
 
@@ -156,22 +197,27 @@ impl<T: Default + 'static> Render for Grid<T> {
     }
 
     fn render(&self, ctx: &mut xs::Context) -> Box<dyn xs::Element> {
-        ctx.focus_handle(NavigationNode::new().vertical().id("grid"));
+        let offset = ctx.use_state::<i32>(|_| 0);
+        let _nav = ctx.focus_handle(NavigationNode::new().vertical().id("grid"));
         let cell_renderer = &self.cell_renderer;
         let calculated_width = self.calculate_width();
         let columns = self.columns.max(1) as usize;
+
+        let offset_value = std::cmp::max(*offset.read() - 1, 0);
+        let on_row_change = self.on_row_change.clone();
 
         let rows: Vec<Rc<dyn Render>> = self
             .items
             .chunks(columns)
             .enumerate()
+            .skip(offset_value as _)
             .take(self.rows as _)
-            .map(|(row_index, chunk)| {
+            .map(move |(row_index, chunk)| {
                 let cells: Vec<Rc<dyn Render>> = chunk
                     .iter()
                     .enumerate()
                     .map(|(col_index, item)| {
-                        let index = row_index * columns + col_index;
+                        let index = (offset_value as usize + row_index) * columns + col_index;
                         GridCell {
                             child: (cell_renderer.as_ref().unwrap())(index, item),
                             width: self.cell_width,
@@ -181,11 +227,22 @@ impl<T: Default + 'static> Render for Grid<T> {
                         .into()
                     })
                     .collect();
-                GridRow {
-                    children: cells,
-                    height: self.cell_height,
-                }
-                .into()
+                grid_row()
+                    .children(cells)
+                    .height(self.cell_height)
+                    .on_focus({
+                        let cb = on_row_change.as_ref().map(Rc::clone);
+                        let offset = offset.clone();
+                        move || {
+                            //let row_index = std::cmp::max(row_index - 2, 0);
+                            eprintln!("row_index: {row_index}");
+                            if let Some(ref cb) = cb {
+                                cb(row_index);
+                            }
+                            offset.update(|| row_index as _);
+                        }
+                    })
+                    .into()
             })
             .collect();
 

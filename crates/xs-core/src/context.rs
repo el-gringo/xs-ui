@@ -57,7 +57,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn use_state<S>(&mut self, init: impl FnOnce(&mut Self) -> S) -> &mut State<S>
+    pub fn use_state<S>(&mut self, init: impl FnOnce(&mut Self) -> S) -> State<S>
     where
         S: Any + 'static,
     {
@@ -81,8 +81,9 @@ impl<'a> Context<'a> {
             .unwrap()
             .get_mut(&state_id)
             .unwrap()
-            .downcast_state::<S>()
+            .downcast::<S>()
             .unwrap()
+            .clone()
     }
 
     pub fn updater<S: 'static>(&self) -> Updater<S> {
@@ -97,7 +98,7 @@ impl<'a> Context<'a> {
 
     pub fn focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
         let state = self.use_state::<FocusHandle>(|ctx| ctx.new_focus_handle(node));
-        let result = (*state).clone();
+        let result = state.read().clone();
         self.nav_id = result.id;
         result
     }
