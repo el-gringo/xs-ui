@@ -4,6 +4,9 @@ pub type NavigationNodeId = usize;
 pub enum NavigationLayout {
     Horizontal,
     Verical,
+    Grid {
+        columns: usize,
+    },
     #[default]
     Leaf,
 }
@@ -37,6 +40,11 @@ impl NavigationNode {
 
     pub fn horizontal(mut self) -> Self {
         self.layout = Horizontal;
+        self
+    }
+
+    pub fn grid(mut self, columns: usize) -> Self {
+        self.layout = Grid { columns };
         self
     }
 

@@ -5,7 +5,7 @@ use xs_platform_event::KeyCode;
 use crate::{
     FocusHandle, NavigationNode,
     navigation::{
-        navigation_node::{Horizontal, NavigationNodeId, Verical},
+        navigation_node::{Grid, Horizontal, NavigationNodeId, Verical},
         navigation_tree::NavigationTree,
     },
 };
@@ -89,6 +89,36 @@ impl FocusManager {
                     }
                     (Horizontal, KeyCode::Right) | (Verical, KeyCode::Down) => {
                         propagate = parent.borrow_mut().next();
+                    }
+                    (Grid { columns }, KeyCode::Left) => {
+                        let sel = parent.borrow().selected_index;
+                        if sel > 0 && sel % columns != 0 {
+                            parent.borrow_mut().selected_index -= 1;
+                            propagate = false;
+                        }
+                    }
+                    (Grid { columns }, KeyCode::Right) => {
+                        let sel = parent.borrow().selected_index;
+                        let len = parent.borrow().children.len();
+                        if sel < len - 1 && sel % columns != columns - 1 {
+                            parent.borrow_mut().selected_index += 1;
+                            propagate = false;
+                        }
+                    }
+                    (Grid { columns }, KeyCode::Up) => {
+                        let sel = parent.borrow().selected_index;
+                        if sel >= columns {
+                            parent.borrow_mut().selected_index -= columns;
+                            propagate = false;
+                        }
+                    }
+                    (Grid { columns }, KeyCode::Down) => {
+                        let sel = parent.borrow().selected_index;
+                        let len = parent.borrow().children.len();
+                        if sel + columns < len {
+                            parent.borrow_mut().selected_index += columns;
+                            propagate = false;
+                        }
                     }
                     _ => {}
                 }
