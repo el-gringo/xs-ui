@@ -2,6 +2,8 @@ use std::{any::TypeId, rc::Rc};
 
 use xs::{Color, Context, Element, NavigationNode, Render, div};
 
+use crate::scroller::{Scroller, scroller};
+
 type CellRenderer<T> = dyn Fn(usize, &T) -> Rc<dyn Render>;
 
 pub struct GridCell {
@@ -204,7 +206,13 @@ impl<T: Default + 'static> Render for Grid<T> {
             grid_div = grid_div.grow(1., 0.);
         }
 
-        grid_div.into()
+        div()
+            .child(
+                scroller()
+                    .scroll_to(offset_value as f32 * cell_height)
+                    .children(vec![grid_div]),
+            )
+            .into()
     }
 }
 

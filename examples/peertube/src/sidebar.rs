@@ -30,6 +30,10 @@ impl Sidebar {
 }
 
 impl Render for Sidebar {
+    fn tag(&self) -> std::any::TypeId {
+        std::any::TypeId::of::<Self>()
+    }
+
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
         ctx.focus_handle(NavigationNode::new().vertical().id("sidebar"));
 
@@ -62,10 +66,6 @@ impl Render for Sidebar {
                     .child(button("Settings", theme::GRAY4)),
             )
             .into()
-    }
-
-    fn tag(&self) -> std::any::TypeId {
-        TypeId::of::<Sidebar>()
     }
 }
 

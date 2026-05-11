@@ -5,6 +5,7 @@ mod body;
 mod button;
 mod card;
 mod grid;
+mod scroller;
 mod sidebar;
 mod theme;
 
