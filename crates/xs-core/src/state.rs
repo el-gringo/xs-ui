@@ -52,6 +52,10 @@ impl<S: 'static> State<S> {
     pub fn update(&self, mutator: impl FnOnce() -> S) {
         *self.inner.borrow_mut() = mutator();
     }
+
+    pub fn mutate(&self, f: impl FnOnce(&mut S)) {
+        f(&mut *self.inner.borrow_mut());
+    }
 }
 
 pub struct Updater<S> {
@@ -88,6 +92,18 @@ impl<S: 'static> Updater<S> {
             .and_then(|s| s.downcast::<S>())
         {
             state.update(value);
+        }
+    }
+
+    pub fn mutate(&self, f: impl FnOnce(&mut S)) {
+        let app = crate::get_app_context();
+        if let Some(state) = app
+            .states
+            .get_mut(&self.node_id)
+            .and_then(|s| s.get_mut(&self.state_id))
+            .and_then(|s| s.downcast::<S>())
+        {
+            state.mutate(f);
         }
     }
 }

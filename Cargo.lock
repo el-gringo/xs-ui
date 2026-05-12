@@ -148,6 +148,7 @@ dependencies = [
 name = "xs"
 version = "0.1.0"
 dependencies = [
+ "xs-animation",
  "xs-backend",
  "xs-backend-core",
  "xs-backend-image",
@@ -159,6 +160,10 @@ dependencies = [
  "xs-text-system",
  "zune-image",
 ]
+
+[[package]]
+name = "xs-animation"
+version = "0.1.0"
 
 [[package]]
 name = "xs-backend"
@@ -341,6 +346,7 @@ version = "0.1.0"
 name = "xs-primitive"
 version = "0.1.0"
 dependencies = [
+ "xs-animation",
  "xs-backend-core",
  "xs-core",
  "xs-layout",

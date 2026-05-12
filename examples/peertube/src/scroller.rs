@@ -1,8 +1,7 @@
 use std::rc::Rc;
 
-use xs::{Render, div};
+use xs::{Context, Element, Render, Spring, animate, div};
 
-#[derive(Default)]
 pub struct Scroller {
     offset_top: f32,
     children: Vec<Rc<dyn Render>>,
@@ -10,7 +9,10 @@ pub struct Scroller {
 
 impl Scroller {
     pub fn new() -> Self {
-        Default::default()
+        Self {
+            offset_top: 0.0,
+            children: Vec::new(),
+        }
     }
 
     pub fn scroll_to(mut self, offset_top: f32) -> Self {
@@ -33,10 +35,12 @@ impl Render for Scroller {
         std::any::TypeId::of::<Self>()
     }
 
-    fn render(&self, _ctx: &mut xs::Context) -> Box<dyn xs::Element> {
+    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+        let animated_offset = animate(ctx, Spring::new(0.0), self.offset_top);
+
         div()
             .absolute()
-            .top(-self.offset_top)
+            .top(-animated_offset)
             .children(self.children.clone())
             .into()
     }

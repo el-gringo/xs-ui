@@ -5,6 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+xs-animation.workspace = true
 xs-core.workspace = true
 xs-backend.workspace = true
 xs-backend-image.workspace = true

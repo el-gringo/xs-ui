@@ -21,6 +21,7 @@ edition = "2024"
 
 [workspace.dependencies]
 xs = { path = "crates/xs" }
+xs-animation = { path = "crates/xs-animation" }
 xs-backend = { path = "crates/xs-backend" }
 xs-backend-core = { path = "crates/xs-backend-core" }
 xs-backend-browser = { path = "crates/xs-backend-browser" }
