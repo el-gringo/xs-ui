@@ -17,27 +17,24 @@ use xs::{
 };
 
 use crate::{
-    api::peertube::{PeerTubeClient, Video},
-    body::body,
-    card::card,
-    grid::grid,
-    sidebar::sidebar,
+    api::peertube::PeerTubeClient, body::body, card::card, grid::grid, sidebar::sidebar,
     theme::GRAY4,
 };
 
 const PEERTUBE_API_URL: &str = "https://video.monsieurbidouille.fr/api/v1";
 
-struct MyApp;
-impl Render for MyApp {
+struct Peertube;
+impl Render for Peertube {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
         ctx.focus_handle(NavigationNode::new().horizontal().id("root"));
-        let videos = ctx.use_state::<Vec<Video>>(|ctx| {
-            let updater = ctx.updater::<Vec<Video>>();
+        let videos = ctx.use_state(|_| Vec::new());
+        let _ = ctx.use_state::<bool>(|_| {
+            let set_videos = videos.clone();
             let client = PeerTubeClient::new();
             client.get_videos(0, 20, move |new_videos| {
-                updater.update(|| new_videos);
+                set_videos.update(|| new_videos);
             });
-            Vec::new()
+            true
         });
 
         div()
@@ -62,9 +59,10 @@ impl Render for MyApp {
                     div()
                         .row()
                         .width(1140.)
-                        .padding_top(64.)
+                        //.padding_top(64.)
                         .gap(32.)
                         .justify_content(JustifyContent::Center)
+                        .overflow(xs::Overflow::Hidden)
                         .child(
                             grid()
                                 .items(videos.read().clone())
@@ -78,7 +76,7 @@ impl Render for MyApp {
                                         .thumbnail(video.thumbnail_url())
                                         .title(video.name.clone())
                                         .into()
-                                }), //.on_row_change(|row_index| eprintln!("on_row_change: {row_index}")),
+                                }),
                         ),
                 ]),
             )
@@ -94,5 +92,5 @@ pub fn main() {
     Application::new()
         .id("peertube")
         .title("Peertube")
-        .run(|_ctx| MyApp);
+        .run(|_ctx| Peertube);
 }

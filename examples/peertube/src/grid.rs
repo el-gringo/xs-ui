@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{cmp::max, rc::Rc};
 
 use xs::{Color, Context, Element, NavigationNode, Overflow, Render, div};
 
@@ -10,37 +10,31 @@ pub struct GridCell {
     child: Rc<dyn Render>,
     width: f32,
     height: f32,
-    grow: bool,
-    on_focus: Option<Box<dyn Fn() + 'static>>,
+    on_focus: Option<Rc<dyn Fn() + 'static>>,
 }
 
 impl Render for GridCell {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let node = ctx.focus_handle(NavigationNode::new().id("grid-cell"));
-        let mut cell = div().height(self.height).border(
-            if node.has_focus() {
-                Color::RED
-            } else {
-                Color::TRANSPARENT
-            },
-            4.,
-        );
-        if self.grow {
-            cell = cell.grow(1., 0.);
-        } else {
-            cell = cell.width(self.width);
-        }
+        let mut focus_handle = ctx.focus_handle(NavigationNode::new().id("grid-cell"));
 
         if let Some(callback) = &self.on_focus {
-            let was_focused = ctx.use_state::<bool>(|_| false);
-            let is_focused = node.has_focus();
-            if is_focused && !*was_focused.read() {
-                callback();
-            }
-            was_focused.update(|| is_focused);
+            let cb = callback.clone();
+            focus_handle.on_focus(move || cb());
         }
 
-        cell.child(self.child.clone()).into()
+        div()
+            .width(self.width)
+            .height(self.height)
+            .border(
+                if focus_handle.has_focus() {
+                    Color::RED
+                } else {
+                    Color::TRANSPARENT
+                },
+                4.,
+            )
+            .child(self.child.clone())
+            .into()
     }
 
     fn tag(&self) -> std::any::TypeId {
@@ -149,69 +143,68 @@ impl<T: Default + 'static> Render for Grid<T> {
     }
 
     fn render(&self, ctx: &mut xs::Context) -> Box<dyn xs::Element> {
-        let offset = ctx.use_state::<i32>(|_| 0);
-        let _nav = ctx.focus_handle(NavigationNode::new().grid(self.columns as usize).id("grid"));
+        let state = ctx.use_state::<i32>(|_| 0);
+        let focused_absolute = ctx.use_state::<usize>(|_| 0);
+        let focus_handle =
+            ctx.focus_handle(NavigationNode::new().grid(self.columns as usize).id("grid"));
         let cell_renderer = &self.cell_renderer;
         let calculated_width = self.calculate_width();
-        let columns = self.columns.max(1) as usize;
+        let rows = self.rows;
+        let columns = self.columns;
         let gap = self.gap;
         let cell_width = self.cell_width;
         let cell_height = self.cell_height;
         let grow = self.grow;
-        let rows_count = self.rows;
 
-        let offset_value = std::cmp::max(*offset.read() - 1, 0);
-        let offset_updater = ctx.updater::<i32>();
+        let offset_value = *state.read();
+        let first_row = max(offset_value - 2, 0) as i32;
+
+        let skipped = (first_row * columns as i32) as i32;
+
         let on_row_change = self.on_row_change.clone();
+
+        let selected_index = focus_handle.selected_index();
+        let selected_row = (selected_index as f32 / columns as f32).floor() as i32;
+        let scroll_position = max(selected_row - 1, 0) * cell_height as i32;
 
         let cells: Vec<Rc<dyn Render>> = self
             .items
             .iter()
             .enumerate()
-            .skip(offset_value as _)
-            .take((rows_count * columns as u32) as _)
+            .skip(skipped as _)
+            .take((rows * columns) as _)
             .map(move |(index, item)| {
+                let row_index = index / columns as usize;
                 let on_focus = {
-                    let updater = offset_updater.clone();
                     let cb = on_row_change.clone();
-                    Some(Box::new(move || {
-                        let row_index = ((index / columns) as f32).floor() as usize;
+                    Some(Rc::new(move || {
                         if let Some(ref cb) = cb {
                             cb(row_index);
                         }
-                        updater.update(|| row_index as i32);
-                    }) as Box<dyn Fn() + 'static>)
+                    }) as Rc<dyn Fn() + 'static>)
                 };
                 GridCell {
                     child: (cell_renderer.as_ref().unwrap())(index, &item),
                     width: cell_width,
                     height: cell_height,
-                    grow,
                     on_focus,
                 }
                 .into()
             })
             .collect();
 
-        let mut grid_div = div()
-            .width(calculated_width)
-            .height(self.height)
-            .row()
-            .gap(gap)
-            .wrap()
-            .children(cells);
-
-        if self.grow {
-            grid_div = grid_div.grow(1., 0.);
-        }
-
         div()
             .overflow(Overflow::Hidden)
-            .child(
-                scroller()
-                    .scroll_to(offset_value as f32 * cell_height)
-                    .children(vec![grid_div]),
-            )
+            .child(scroller().scroll_to(scroll_position as _).children(vec![
+                        div()
+                            .width(calculated_width)
+                            .height(self.height)
+                            .row()
+                            .gap(gap)
+                            .wrap()
+                            .grow(1., 1.)
+                            .children(cells)
+                    ]))
             .into()
     }
 }

@@ -1,7 +1,6 @@
 use std::{
     any::Any,
     cell::{Ref, RefCell},
-    marker::PhantomData,
     rc::Rc,
 };
 
@@ -27,7 +26,7 @@ impl AnyState {
 }
 
 pub struct State<S> {
-    inner: Rc<RefCell<S>>,
+    pub(crate) inner: Rc<RefCell<S>>,
 }
 
 impl<S: 'static> Clone for State<S> {
@@ -58,52 +57,19 @@ impl<S: 'static> State<S> {
     }
 }
 
-pub struct Updater<S> {
-    node_id: crate::core::NodeId,
-    state_id: StateId,
-    _marker: PhantomData<S>,
+// SAFETY: State is only used on the main thread (single-threaded event loop).
+// Rc/RefCell are !Send, but the framework guarantees single-threaded access,
+// so it is safe to send the State across thread boundaries for async callbacks.
+unsafe impl<S: 'static> Send for State<S> {}
+
+pub struct Setter<S> {
+    pub(crate) inner: Rc<RefCell<S>>,
 }
 
-impl<S: 'static> Clone for Updater<S> {
+impl<S: 'static> Clone for Setter<S> {
     fn clone(&self) -> Self {
         Self {
-            node_id: self.node_id.clone(),
-            state_id: self.state_id.clone(),
-            _marker: PhantomData,
-        }
-    }
-}
-
-impl<S: 'static> Updater<S> {
-    pub(crate) fn new(node_id: crate::core::NodeId, state_id: StateId) -> Self {
-        Self {
-            node_id,
-            state_id,
-            _marker: PhantomData,
-        }
-    }
-
-    pub fn update(&self, value: impl FnOnce() -> S) {
-        let app = crate::get_app_context();
-        if let Some(state) = app
-            .states
-            .get_mut(&self.node_id)
-            .and_then(|s| s.get_mut(&self.state_id))
-            .and_then(|s| s.downcast::<S>())
-        {
-            state.update(value);
-        }
-    }
-
-    pub fn mutate(&self, f: impl FnOnce(&mut S)) {
-        let app = crate::get_app_context();
-        if let Some(state) = app
-            .states
-            .get_mut(&self.node_id)
-            .and_then(|s| s.get_mut(&self.state_id))
-            .and_then(|s| s.downcast::<S>())
-        {
-            state.mutate(f);
+            inner: self.inner.clone(),
         }
     }
 }

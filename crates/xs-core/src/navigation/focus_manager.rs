@@ -85,40 +85,22 @@ impl FocusManager {
                 let layout = parent.borrow().layout;
                 match (layout, key_code) {
                     (Horizontal, KeyCode::Left) | (Verical, KeyCode::Up) => {
-                        propagate = parent.borrow_mut().previous();
+                        propagate = parent.borrow_mut().previous_sibling();
                     }
                     (Horizontal, KeyCode::Right) | (Verical, KeyCode::Down) => {
-                        propagate = parent.borrow_mut().next();
+                        propagate = parent.borrow_mut().next_sibling();
                     }
                     (Grid { columns }, KeyCode::Left) => {
-                        let sel = parent.borrow().selected_index;
-                        if sel > 0 && sel % columns != 0 {
-                            parent.borrow_mut().selected_index -= 1;
-                            propagate = false;
-                        }
+                        propagate = parent.borrow_mut().previous_sibling_in_row(columns);
                     }
                     (Grid { columns }, KeyCode::Right) => {
-                        let sel = parent.borrow().selected_index;
-                        let len = parent.borrow().children.len();
-                        if sel < len - 1 && sel % columns != columns - 1 {
-                            parent.borrow_mut().selected_index += 1;
-                            propagate = false;
-                        }
+                        propagate = parent.borrow_mut().next_sibling_in_row(columns);
                     }
                     (Grid { columns }, KeyCode::Up) => {
-                        let sel = parent.borrow().selected_index;
-                        if sel >= columns {
-                            parent.borrow_mut().selected_index -= columns;
-                            propagate = false;
-                        }
+                        propagate = parent.borrow_mut().previous_row(columns);
                     }
                     (Grid { columns }, KeyCode::Down) => {
-                        let sel = parent.borrow().selected_index;
-                        let len = parent.borrow().children.len();
-                        if sel + columns < len {
-                            parent.borrow_mut().selected_index += columns;
-                            propagate = false;
-                        }
+                        propagate = parent.borrow_mut().next_row(columns);
                     }
                     _ => {}
                 }
@@ -134,11 +116,29 @@ impl FocusManager {
     pub fn update(&mut self) {
         let tree = self.tree.borrow();
         for (parent, index, child) in tree.iter() {
-            let parent_has_focus = parent.borrow().has_focus;
-            let selected_index = parent.borrow().selected_index;
+            // clamp selected_index to valid range in case children were removed
+            let children_len;
+            let selected_index;
+            let parent_has_focus;
+            {
+                let mut parent_node = parent.borrow_mut();
+                children_len = parent_node.children.len();
+                if parent_node.selected_index >= children_len && children_len > 0 {
+                    parent_node.selected_index = children_len - 1;
+                }
+                selected_index = parent_node.selected_index;
+                parent_has_focus = parent_node.has_focus;
+            }
             if parent_has_focus {
-                if index == selected_index && parent.borrow().children.len() > index {
-                    child.borrow_mut().has_focus = true;
+                if index == selected_index && index < children_len {
+                    let should_have_focus = true;
+                    let mut child_node = child.borrow_mut();
+                    let prev = child_node.has_focus;
+                    child_node.has_focus = should_have_focus;
+                    if should_have_focus && !prev {
+                        child_node.focus_callback.clone().map(|cb| cb());
+                    }
+                    drop(child_node);
                     if child.borrow().children.is_empty() {
                         self.active_element_id = parent.borrow().children[selected_index];
                     }

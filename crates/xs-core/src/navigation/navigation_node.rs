@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 pub type NavigationNodeId = usize;
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
@@ -21,6 +23,7 @@ pub struct NavigationNode {
     pub has_focus: bool,
     pub children: Vec<NavigationNodeId>,
     pub parent: NavigationNodeId,
+    pub focus_callback: Option<Rc<dyn Fn() + 'static>>,
 }
 
 impl NavigationNode {
@@ -53,7 +56,7 @@ impl NavigationNode {
         self
     }
 
-    pub fn previous(&mut self) -> bool {
+    pub fn previous_sibling(&mut self) -> bool {
         if self.selected_index > 0 {
             self.selected_index -= 1;
             return false;
@@ -61,11 +64,48 @@ impl NavigationNode {
         true
     }
 
-    pub fn next(&mut self) -> bool {
+    pub fn next_sibling(&mut self) -> bool {
         if self.selected_index < self.children.len() - 1 {
             self.selected_index += 1;
             return false;
         }
         true
+    }
+
+    pub fn previous_sibling_in_row(&mut self, columns: usize) -> bool {
+        if self.selected_index > 0 && !self.selected_index.is_multiple_of(columns) {
+            self.selected_index -= 1;
+            return false;
+        }
+        true
+    }
+
+    pub fn next_sibling_in_row(&mut self, columns: usize) -> bool {
+        if self.selected_index < self.children.len() - 1
+            && self.selected_index % columns < columns - 1
+        {
+            self.selected_index += 1;
+            return false;
+        }
+        true
+    }
+
+    pub fn previous_row(&mut self, columns: usize) -> bool {
+        if self.selected_index >= columns {
+            self.selected_index -= columns;
+            false
+        } else {
+            true
+        }
+    }
+
+    pub fn next_row(&mut self, columns: usize) -> bool {
+        let next_index = self.selected_index + columns;
+        if next_index < self.children.len() {
+            self.selected_index = next_index;
+            false
+        } else {
+            true
+        }
     }
 }
