@@ -63,7 +63,7 @@ impl Render for Peertube {
                                 .columns(3)
                                 .rows(4)
                                 .cell_width(320.)
-                                .cell_height(240.)
+                                .cell_height(320.)
                                 .gap(48.)
                                 .cell_renderer(|_index, video| {
                                     card()

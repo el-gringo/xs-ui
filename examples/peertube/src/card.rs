@@ -49,7 +49,7 @@ impl Render for Card {
         div()
             .column()
             .width(320.)
-            .height(240.)
+            .height(270.)
             .background_color(Color::WHITE)
             .border_radius_all(8.)
             .box_shadow(4., 4., 8., 0., Color::BLACK)
