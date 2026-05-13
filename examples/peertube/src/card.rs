@@ -51,9 +51,11 @@ impl Render for Card {
             .width(320.)
             .height(240.)
             .background_color(Color::WHITE)
+            .border_radius_all(8.)
+            .box_shadow(4., 4., 8., 0., Color::BLACK)
             .border(
                 if focus_handle.has_focus() {
-                    Color::RED
+                    theme::BRIGHT_RED
                 } else {
                     Color::TRANSPARENT
                 },

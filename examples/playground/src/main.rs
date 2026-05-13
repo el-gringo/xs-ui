@@ -1,17 +1,9 @@
 use std::any::TypeId;
 
-use xs::{Application, Color, Context, Div, Element, Render, div};
+use xs::{Application, Color, Context, Element, Gradient, Render, div};
 
-fn tile(color: Color) -> Div {
-    div()
-        .width(50.)
-        .height(50.)
-        .background_color(color)
-        .border(Color::BLUE, 8.)
-}
-
-struct Counter;
-impl Render for Counter {
+struct App;
+impl Render for App {
     fn tag(&self) -> std::any::TypeId {
         TypeId::of::<Self>()
     }
@@ -23,20 +15,39 @@ impl Render for Counter {
             .column()
             .justify_content(xs::JustifyContent::Center)
             .align_items(xs::AlignItems::Center)
-            .background_color(Color::GRAY)
+            .background(Color::GRAY)
             .child(
                 div()
                     .testid("body")
                     .column()
-                    .background_color(Color::BLACK)
-                    .border(Color::RED, 8.)
-                    .width(200.)
-                    .height(300.)
-                    .child(tile(Color::RED))
-                    .child(tile(Color::GREEN))
-                    .child(tile(Color::BLUE))
-                    .child(tile(Color::YELLOW))
-                    .child(tile(Color::ORANGE).margin_left(16.).grow(0., 1.)),
+                    .background(Gradient::linear(Color::RED, Color::BLUE))
+                    .border(Color::WHITE, 4.)
+                    .width(400.)
+                    .height(500.)
+                    .child(
+                        div()
+                            .background(Gradient::angled(Color::GREEN, Color::YELLOW, 1.57))
+                            .width(200.)
+                            .height(100.)
+                            .margin_left(16.)
+                            .margin_top(16.),
+                    )
+                    .child(
+                        div()
+                            .background(Gradient::linear(Color::ORANGE, Color::PURPLE))
+                            .width(200.)
+                            .height(100.)
+                            .margin_left(16.)
+                            .margin_top(16.),
+                    )
+                    .child(
+                        div()
+                            .background_color(Color::WHITE)
+                            .width(200.)
+                            .height(50.)
+                            .margin_left(16.)
+                            .margin_top(16.),
+                    ),
             )
             .into()
     }
@@ -46,5 +57,5 @@ pub fn main() {
     Application::new()
         .id("playground")
         .title("Playground")
-        .run(|_ctx| Counter);
+        .run(|_ctx| App);
 }

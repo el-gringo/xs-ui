@@ -12,14 +12,11 @@ mod theme;
 use std::any::TypeId;
 
 use xs::{
-    AlignItems, Application, Color, Context, Element, JustifyContent, NavigationNode, Overflow,
-    Render, div, text,
+    AlignItems, Application, Color, Context, Element, Gradient, JustifyContent, NavigationNode,
+    Overflow, Render, div, text,
 };
 
-use crate::{
-    api::peertube::PeerTubeClient, body::body, card::card, grid::grid, sidebar::sidebar,
-    theme::GRAY4,
-};
+use crate::{api::peertube::PeerTubeClient, body::body, card::card, grid::grid, sidebar::sidebar};
 
 const PEERTUBE_API_URL: &str = "https://video.monsieurbidouille.fr/api/v1";
 
@@ -42,6 +39,7 @@ impl Render for Peertube {
             .row()
             .justify_content(xs::JustifyContent::FlexStart)
             .align_items(AlignItems::FlexStart)
+            .background(Gradient::angled(theme::ORANGE1, theme::ORANGE5, 0.5))
             .child(
                 sidebar(), //.buttons([button(RED), button(GREEN), button(BLUE)].into())
             )
@@ -50,7 +48,6 @@ impl Render for Peertube {
                     div()
                         .height(80.)
                         .width(1140.)
-                        .background_color(GRAY4)
                         .color(Color::WHITE)
                         .justify_content(JustifyContent::Center)
                         .align_items(AlignItems::Center)
@@ -67,7 +64,7 @@ impl Render for Peertube {
                                 .rows(4)
                                 .cell_width(320.)
                                 .cell_height(240.)
-                                .gap(16.)
+                                .gap(48.)
                                 .cell_renderer(|_index, video| {
                                     card()
                                         .thumbnail(video.thumbnail_url())

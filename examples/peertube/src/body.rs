@@ -2,8 +2,6 @@ use std::{any::TypeId, rc::Rc};
 
 use xs::{Context, Element, Render, div};
 
-use crate::theme;
-
 pub struct Body {
     pub children: Vec<Rc<dyn Render>>,
 }
@@ -29,7 +27,6 @@ impl Render for Body {
         div()
             .testid("body")
             .column()
-            .background_color(theme::GRAY1)
             .children(self.children.clone())
             .into()
     }

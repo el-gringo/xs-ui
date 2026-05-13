@@ -2,6 +2,8 @@ use std::{any::TypeId, rc::Rc};
 
 use xs::{Color, Context, Element, NavigationNode, Render, div, text};
 
+use crate::theme;
+
 pub struct Button {
     text: &'static str,
     background_color: Color,
@@ -26,13 +28,14 @@ impl Render for Button {
             .width(200.)
             .height(50.)
             .margin_top(16.)
-            .background_color(self.background_color)
-            .color(Color::WHITE)
+            .border_radius_all(8.)
+            .background_color(theme::ORANGE4)
+            .color(Color::BLACK)
             .border(
                 if nav_node.has_focus() {
-                    Color::WHITE
+                    theme::BRIGHT_RED
                 } else {
-                    Color::GRAY
+                    Color::TRANSPARENT
                 },
                 4.,
             )
