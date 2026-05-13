@@ -184,12 +184,6 @@ pub fn glFlush() {
     }
 }
 
-pub fn glScissor(x: GLint, y: GLint, width: GLsizei, height: GLsizei) {
-    unsafe {
-        bindings::glScissor(x, y, width, height);
-    }
-}
-
 pub fn glPixelStorei(pname: GLenum, param: GLint) {
     unsafe {
         bindings::glPixelStorei(pname, param);
