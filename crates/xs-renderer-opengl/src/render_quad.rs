@@ -4,7 +4,7 @@ use xs_gl::{
     Buffer, GL_FLOAT, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, GL_UNSIGNED_SHORT, Shader,
     glActiveTexture, glBindTexture, glDrawElements,
 };
-use xs_layout::{Image, Style};
+use xs_layout::{Background, Image, Style};
 use xs_math::Rectangle;
 
 #[rustfmt::skip]
@@ -71,7 +71,18 @@ impl RendererOpenGl {
             ctx.screen.height as _,
         );
         shader.uniform_4fv("u_box", *quad);
-        shader.uniform_4fv("u_color", style.background_color);
+        match style.background {
+            Background::Color(c) => {
+                shader.uniform_4fv("u_color", c);
+                shader.uniform_1f("u_gradientAngle", -1.0);
+            }
+            Background::Gradient(g) => {
+                shader.uniform_4fv("u_color", g.start);
+                shader.uniform_4fv("u_gradientStart", g.start);
+                shader.uniform_4fv("u_gradientEnd", g.end);
+                shader.uniform_1f("u_gradientAngle", g.angle);
+            }
+        }
         shader.uniform_1f("u_colorAlpha", 0.5);
         shader.uniform_4fv("u_shadow", style.box_shadow);
         shader.uniform_4fv("u_shadowColor", style.box_shadow.color);

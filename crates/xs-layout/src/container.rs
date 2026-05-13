@@ -5,7 +5,7 @@ use xs_math::Vector2;
 use crate::base::{Alignment, EdgeInsets};
 use crate::decoration::{Borders, Material};
 use crate::tree::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
-use crate::{Color, Image, Style, View};
+use crate::{Background, Color, Image, Style, View};
 
 fn clamp_f32(value: f32, min: f32, max: f32) -> f32 {
     if value < min {
@@ -122,7 +122,7 @@ impl Container {
         style.padding = self.padding;
         style.margin = self.margin;
         style.padding = self.padding;
-        style.background_color = self.color;
+        style.background = Background::Color(self.color);
 
         /*
         *     pub width: Option<f32>,
@@ -158,7 +158,7 @@ impl Container {
         style.padding = self.padding;
         style.margin = self.margin;
         style.padding = self.padding;
-        style.background_color = self.color;
+        style.background = Background::Color(self.color);
         SizedLayoutBox {
             size,
             children: vec![],

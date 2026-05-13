@@ -207,8 +207,13 @@ impl Div {
         self
     }
 
+    pub fn background(mut self, bg: impl Into<xs_layout::Background>) -> Self {
+        self.style.background = bg.into();
+        self
+    }
+
     pub fn background_color(mut self, color: Color) -> Self {
-        self.style.background_color = color;
+        self.style.background = xs_layout::Background::Color(color);
         self
     }
 

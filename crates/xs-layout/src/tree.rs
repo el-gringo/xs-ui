@@ -4,6 +4,7 @@ use std::{collections::VecDeque, rc::Rc};
 use xs_math::{Rectangle, Vector2};
 
 use crate::AlignItems;
+use crate::Background;
 use crate::base::EdgeInsets;
 use crate::decoration::Material;
 
@@ -225,7 +226,10 @@ impl LayoutTree {
                 child.clone().bounds,
                 if let Some(m) = material {
                     let color = match m {
-                        Material::Quad(style, _) => style.background_color,
+                        Material::Quad(style, _) => match style.background {
+                            Background::Color(c) => c,
+                            Background::Gradient(g) => g.start,
+                        },
                         Material::Text(color, _, _) => color,
                     };
                     format!("{color:?}")

@@ -7,6 +7,9 @@ uniform sampler2D u_texture;
 uniform vec2 u_resolution;
 uniform vec4 u_box;
 uniform vec4 u_color;
+uniform vec4 u_gradientStart;
+uniform vec4 u_gradientEnd;
+uniform float u_gradientAngle;
 uniform float u_colorAlpha;
 uniform vec4 u_shadow;
 uniform vec4 u_shadowColor;
@@ -89,6 +92,19 @@ void main() {
     float shadow = roundedBoxShadow(shadowL, shadowU, vertex, shadowBlur + 0.25, u_borderRadius);
 
     vec4 fillColor = u_color;
+    if (u_gradientAngle >= 0.0) {
+        vec2 dir = vec2(cos(u_gradientAngle), sin(u_gradientAngle));
+        vec2 boxSize = u_box.zw;
+        vec2 relPos = vertex - u_box.xy;
+        float projBL = dot(vec2(0.0, 0.0), dir);
+        float projBR = dot(vec2(boxSize.x, 0.0), dir);
+        float projTL = dot(vec2(0.0, boxSize.y), dir);
+        float projTR = dot(boxSize, dir);
+        float minT = min(min(projBL, projBR), min(projTL, projTR));
+        float maxT = max(max(projBL, projBR), max(projTL, projTR));
+        float t = (dot(relPos, dir) - minT) / (maxT - minT);
+        fillColor = mix(u_gradientStart, u_gradientEnd, clamp(t, 0.0, 1.0));
+    }
 
     vec4 resetColor = vec4(0.0);
     vec4 color = mix(resetColor, u_shadowColor, shadow);

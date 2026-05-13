@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{Color, Image, Style, TextProperties, TextVertices};
+use crate::{Background, Color, Image, Style, TextProperties, TextVertices};
 use xs_math::Vector2;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -11,9 +11,9 @@ pub enum Material {
 
 impl Material {
     #[must_use]
-    pub fn filled(background_color: Color) -> Material {
+    pub fn filled(background: impl Into<Background>) -> Material {
         let style = Style {
-            background_color,
+            background: background.into(),
             ..Default::default()
         };
         Material::Quad(Rc::new(style), None)

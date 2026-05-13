@@ -3,6 +3,47 @@ use crate::{
     FlexDirection, FlexWrap, JustifyContent,
 };
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Gradient {
+    pub start: Color,
+    pub end: Color,
+    pub angle: f32,
+}
+
+impl Gradient {
+    pub fn linear(start: Color, end: Color) -> Self {
+        Gradient { start, end, angle: 0.0 }
+    }
+
+    pub fn angled(start: Color, end: Color, angle: f32) -> Self {
+        Gradient { start, end, angle }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Background {
+    Color(Color),
+    Gradient(Gradient),
+}
+
+impl Default for Background {
+    fn default() -> Self {
+        Background::Color(Color::TRANSPARENT)
+    }
+}
+
+impl From<Color> for Background {
+    fn from(color: Color) -> Self {
+        Background::Color(color)
+    }
+}
+
+impl From<Gradient> for Background {
+    fn from(gradient: Gradient) -> Self {
+        Background::Gradient(gradient)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub enum FontStyle {
     #[default]
@@ -71,7 +112,7 @@ pub enum Overflow {
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Style {
     pub color: Color,
-    pub background_color: Color,
+    pub background: Background,
     pub background_image: Option<String>,
 
     pub border: Borders,
