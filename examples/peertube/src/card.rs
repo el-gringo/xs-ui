@@ -1,6 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs::{AlignItems, Color, Context, Element, Render, div, text};
+use xs::{AlignItems, Color, Context, Element, NavigationNode, Render, div, text};
 
 use crate::theme;
 
@@ -8,6 +8,7 @@ pub struct Card {
     id: Option<&'static str>,
     thumbnail: String,
     title: String,
+    on_focus: Option<Rc<dyn Fn() + 'static>>,
 }
 
 impl Card {
@@ -16,6 +17,7 @@ impl Card {
             id: None,
             thumbnail: String::new(),
             title: String::new(),
+            on_focus: None,
         }
     }
 
@@ -36,12 +38,27 @@ impl Card {
 }
 
 impl Render for Card {
-    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+        let mut focus_handle = ctx.focus_handle(NavigationNode::new().id("grid-cell"));
+
+        if let Some(callback) = &self.on_focus {
+            let cb = callback.clone();
+            focus_handle.on_focus(move || cb());
+        }
+
         div()
             .column()
             .width(320.)
             .height(240.)
             .background_color(Color::WHITE)
+            .border(
+                if focus_handle.has_focus() {
+                    Color::RED
+                } else {
+                    Color::TRANSPARENT
+                },
+                4.,
+            )
             .align_items(AlignItems::Center)
             .child(
                 div()

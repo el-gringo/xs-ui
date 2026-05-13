@@ -12,8 +12,8 @@ mod theme;
 use std::any::TypeId;
 
 use xs::{
-    AlignItems, Application, Color, Context, Element, JustifyContent, NavigationNode, Render, div,
-    text,
+    AlignItems, Application, Color, Context, Element, JustifyContent, NavigationNode, Overflow,
+    Render, div, text,
 };
 
 use crate::{
@@ -57,12 +57,9 @@ impl Render for Peertube {
                         .font_size(60)
                         .child(text("Monsieur Bidouille")),
                     div()
-                        .row()
                         .width(1140.)
-                        //.padding_top(64.)
-                        .gap(32.)
-                        .justify_content(JustifyContent::Center)
-                        .overflow(xs::Overflow::Hidden)
+                        .padding_top(64.)
+                        .overflow(Overflow::Hidden)
                         .child(
                             grid()
                                 .items(videos.read().clone())

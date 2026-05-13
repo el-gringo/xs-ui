@@ -1,52 +1,10 @@
 use std::{cmp::max, rc::Rc};
 
-use xs::{Color, Context, Element, NavigationNode, Overflow, Render, div};
+use xs::{JustifyContent, NavigationNode, Render, div};
 
 use crate::scroller::scroller;
 
 type CellRenderer<T> = dyn Fn(usize, &T) -> Rc<dyn Render>;
-
-pub struct GridCell {
-    child: Rc<dyn Render>,
-    width: f32,
-    height: f32,
-    on_focus: Option<Rc<dyn Fn() + 'static>>,
-}
-
-impl Render for GridCell {
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
-        let mut focus_handle = ctx.focus_handle(NavigationNode::new().id("grid-cell"));
-
-        if let Some(callback) = &self.on_focus {
-            let cb = callback.clone();
-            focus_handle.on_focus(move || cb());
-        }
-
-        div()
-            .width(self.width)
-            .height(self.height)
-            .border(
-                if focus_handle.has_focus() {
-                    Color::RED
-                } else {
-                    Color::TRANSPARENT
-                },
-                4.,
-            )
-            .child(self.child.clone())
-            .into()
-    }
-
-    fn tag(&self) -> std::any::TypeId {
-        std::any::TypeId::of::<Self>()
-    }
-}
-
-impl From<GridCell> for Rc<dyn Render> {
-    fn from(val: GridCell) -> Self {
-        Rc::new(val)
-    }
-}
 
 #[derive(Default)]
 pub struct Grid<T> {
@@ -58,7 +16,6 @@ pub struct Grid<T> {
     pub width: f32,
     pub height: f32,
     pub gap: f32,
-    pub grow: bool,
     pub cell_renderer: Option<Box<CellRenderer<T>>>,
     pub on_row_change: Option<Rc<dyn Fn(usize) + 'static>>,
 }
@@ -113,27 +70,12 @@ impl<T: Default + 'static> Grid<T> {
         self
     }
 
-    pub fn grow(mut self, grow: bool) -> Self {
-        self.grow = grow;
-        self
-    }
-
     pub fn cell_renderer(
         mut self,
         cell_renderer: impl Fn(usize, &T) -> Rc<dyn Render> + 'static,
     ) -> Self {
         self.cell_renderer = Some(Box::new(cell_renderer));
         self
-    }
-
-    fn calculate_width(&self) -> f32 {
-        if self.width > 0. {
-            self.width
-        } else if self.columns > 0 && self.cell_width > 0. {
-            self.columns as f32 * self.cell_width + (self.columns as f32 - 1.) * self.gap
-        } else {
-            self.width
-        }
     }
 }
 
@@ -144,24 +86,18 @@ impl<T: Default + 'static> Render for Grid<T> {
 
     fn render(&self, ctx: &mut xs::Context) -> Box<dyn xs::Element> {
         let state = ctx.use_state::<i32>(|_| 0);
-        let focused_absolute = ctx.use_state::<usize>(|_| 0);
         let focus_handle =
             ctx.focus_handle(NavigationNode::new().grid(self.columns as usize).id("grid"));
         let cell_renderer = &self.cell_renderer;
-        let calculated_width = self.calculate_width();
         let rows = self.rows;
         let columns = self.columns;
         let gap = self.gap;
-        let cell_width = self.cell_width;
         let cell_height = self.cell_height;
-        let grow = self.grow;
 
         let offset_value = *state.read();
         let first_row = max(offset_value - 2, 0) as i32;
 
         let skipped = (first_row * columns as i32) as i32;
-
-        let on_row_change = self.on_row_change.clone();
 
         let selected_index = focus_handle.selected_index();
         let selected_row = (selected_index as f32 / columns as f32).floor() as i32;
@@ -173,38 +109,19 @@ impl<T: Default + 'static> Render for Grid<T> {
             .enumerate()
             .skip(skipped as _)
             .take((rows * columns) as _)
-            .map(move |(index, item)| {
-                let row_index = index / columns as usize;
-                let on_focus = {
-                    let cb = on_row_change.clone();
-                    Some(Rc::new(move || {
-                        if let Some(ref cb) = cb {
-                            cb(row_index);
-                        }
-                    }) as Rc<dyn Fn() + 'static>)
-                };
-                GridCell {
-                    child: (cell_renderer.as_ref().unwrap())(index, &item),
-                    width: cell_width,
-                    height: cell_height,
-                    on_focus,
-                }
-                .into()
-            })
+            .map(move |(index, item)| cell_renderer.as_ref().unwrap()(index, &item).into())
             .collect();
 
         div()
-            .overflow(Overflow::Hidden)
+            .grow(1., 1.)
             .child(scroller().scroll_to(scroll_position as _).children(vec![
-                        div()
-                            .width(calculated_width)
-                            .height(self.height)
-                            .row()
-                            .gap(gap)
-                            .wrap()
-                            .grow(1., 1.)
-                            .children(cells)
-                    ]))
+                    div()
+                        .justify_content(JustifyContent::Center)
+                        .gap(gap)
+                        .wrap()
+                        .grow(1., 1.)
+                        .children(cells),
+                ]))
             .into()
     }
 }

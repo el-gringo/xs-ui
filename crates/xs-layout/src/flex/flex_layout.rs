@@ -109,18 +109,19 @@ impl Layout for Flex {
             .children
             .iter()
             .map(|child| {
-                let child_constraints = if child.flex_grow()[0] > 0.0 {
+                let growing = child.flex_grow()[0] > 0.0;
+                let layout = child.layout(tree, &inner_constraints);
+                let size = if growing {
                     if main_is_x {
-                        BoxConstraints::from_max(Vector2::new(0.0, inner.y))
+                        Vector2::new(0.0, layout.size.y)
                     } else {
-                        BoxConstraints::from_max(Vector2::new(inner.x, 0.0))
+                        Vector2::new(layout.size.x, 0.0)
                     }
                 } else {
-                    inner_constraints.clone()
+                    layout.size
                 };
-                let layout = child.layout(tree, &child_constraints);
                 FlexItem {
-                    size: layout.size,
+                    size,
                     flex_grow: child.flex_grow(),
                     min_main: child.min_main(),
                     max_main: child.max_main(),
@@ -240,7 +241,6 @@ impl Layout for Flex {
 
         let mut child_ids = Vec::new();
         let padding_min = style.padding.min();
-        let justify_base = justify_offset(container_main, total_main, style.justify_content);
 
         let mut cross_pos = if main_is_x {
             padding_min.y + style.border.min().y
@@ -248,7 +248,7 @@ impl Layout for Flex {
             padding_min.x + style.border.min().x
         };
 
-        for (line_idx, line) in lines.iter().enumerate() {
+        for (_line_idx, line) in lines.iter().enumerate() {
             let line_cross: f32 = line
                 .iter()
                 .map(|i| i.cross(main_is_x))
@@ -256,8 +256,13 @@ impl Layout for Flex {
                 .unwrap_or(0.0);
             let line_cross_start = cross_pos;
 
-            // For wrapped lines, reset main position to start of container (not accumulated)
-            let line_main_start = if line_idx == 0 { justify_base } else { 0.0 };
+            // Per-line justify: each wrapped line is justified independently
+            let line_content_main: f32 = line
+                .iter()
+                .map(|i| i.main(main_is_x))
+                .sum::<f32>()
+                + gap * (line.len().saturating_sub(1)) as f32;
+            let line_main_start = justify_offset(container_main, line_content_main, style.justify_content);
 
             let (line_ids, _new_cursor) =
                 line.iter()
@@ -1219,5 +1224,67 @@ mod tests {
 
         assert_eq!(result.size.x, 200.0);
         assert_eq!(result.size.y, 100.0);
+    }
+
+    #[test]
+    fn flex_grow_child_sees_full_constraint_for_subtree() {
+        // Regression test: a Column with flex_grow inside a Row should pass the
+        // full container width to its children, not zero. Otherwise, a wrapping
+        // Row inside the Column wraps prematurely.
+        //
+        // Layout:
+        //   Row (width=400):
+        //     - Fixed child (width=100, height=100)
+        //     - Column (flex_grow=1)
+        //         +-- Row with Wrap
+        //               - Item A (width=80, height=50)
+        //               - Item B (width=80, height=50)
+        //               - Item C (width=80, height=50)
+        //
+        // Available width for Column = 400 - 100 = 300
+        // All 3 items (240px + 2*10 gap = 260px) should fit on one line.
+
+        let item_a = child(80.0, 50.0);
+        let item_b = child(80.0, 50.0);
+        let item_c = child(80.0, 50.0);
+
+        let mut wrapping_row = row(None, None, vec![item_a, item_b, item_c]);
+        wrapping_row.style.flex_wrap = FlexWrap::Wrap;
+        wrapping_row.style.gap = 10.0;
+
+        let mut inner_column = column(None, None, vec![Rc::new(wrapping_row)]);
+        inner_column.style.flex_grow = [1.0, 0.0];
+
+        let fixed = child(100.0, 100.0);
+
+        let outer_row = row(Some(400.0), None, vec![fixed, Rc::new(inner_column)]);
+
+        let mut tree = LayoutTree::new();
+        let result = outer_row.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+
+        let inner_col_box = tree.get(result.children[1]).unwrap();
+        let wrapping_row_box = tree.get(inner_col_box.children[0]).unwrap();
+
+        // All 3 items should be on the same line (same y-position)
+        let child_a = tree.get(wrapping_row_box.children[0]).unwrap();
+        let child_b = tree.get(wrapping_row_box.children[1]).unwrap();
+        let child_c = tree.get(wrapping_row_box.children[2]).unwrap();
+
+        assert_eq!(
+            child_a.bounds.y, child_b.bounds.y,
+            "item A and B should be on same line (no wrap)"
+        );
+        assert_eq!(
+            child_a.bounds.y, child_c.bounds.y,
+            "item A and C should be on same line (no wrap)"
+        );
+
+        // Items should be positioned sequentially on the x axis
+        assert_eq!(child_a.bounds.x, 0.0);
+        assert_eq!(child_b.bounds.x, 80.0 + 10.0); // 80 width + 10 gap
+        assert_eq!(child_c.bounds.x, 80.0 * 2.0 + 10.0 * 2.0);
     }
 }
