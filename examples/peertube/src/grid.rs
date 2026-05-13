@@ -1,6 +1,6 @@
 use std::{cmp::max, rc::Rc};
 
-use xs::{JustifyContent, NavigationNode, Render, div};
+use xs::{NavigationNode, Render, div};
 
 use crate::scroller::scroller;
 
@@ -85,7 +85,6 @@ impl<T: Default + 'static> Render for Grid<T> {
     }
 
     fn render(&self, ctx: &mut xs::Context) -> Box<dyn xs::Element> {
-        let state = ctx.use_state::<i32>(|_| 0);
         let focus_handle =
             ctx.focus_handle(NavigationNode::new().grid(self.columns as usize).id("grid"));
         let cell_renderer = &self.cell_renderer;
@@ -94,14 +93,12 @@ impl<T: Default + 'static> Render for Grid<T> {
         let gap = self.gap;
         let cell_height = self.cell_height;
 
-        let offset_value = *state.read();
-        let first_row = max(offset_value - 2, 0) as i32;
-
-        let skipped = (first_row * columns as i32) as i32;
-
         let selected_index = focus_handle.selected_index();
         let selected_row = (selected_index as f32 / columns as f32).floor() as i32;
         let scroll_position = max(selected_row - 1, 0) * cell_height as i32;
+
+        let first_row = max(selected_row - 2, 0) as i32;
+        let skipped = (first_row * columns as i32) as i32;
 
         let cells: Vec<Rc<dyn Render>> = self
             .items
@@ -109,19 +106,16 @@ impl<T: Default + 'static> Render for Grid<T> {
             .enumerate()
             .skip(skipped as _)
             .take((rows * columns) as _)
-            .map(move |(index, item)| cell_renderer.as_ref().unwrap()(index, &item).into())
+            .map(move |(index, item)| cell_renderer.as_ref().unwrap()(index, item))
             .collect();
 
         div()
-            .grow(1., 1.)
-            .child(scroller().scroll_to(scroll_position as _).children(vec![
-                    div()
-                        .justify_content(JustifyContent::Center)
-                        .gap(gap)
-                        .wrap()
-                        .grow(1., 1.)
-                        .children(cells),
-                ]))
+            .width((self.cell_width + gap) * columns as f32)
+            .child(
+                scroller()
+                    .scroll_to(scroll_position as _)
+                    .children(vec![div().gap(gap).wrap().grow(1., 1.).children(cells)]),
+            )
             .into()
     }
 }

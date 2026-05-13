@@ -28,7 +28,7 @@ impl Render for Peertube {
         let _ = ctx.use_state::<bool>(|_| {
             let set_videos = videos.clone();
             let client = PeerTubeClient::new();
-            client.get_videos(0, 20, move |new_videos| {
+            client.get_videos(0, 100, move |new_videos| {
                 set_videos.update(|| new_videos);
             });
             true
@@ -54,9 +54,9 @@ impl Render for Peertube {
                         .font_size(60)
                         .child(text("Monsieur Bidouille")),
                     div()
-                        .width(1140.)
                         .padding_top(64.)
                         .overflow(Overflow::Hidden)
+                        .justify_content(JustifyContent::Center)
                         .child(
                             grid()
                                 .items(videos.read().clone())

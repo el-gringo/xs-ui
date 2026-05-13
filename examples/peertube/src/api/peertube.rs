@@ -3,7 +3,7 @@ use nanoserde::DeJson;
 use crate::api::rest_api::{RestApi, body_string};
 
 const PEERTUBE_BASE_URL: &str = "https://video.monsieurbidouille.fr";
-const PEERTUBE_API_URL: &str = "https://video.monsieurbidouille.fr/api/v1";
+const PEERTUBE_API_PREFIX: &str = "/api/v1";
 
 #[derive(Default, DeJson, Clone, Debug)]
 pub struct Video {
@@ -31,7 +31,7 @@ pub struct PeerTubeClient {
 impl PeerTubeClient {
     pub fn new() -> Self {
         Self {
-            api: RestApi::new(PEERTUBE_API_URL),
+            api: RestApi::new(&(PEERTUBE_BASE_URL.to_owned() + PEERTUBE_API_PREFIX)),
         }
     }
 
@@ -41,9 +41,8 @@ impl PeerTubeClient {
         count: u32,
         on_result: impl FnOnce(Vec<Video>) + Send + 'static,
     ) {
-        let api = RestApi::new(PEERTUBE_API_URL);
         let mut on_result = Some(on_result);
-        api.get(
+        self.api.get(
             &format!("/videos?start={offset}&count={count}"),
             move |response| {
                 let json_str = body_string(&response);
