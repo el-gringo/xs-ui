@@ -69,7 +69,6 @@ float roundedBoxShadow(vec2 lower, vec2 upper, vec2 point, float sigma, vec4 rad
 }
 
 void main() {
-    vec2 r = u_resolution;
     vec4 texColor = texture2D(u_texture, v_textureCoords);
 
     vec2 vertex = v_pixelPos.xy;
@@ -106,10 +105,10 @@ void main() {
         fillColor = mix(u_gradientStart, u_gradientEnd, clamp(t, 0.0, 1.0));
     }
 
-    vec4 resetColor = vec4(0.0);
-    vec4 color = mix(resetColor, u_shadowColor, shadow);
+    vec4 contentColor = mix(fillColor, texColor, u_colorAlpha * texColor.a);
+    vec4 color = mix(vec4(0.0), u_shadowColor, shadow);
     color = mix(color, u_borderColor, border);
-    color = mix(color, fillColor, box);
+    color = mix(color, contentColor, box);
 
     vec2 clipL = u_clip.xy;
     vec2 clipU = u_clip.xy + u_clip.zw;
