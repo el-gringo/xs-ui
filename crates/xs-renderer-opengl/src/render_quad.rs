@@ -83,7 +83,7 @@ impl RendererOpenGl {
                 shader.uniform_1f("u_gradientAngle", g.angle);
             }
         }
-        shader.uniform_1f("u_colorAlpha", 0.5);
+        shader.uniform_1f("u_colorAlpha", 1.0);
         shader.uniform_4fv("u_shadow", style.box_shadow);
         shader.uniform_4fv("u_shadowColor", style.box_shadow.color);
         shader.uniform_4fv("u_borderWidth", border_width);
