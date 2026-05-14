@@ -1,9 +1,9 @@
-use std::{ptr::null_mut, time::Instant};
+use std::{ptr::null_mut, sync::mpsc::Sender, time::Instant};
 
 use xs_backend_wayland_client::{
     WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
 };
-use xs_core::{AppConfig, AppContext, Backend, EventLoop, set_app_context};
+use xs_core::{AppConfig, AppContext, Backend, BackendResponse, EventLoop, set_app_context};
 
 use crate::{
     config::WaylandConfig, context::WaylandContext, egl::create_egl_window,
@@ -80,7 +80,43 @@ impl Backend for BackendWayland {
         }
     }
 
-    fn performance_now(&self) -> u128 {
-        self.elapsed
+    /// Not used yet, this will need to adapt event loop to e able to pass messages to the backend
+    fn load_image(&mut self, src: String, tx: Sender<BackendResponse>) {
+        load_image(src, tx);
     }
+}
+
+#[cfg(not(feature = "image"))]
+pub fn load_image(_src: String, _tx: Sender<BackendResponse>) {}
+
+#[cfg(feature = "image")]
+pub fn load_image(src: String, tx: Sender<BackendResponse>) {
+    use xs_http::HttpClient;
+    use zune_image::codecs::qoi::zune_core::{colorspace::ColorSpace, options::DecoderOptions};
+    let http = HttpClient::new();
+    http.get(
+        src.clone(),
+        move |response| match zune_image::image::Image::read(
+            std::io::Cursor::new(response.body),
+            DecoderOptions::default(),
+        ) {
+            Ok(mut image) => {
+                let (width, height) = image.dimensions();
+                let width = width as u32;
+                let height = height as u32;
+                let _ = image.convert_color(ColorSpace::RGBA);
+                let bytes = image.flatten_to_u8().first().unwrap().clone();
+                let _ = tx.send(BackendResponse::ImageLoaded(
+                    src.clone(),
+                    -1,
+                    bytes,
+                    width,
+                    height,
+                ));
+            }
+            Err(error) => {
+                eprintln!("Backend::load_image error: {:?}", error);
+            }
+        },
+    );
 }

@@ -10,9 +10,11 @@ text = [ "xs-text-system" ]
 
 [dependencies]
 xs-core.workspace = true
-xs-backend.workspace = true
 xs-gl.workspace = true
-xs-text-system = {
-    path = "../xs-text-system",
-    optional = true
-}
+
+xs-backend.path = "../xs-backend"
+xs-backend.default-features = false
+xs-backend.features = []
+
+xs-text-system.path = "../xs-text-system"
+xs-text-system.optional = true

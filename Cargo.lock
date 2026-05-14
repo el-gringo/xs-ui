@@ -150,15 +150,12 @@ version = "0.1.0"
 dependencies = [
  "xs-animation",
  "xs-backend",
- "xs-backend-core",
- "xs-backend-image",
  "xs-core",
  "xs-http",
  "xs-layout",
  "xs-primitive",
  "xs-renderer",
  "xs-text-system",
- "zune-image",
 ]
 
 [[package]]
@@ -170,7 +167,6 @@ name = "xs-backend"
 version = "0.1.0"
 dependencies = [
  "xs-backend-browser",
- "xs-backend-core",
  "xs-backend-wayland",
  "xs-layout",
 ]
@@ -179,7 +175,6 @@ dependencies = [
 name = "xs-backend-browser"
 version = "0.1.0"
 dependencies = [
- "xs-backend-core",
  "xs-core",
  "xs-http",
  "xs-js-sys",
@@ -188,28 +183,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "xs-backend-core"
-version = "0.1.0"
-dependencies = [
- "xs-core",
- "xs-layout",
- "xs-platform-event",
-]
-
-[[package]]
-name = "xs-backend-image"
-version = "0.1.0"
-dependencies = [
- "xs-core",
- "xs-http",
- "zune-image",
-]
-
-[[package]]
 name = "xs-backend-wayland"
 version = "0.1.0"
 dependencies = [
- "xs-backend-core",
  "xs-backend-wayland-client",
  "xs-backend-wayland-egl",
  "xs-backend-wayland-extensions",
@@ -222,6 +198,7 @@ dependencies = [
  "xs-platform-event",
  "xs-platform-linux",
  "xs-renderer-core",
+ "zune-image",
 ]
 
 [[package]]
@@ -327,6 +304,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "xs-log"
+version = "0.1.0"
+
+[[package]]
 name = "xs-macro"
 version = "0.1.0"
 
@@ -347,7 +328,6 @@ name = "xs-primitive"
 version = "0.1.0"
 dependencies = [
  "xs-animation",
- "xs-backend-core",
  "xs-core",
  "xs-layout",
 ]

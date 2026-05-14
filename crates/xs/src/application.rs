@@ -3,7 +3,7 @@ use std::{
     sync::mpsc::{Receiver, Sender, channel},
 };
 
-use xs_backend_image::load_image;
+use xs_backend::load_image;
 use xs_core::{
     AppConfig, AppContext, Backend, BackendRequest, BackendResponse, EventLoop, ImageFormat,
     Render, Renderer,
@@ -112,8 +112,8 @@ impl Application {
         let mut app_context = AppContext::new(text_system);
         let renderer = Box::new(xs_renderer::Renderer::new(self.0.width, self.0.height));
         let root = Rc::new(on_initialize(&mut app_context));
-        let event_loop = Box::new(AppEventLoop::new(renderer, root));
         let mut backend = xs_backend::Backend::new();
+        let event_loop = Box::new(AppEventLoop::new(renderer, root));
         backend.run(&self.0, app_context, event_loop);
     }
 }

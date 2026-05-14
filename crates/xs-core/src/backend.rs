@@ -1,3 +1,5 @@
+use std::sync::mpsc::Sender;
+
 use crate::{AppConfig, AppContext};
 
 pub enum BackendResponse {
@@ -21,7 +23,7 @@ pub trait EventLoop {
 
 pub trait Backend {
     fn run(&mut self, app: &AppConfig, app_context: AppContext, event_loop: Box<dyn EventLoop>);
-    fn performance_now(&self) -> u128;
+    fn load_image(&mut self, _src: String, _tx: Sender<BackendResponse>) {}
 }
 
 pub struct BackendDummy;
@@ -34,7 +36,5 @@ impl Backend for BackendDummy {
     ) {
     }
 
-    fn performance_now(&self) -> u128 {
-        0
-    }
+    fn load_image(&mut self, _src: String, _tx: Sender<BackendResponse>) {}
 }

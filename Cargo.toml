@@ -23,9 +23,7 @@ edition = "2024"
 xs = { path = "crates/xs" }
 xs-animation = { path = "crates/xs-animation" }
 xs-backend = { path = "crates/xs-backend" }
-xs-backend-core = { path = "crates/xs-backend-core" }
 xs-backend-browser = { path = "crates/xs-backend-browser" }
-xs-backend-image = { path = "crates/xs-backend-image" }
 xs-backend-wayland = { path = "crates/xs-backend-wayland" }
 xs-backend-wayland-egl = { path = "crates/xs-backend-wayland-egl" }
 xs-backend-wayland-extensions = { path = "crates/xs-backend-wayland-extensions" }
@@ -67,16 +65,6 @@ ab_glyph.features = [ "small" ]
 nanoserde.path = "vendors/nanoserde"
 nanoserde.default-features = false
 nanoserde.features = [ "json" ]
-
-zune-image.version = "0.5"
-zune-image.default-features = false
-zune-image.features = [
-    "jpeg",
-    #"jpeg-xl",
-    "png",
-    #"webp",
-    "qoi"
-]
 
 test_utils = { path = "tools/test_utils" }
 pretty_assertions = { version = "1.4" }

@@ -4,12 +4,17 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+default = [
+    "xs-backend-wayland/image"
+]
+
 [dependencies]
 xs-layout.workspace = true
-xs-backend-core.workspace = true
 
 [target.wasm32-unknown-unknown.dependencies]
-xs-backend-browser = { workspace = true }
+xs-backend-browser.path = "../xs-backend-browser"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-xs-backend-wayland = { workspace = true }
+xs-backend-wayland.path = "../xs-backend-wayland"
+xs-backend-wayland.default-features = false

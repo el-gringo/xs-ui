@@ -8,13 +8,8 @@ edition.workspace = true
 xs-animation.workspace = true
 xs-core.workspace = true
 xs-backend.workspace = true
-xs-backend-image.workspace = true
-xs-backend-core.workspace = true
 xs-http.workspace = true
 xs-layout.workspace = true
 xs-primitive.workspace = true
 xs-renderer.workspace = true
 xs-text-system.workspace = true
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-zune-image.workspace = true

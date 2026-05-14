@@ -4,8 +4,11 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+default = [ "image" ]
+image = []
+
 [dependencies]
-xs-backend-core.workspace = true
 xs-core.workspace = true
 xs-http.workspace = true
 xs-layout.workspace = true

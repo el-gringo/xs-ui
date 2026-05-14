@@ -6,9 +6,7 @@ use xs_core::{AppConfig, AppContext, Backend, BackendResponse, EventLoop, set_ap
 use xs_js_sys::{Closure, request_animation_frame};
 
 #[derive(Default)]
-pub struct BackendBrowser {
-    elapsed: u128,
-}
+pub struct BackendBrowser;
 
 impl BackendBrowser {
     pub fn new() -> Self {
@@ -39,8 +37,9 @@ impl Backend for BackendBrowser {
         request_animation_frame(g.borrow_mut().as_mut().unwrap());
     }
 
-    fn performance_now(&self) -> u128 {
-        self.elapsed
+    #[cfg(feature = "image")]
+    fn load_image(&mut self, src: String, tx: Sender<BackendResponse>) {
+        load_image(src, tx);
     }
 }
 
