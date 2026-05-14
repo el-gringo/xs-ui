@@ -8,8 +8,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # - name: Check
-      #   run: cargo check --target wasm32-unknown-unknown
+      - name: Check
+        run: cargo check --target wasm32-unknown-unknown
 
       - name: Build
         run: cargo build --package peertube --target wasm32-unknown-unknown --release
@@ -18,7 +18,7 @@ jobs:
         run: mkdir dist;
           cp -v target/wasm32-unknown-unknown/release/peertube.wasm dist/;
           cp -rv tools/cli/src/html/* dist/;
-          sed -i \"s/{wasm-file}/peertube/\" dist/index.html;
+          sed -i "s/{wasm-file}/peertube/" dist/index.html;
 
       - if: github.ref != 'refs/heads/main'
         run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}
