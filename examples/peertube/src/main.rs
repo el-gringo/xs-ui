@@ -50,7 +50,6 @@ impl Render for Peertube {
                         .font_size(60)
                         .child(text("Monsieur Bidouille")),
                     div()
-                        .absolute()
                         .padding_top(64.)
                         .overflow(Overflow::Hidden)
                         .width(1200.)
