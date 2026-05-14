@@ -1,16 +1,19 @@
 # XS-UI
 
-An extra small, Rust GPU accelerated UI framework with minimal dependencies. Targeting STB / SmartTVs.
+Highly  **experimental**. 
 
-Inspired by [GPUI](https://github.com/zed-industries/gpui) and [Iced](https://github.com/iced-rs/iced). With a builder API.
+An extra small Rust GPU accelerated UI framework with minimal dependencies. 
 
-Highly experimental. Not production ready.
+Targeting STB / SmartTVs. 
+
+Inspired by [GPUI](https://github.com/zed-industries/gpui) and [Iced](https://github.com/iced-rs/iced). With a builder API. 
+
 
 Discord: [https://discord.gg/8VYgS7aD](https://discord.gg/8VYgS7aD)
 
 ## Features
 
-- Minimal dependencies - No wasm-bindgen, winit nor wgpu
+- Minimal dependencies - No `wasm-bindgen`, `winit` nor `wgpu`
 - Compile for Linux Wayland & WASM
 - OpenGl / WebGl renderer
 - Arrow key navition
