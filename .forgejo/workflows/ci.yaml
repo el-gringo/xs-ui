@@ -3,7 +3,7 @@ jobs:
   build:
     runs-on: linux
     container:
-      image: registry:5000/alpine-rust-wasm-vercel
+      image: registry:5000/debian-rust-wasm-vercel
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
