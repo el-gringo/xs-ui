@@ -6,15 +6,11 @@ use crate::theme;
 
 pub struct Button {
     text: &'static str,
-    background_color: Color,
 }
 
 impl Button {
-    pub fn new(text: &'static str, background_color: Color) -> Self {
-        Button {
-            text,
-            background_color,
-        }
+    pub fn new(text: &'static str) -> Self {
+        Button { text }
     }
 }
 
@@ -54,6 +50,6 @@ impl From<Button> for Rc<dyn Render> {
     }
 }
 
-pub fn button(text: &'static str, color: Color) -> Button {
-    Button::new(text, color)
+pub fn button(text: &'static str) -> Button {
+    Button::new(text)
 }

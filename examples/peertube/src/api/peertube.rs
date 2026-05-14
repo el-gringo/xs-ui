@@ -7,7 +7,7 @@ const PEERTUBE_API_PREFIX: &str = "/api/v1";
 
 #[derive(Default, DeJson, Clone, Debug)]
 pub struct Video {
-    pub uuid: String,
+    //pub uuid: String,
     pub name: String,
     #[nserde(rename = "thumbnailPath")]
     pub thumbnail_path: String,
@@ -36,7 +36,7 @@ impl PeerTubeClient {
     }
 
     pub fn get_videos(
-        &self,
+        self,
         offset: u32,
         count: u32,
         on_result: impl FnOnce(Vec<Video>) + Send + 'static,

@@ -1,6 +1,10 @@
 use std::any::TypeId;
 
-use xs::{Application, Color, Context, Element, Gradient, Render, div};
+use xs::{Application, Color, Context, Div, Element, Render, div};
+
+fn row() -> Div {
+    div().absolute().grow(1.0, 0.).height(100.)
+}
 
 struct App;
 impl Render for App {
@@ -12,43 +16,11 @@ impl Render for App {
             .testid("root")
             .width(ctx.app_context.screen.width as _)
             .height(ctx.app_context.screen.height as _)
-            .column()
-            .justify_content(xs::JustifyContent::Center)
-            .align_items(xs::AlignItems::Center)
-            .background(Color::GRAY)
-            .child(
-                div()
-                    .testid("body")
-                    .column()
-                    .background(Gradient::linear(Color::RED, Color::BLUE))
-                    .border(Color::WHITE, 4.)
-                    .width(400.)
-                    .height(500.)
-                    .child(
-                        div()
-                            .background(Gradient::angled(Color::GREEN, Color::YELLOW, 1.57))
-                            .width(200.)
-                            .height(100.)
-                            .margin_left(16.)
-                            .margin_top(16.),
-                    )
-                    .child(
-                        div()
-                            .background(Gradient::linear(Color::ORANGE, Color::PURPLE))
-                            .width(200.)
-                            .height(100.)
-                            .margin_left(16.)
-                            .margin_top(16.),
-                    )
-                    .child(
-                        div()
-                            .background_color(Color::WHITE)
-                            .width(200.)
-                            .height(50.)
-                            .margin_left(16.)
-                            .margin_top(16.),
-                    ),
-            )
+            .child(row().testid("row1").top(100.).background(Color::RED))
+            .child(row().testid("row2").top(210.).background(Color::GREEN))
+            .child(row().testid("row3").top(320.).background(Color::BLUE))
+            .child(row().testid("row4").top(320.).background(Color::ORANGE))
+            .child(row().testid("row5").top(320.).background(Color::YELLOW))
             .into()
     }
 }

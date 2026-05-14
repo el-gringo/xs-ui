@@ -41,7 +41,6 @@ impl Render for Scroller {
         div()
             .absolute()
             .top(-animated_offset)
-            .grow(1., 1.)
             .children(self.children.clone())
             .into()
     }

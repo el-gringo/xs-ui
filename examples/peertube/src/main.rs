@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 mod api;
 mod body;
 mod button;
@@ -17,8 +15,6 @@ use xs::{
 };
 
 use crate::{api::peertube::PeerTubeClient, body::body, card::card, grid::grid, sidebar::sidebar};
-
-const PEERTUBE_API_URL: &str = "https://video.monsieurbidouille.fr/api/v1";
 
 struct Peertube;
 impl Render for Peertube {
@@ -54,8 +50,10 @@ impl Render for Peertube {
                         .font_size(60)
                         .child(text("Monsieur Bidouille")),
                     div()
+                        .absolute()
                         .padding_top(64.)
                         .overflow(Overflow::Hidden)
+                        .width(1200.)
                         .justify_content(JustifyContent::Center)
                         .child(
                             grid()
@@ -66,6 +64,7 @@ impl Render for Peertube {
                                 .cell_height(320.)
                                 .gap(48.)
                                 .cell_renderer(|_index, video| {
+                                    //eprintln!("{}", video.name.clone());
                                     card()
                                         .thumbnail(video.thumbnail_url())
                                         .title(video.name.clone())

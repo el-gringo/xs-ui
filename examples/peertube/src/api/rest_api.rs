@@ -13,9 +13,9 @@ impl RestApi {
         }
     }
 
-    pub fn get(&self, path: &str, on_response: impl FnMut(HttpResponse) + Send + 'static) {
+    pub fn get(self, path: &str, on_response: impl FnMut(HttpResponse) + Send + 'static) {
         let url = format!("{}{}", self.base_url, path);
-        let _ = HttpClient::new().get(url, on_response);
+        let _ = self.client.get(url, on_response);
     }
 }
 

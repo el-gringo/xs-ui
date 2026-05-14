@@ -53,7 +53,7 @@ impl FocusManager {
 
     fn attach(&mut self, container_id: NavigationNodeId, handle: &FocusHandle) {
         if let Some(container) = self.tree.borrow_mut().get(container_id) {
-            container.borrow_mut().children.insert(0, handle.id);
+            container.borrow_mut().children.push(handle.id);
         }
     }
 

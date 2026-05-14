@@ -5,6 +5,7 @@ use xs_math::{Rectangle, Vector2};
 
 use crate::AlignItems;
 use crate::Background;
+use crate::StylePosition;
 use crate::base::EdgeInsets;
 use crate::decoration::Material;
 
@@ -56,6 +57,9 @@ pub trait Layout {
     }
     fn padding(&self) -> EdgeInsets {
         EdgeInsets::zero()
+    }
+    fn position(&self) -> StylePosition {
+        StylePosition::Static
     }
 }
 
@@ -183,8 +187,9 @@ impl LayoutTree {
     /// Insert a `LayoutBox` into the tree and get a `LayoutBoxId` to fetch it
     /// again later.
     pub fn insert(&mut self, lbox: LayoutBox) -> LayoutBoxId {
+        let layout_id = self.boxes.len();
         self.boxes.push(lbox);
-        self.boxes.len() - 1
+        layout_id
     }
 
     /// Get a reference to the `LayoutBox` indexed by a `LayoutBoxId`.
@@ -257,7 +262,8 @@ impl<'a> Iterator for LayoutTreeIterator<'a> {
         let parent_offset = self.offsets.pop_front()?;
         let parent = self.tree.get(parent_id)?;
         let child = self.tree.get(child_id)?;
-        let offset = Vector2::new(child.bounds.x, child.bounds.y) + parent_offset + child.margin.min();
+        let offset =
+            Vector2::new(child.bounds.x, child.bounds.y) + parent_offset + child.margin.min();
         for child in child.children.iter().rev() {
             self.parents.push_front(child_id);
             self.remaining.push_front((*child, depth + 1));

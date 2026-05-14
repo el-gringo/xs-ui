@@ -7,9 +7,9 @@ use xs_gl::{
     glClearColor, glDisable, glEnable, glFlush, glGenBuffers, glViewport, load_texture,
 };
 use xs_layout::{
-    BoxConstraints, LayoutBox, LayoutTree, Overflow,
+    BoxConstraints, LayoutBox, LayoutTree,
     Material::{Quad, Text},
-    View,
+    Overflow, View,
 };
 use xs_math::{Rectangle, Vector2};
 
@@ -89,6 +89,7 @@ impl Renderer for RendererOpenGl {
         let node_count = tree.boxes.len();
         let mut clip_rects: Vec<Option<Rectangle>> = vec![None; node_count];
 
+        //tree.debug();
         for (_, parent_id, _, child_id, child, offset) in tree.iter() {
             let origin = Vector2::new(child.bounds.x, child.bounds.y);
             let min = offset + origin + child.margin.min();

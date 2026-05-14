@@ -2,10 +2,7 @@ use std::rc::Rc;
 
 use xs::{AlignItems, Color, Context, Element, JustifyContent, NavigationNode, Render, div, text};
 
-use crate::{
-    button::{Button, button},
-    theme,
-};
+use crate::button::{Button, button};
 
 pub struct Sidebar {
     buttons: Vec<Button>,
@@ -64,9 +61,9 @@ impl Render for Sidebar {
                     .gap(16.)
                     .grow(1., 1.)
                     .background_color(Color::rgba(0.0, 0.0, 0.0, 0.2))
-                    .child(button("Movies", theme::ORANGE3))
-                    .child(button("Series", theme::ORANGE3))
-                    .child(button("Settings", theme::ORANGE3)),
+                    .child(button("Movies"))
+                    .child(button("Series"))
+                    .child(button("Settings")),
             )
             .into()
     }

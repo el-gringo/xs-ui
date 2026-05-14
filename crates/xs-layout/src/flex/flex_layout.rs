@@ -1,6 +1,6 @@
 use crate::{
     AlignItems, BoxConstraints, EdgeInsets, FlexWrap, JustifyContent, Layout, LayoutBoxId,
-    Material, SizedLayoutBox,
+    Material, SizedLayoutBox, StylePosition,
     flex::flex::Flex,
     tree::{LayoutBox, LayoutTree},
 };
@@ -16,6 +16,7 @@ struct FlexItem {
     children: Vec<LayoutBoxId>,
     material: Option<Material>,
     text_material: Option<Material>,
+    is_absolute: bool,
 }
 
 impl FlexItem {
@@ -86,6 +87,10 @@ impl Layout for Flex {
         self.style.flex_grow
     }
 
+    fn position(&self) -> StylePosition {
+        self.style.position
+    }
+
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         let style = &self.style;
         let main_is_x = self.is_row();
@@ -109,9 +114,12 @@ impl Layout for Flex {
             .children
             .iter()
             .map(|child| {
-                let growing = child.flex_grow()[0] > 0.0;
+                let is_absolute = child.position() == StylePosition::Absolute;
+                let growing = !is_absolute && child.flex_grow()[0] > 0.0;
                 let layout = child.layout(tree, &inner_constraints);
-                let size = if growing {
+                let size = if is_absolute {
+                    Vector2::new(0.0, 0.0)
+                } else if growing {
                     if main_is_x {
                         Vector2::new(0.0, layout.size.y)
                     } else {
@@ -122,14 +130,15 @@ impl Layout for Flex {
                 };
                 FlexItem {
                     size,
-                    flex_grow: child.flex_grow(),
-                    min_main: child.min_main(),
-                    max_main: child.max_main(),
+                    flex_grow: if is_absolute { [0.0, 0.0] } else { child.flex_grow() },
+                    min_main: if is_absolute { 0.0 } else { child.min_main() },
+                    max_main: if is_absolute { 0.0 } else { child.max_main() },
                     children: layout.children,
                     material: layout.material,
                     text_material: layout.text_material,
                     margin: child.margin(),
                     padding: child.padding(),
+                    is_absolute,
                 }
             })
             .collect();
@@ -267,6 +276,11 @@ impl Layout for Flex {
             let (line_ids, _new_cursor) =
                 line.iter()
                     .fold((Vec::new(), line_main_start), |(mut ids, cursor), item| {
+                        if item.is_absolute {
+                            ids.extend(item.children.clone());
+                            return (ids, cursor);
+                        }
+
                         let (margin_main_start, margin_main_end) = item.main_margin(main_is_x);
                         let (margin_cross_start, margin_cross_end) = item.cross_margin(main_is_x);
                         let cross_offset = align_offset(

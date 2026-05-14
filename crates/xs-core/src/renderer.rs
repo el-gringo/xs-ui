@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{collections::VecDeque, rc::Rc};
 
 use xs_layout::{BoxConstraints, Color, ImageFormat, TextProperties, View};
 use xs_math::Vector2;
@@ -47,8 +47,8 @@ pub trait Renderer {
                 app_context.screen.height as f32,
             ),
         };
-        let mut stack: Vec<StackItem> = Default::default();
-        stack.push(StackItem {
+        let mut stack: VecDeque<StackItem> = Default::default();
+        stack.push_front(StackItem {
             widget: widget.clone(),
             parent_index: None,
             child_index: 0,
@@ -60,8 +60,12 @@ pub trait Renderer {
 
         // Store (parent_index, element) for each rendered element
         let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Default::default();
-        while let Some(item) = stack.pop() {
-            let node_id: NodeId = (item.widget.tag(), item.parent_index.unwrap_or(0), item.child_index);
+        while let Some(item) = stack.pop_front() {
+            let node_id: NodeId = (
+                item.widget.tag(),
+                item.parent_index.unwrap_or(0),
+                item.child_index,
+            );
             let mut ctx = Context::new(
                 app_context,
                 node_id,
@@ -83,7 +87,7 @@ pub trait Renderer {
                     color: ctx.color,
                     constraints: ctx.constraints.clone(),
                 };
-                stack.push(new_item);
+                stack.push_back(new_item);
             }
             rendered_elements.push((item.parent_index, element));
         }
@@ -101,7 +105,6 @@ pub trait Renderer {
             let (_, element) = &mut rendered_elements[i];
             let child_views: Vec<View> = children_of[i]
                 .iter()
-                .rev()
                 .map(|&child_idx| view_map[child_idx].clone().unwrap())
                 .collect();
             view_map[i] = Some(element.paint(app_context, &child_views));

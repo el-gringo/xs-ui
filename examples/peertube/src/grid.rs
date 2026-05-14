@@ -88,25 +88,77 @@ impl<T: Default + 'static> Render for Grid<T> {
         let focus_handle =
             ctx.focus_handle(NavigationNode::new().grid(self.columns as usize).id("grid"));
         let cell_renderer = &self.cell_renderer;
-        let rows = self.rows;
-        let columns = self.columns;
+        let columns = self.columns as usize;
         let gap = self.gap;
         let cell_height = self.cell_height;
+        let window_rows = self.rows as usize;
+        let buffer = 2usize;
+        let render_rows = window_rows + buffer;
+        let render_cells = render_rows * columns;
+
+        let offset = ctx.use_state::<usize>(|_| 0);
+        let old_offset = *offset.read();
+
+        let total_items = self.items.len();
+        let total_rows = total_items.div_ceil(columns);
 
         let selected_index = focus_handle.selected_index();
-        let selected_row = (selected_index as f32 / columns as f32).floor() as i32;
-        let scroll_position = max(selected_row - 1, 0) * cell_height as i32;
+        let selected_row = selected_index / columns;
 
-        let first_row = max(selected_row - 2, 0) as i32;
-        let skipped = (first_row * columns as i32) as i32;
+        let mut new_offset = old_offset;
+        if selected_row + 1 >= render_rows && old_offset + window_rows < total_rows {
+            new_offset = old_offset + 1;
+        }
+        if selected_row == 0 && old_offset > 0 {
+            new_offset = old_offset - 1;
+        }
 
-        let cells: Vec<Rc<dyn Render>> = self
-            .items
-            .iter()
+        new_offset = new_offset.min(total_rows.saturating_sub(render_rows));
+
+        if new_offset != old_offset {
+            offset.mutate(|v| *v = new_offset);
+
+            let data_index = old_offset * columns + selected_index;
+            let new_selected = data_index.saturating_sub(new_offset * columns);
+            let max_valid = render_cells.saturating_sub(1);
+            focus_handle.set_selected_index(new_selected.min(max_valid));
+
+            if let Some(ref cb) = self.on_row_change {
+                cb(new_offset);
+            }
+        }
+
+        let data_start = new_offset * columns;
+        let data_end = data_start + render_cells;
+
+        let mut cell_rows: Vec<Vec<Rc<dyn Render>>> =
+            vec![Vec::with_capacity(columns); render_rows];
+        for i in data_start..data_end {
+            let row = (i - data_start) / columns;
+            if i < total_items {
+                cell_rows[row].push(cell_renderer.as_ref().unwrap()(i, &self.items[i]));
+            }
+        }
+
+        let adjusted_selected = focus_handle.selected_index();
+        let adjusted_row = adjusted_selected / columns;
+        let data_row = new_offset + adjusted_row;
+        let scroll_position = max(data_row as i32 - 1, 0) * cell_height as i32;
+
+        let rows: Vec<Rc<dyn Render>> = cell_rows
+            .into_iter()
             .enumerate()
-            .skip(skipped as _)
-            .take((rows * columns) as _)
-            .map(move |(index, item)| cell_renderer.as_ref().unwrap()(index, item))
+            .map(|(row_index, cells)| {
+                let data_row_index = new_offset + row_index;
+                Rc::new(
+                    div()
+                        .absolute()
+                        .gap(gap)
+                        .top(data_row_index as f32 * cell_height)
+                        .height(cell_height)
+                        .children(cells),
+                ) as Rc<dyn Render>
+            })
             .collect();
 
         div()
@@ -114,7 +166,7 @@ impl<T: Default + 'static> Render for Grid<T> {
             .child(
                 scroller()
                     .scroll_to(scroll_position as _)
-                    .children(vec![div().gap(gap).wrap().grow(1., 1.).children(cells)]),
+                    .children(vec![div().children(rows)]),
             )
             .into()
     }
