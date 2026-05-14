@@ -58,8 +58,8 @@ Other notable crates. They are designed to be used in any project.
 
 - `xs-animation` - Animations
 - `xs-js-sys` - Javascript bindings
-- `xs-http` - Http server / client
-- `xs-websocket` - WebSocket client
+- `xs-http` - Http client & server
+- `xs-websocket` - WebSocket server
 - `xs-log` - Logging facilities
 
 ## Examples
@@ -103,7 +103,7 @@ cargo run -p xs-cli -- peertube
 
   The name is not definitive and I didn't spend time looking for one. Inspired by Diocus, I wanted a name that can be reduced in 2 to 3 letters for the CLI tool.
 
-  Futur name candidate: *joona* which stands for *fast* in Malinké.
+  Futur candidate name: *joona* which stands for *fast* in Malinké.
 
 - Why OpenGl/WebGl and not Vulkan/WebGPU?
 
@@ -119,4 +119,4 @@ cargo run -p xs-cli -- peertube
 
 ## License
 
-GPL 3
+[GPL-3](LICENSE)
