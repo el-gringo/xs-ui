@@ -16,8 +16,9 @@ jobs:
 
       - name: Create dist
         run: mkdir dist;
-          cp -v target/wasm32-unknown-unknown/release/app.wasm dist/;
+          cp -v target/wasm32-unknown-unknown/release/peertube.wasm dist/;
           cp -rv tools/cli/src/html/* dist/;
+          sed -i \"s/{wasm-file}/peertube/\" dist/index.html;
 
       - if: github.ref != 'refs/heads/main'
         run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}
