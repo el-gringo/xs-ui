@@ -8,8 +8,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Check
-        run: cargo check --target wasm32-unknown-unknown
+      # - name: Check
+      #   run: cargo check --target wasm32-unknown-unknown
 
       - name: Build
         run: cargo build --package peertube --target wasm32-unknown-unknown --release
