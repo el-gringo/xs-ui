@@ -112,7 +112,6 @@ dependencies = [
 name = "playground"
 version = "0.1.0"
 dependencies = [
- "log",
  "xs",
  "xs-log",
 ]

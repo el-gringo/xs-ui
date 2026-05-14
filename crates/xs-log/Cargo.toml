@@ -5,7 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-log = "0.4.29"
+log.workspace = true
 
 [target.wasm32-unknown-unknown.dependencies]
 xs-js-sys.workspace = true

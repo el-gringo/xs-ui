@@ -27,7 +27,7 @@ impl Render for App {
 
 pub fn main() {
     xs_log::init();
-    log::info!("started !");
+    xs_log::info!("started !");
     Application::new()
         .id("playground")
         .title("Playground")

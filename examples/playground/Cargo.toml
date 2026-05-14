@@ -7,4 +7,3 @@ edition.workspace = true
 [dependencies]
 xs.workspace = true
 xs-log.workspace = true
-log.workspace = true
