@@ -6,6 +6,8 @@ Inspired by [GPUI](https://github.com/zed-industries/gpui) and [Iced](https://gi
 
 Highly experimental. Not production ready.
 
+Discord: [https://discord.gg/8VYgS7aD](https://discord.gg/8VYgS7aD)
+
 ## Features
 
 - Minimal dependencies - No wasm-bindgen, winit nor wgpu
