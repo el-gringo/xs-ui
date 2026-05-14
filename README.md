@@ -13,6 +13,7 @@ Discord: [https://discord.gg/8VYgS7aD](https://discord.gg/8VYgS7aD)
 - Minimal dependencies - No wasm-bindgen, winit nor wgpu
 - Compile for Linux Wayland & WASM
 - OpenGl / WebGl renderer
+- Arrow key navition
 - HTTP Client
 - Text rendering from alpha glyph atlas
 - Flex layout
@@ -23,6 +24,8 @@ Discord: [https://discord.gg/8VYgS7aD](https://discord.gg/8VYgS7aD)
 - Animation
 
 ## Demo
+
+Only arrow key navigation work for now
 
 https://xs-ui.vercel.app/
 
