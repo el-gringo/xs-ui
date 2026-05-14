@@ -38,13 +38,6 @@ xs-gl-sys = { path = "crates/xs-gl-sys" }
 xs-js-sys = { path = "crates/xs-js-sys" }
 xs-layout = { path = "crates/xs-layout" }
 xs-http = { path = "crates/xs-http" }
-# xs-inflate = { path = "crates/xs-inflate" }
-# xs-image = { path = "crates/xs-image" }
-# xs-image-core = { path = "crates/xs-image-core" }
-# xs-image-jpeg = { path = "crates/xs-image-jpeg" }
-# xs-image-png = { path = "crates/xs-image-png" }
-# xs-macro = { path = "crates/xs-macro" }
-# xs-macro-tests = { path = "crates/xs-macro/tests" }
 xs-math = { path = "crates/xs-math" }
 xs-platform-event = { path = "crates/xs-platform-event" }
 xs-platform-linux = { path = "crates/xs-platform-linux" }
