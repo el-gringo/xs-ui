@@ -81,6 +81,20 @@ There is 2 ways about starting an application.
 - [zune-image](https://crates.io/crates/zune-image)
 - [ab_glyph](https://crates.io/crates/ab_glyph)
 
+## FAQ
+
+- Why the name `xs-ui` ? 
+
+  The name is not definitive and I didn't spend time on searching for a name. Inspired by Diocus, I wanted a name that can be reduced in 2 to 3 letters for the CLI tool.
+
+  Futur name candidate: *joona* which stands for *fast* in Malinké.
+
+- Why OpenGl/WebGl and not Vulkan/WebGPU?
+
+  Because already knew OpenGl/GLSL.
+
+  And, as I am aiming to target SmartTVs, the WebGl is the only compatible API. Also, OpenGl & WebGl share the same shader language and almost the same API. I managed to create only one renderer for both. 
+
 ## Thanks
 
 - [makepad](https://github.com/makepad/makepad) & [miniquad](https://github.com/not-fl3/miniquad) for their bindings
