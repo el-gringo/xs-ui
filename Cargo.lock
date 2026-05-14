@@ -112,7 +112,9 @@ dependencies = [
 name = "playground"
 version = "0.1.0"
 dependencies = [
+ "log",
  "xs",
+ "xs-log",
 ]
 
 [[package]]
@@ -306,6 +308,10 @@ dependencies = [
 [[package]]
 name = "xs-log"
 version = "0.1.0"
+dependencies = [
+ "log",
+ "xs-js-sys",
+]
 
 [[package]]
 name = "xs-macro"

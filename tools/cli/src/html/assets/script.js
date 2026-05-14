@@ -189,14 +189,48 @@ const env = {
   console_debug: function (ptr, len) {
     console.debug(getStringFromWasm0(ptr, len));
   },
+  console_debug2(ptr_arg1, len_arg1, ptr_arg2, len_arg2) {
+    console.debug(
+      getStringFromWasm0(ptr_arg1, len_arg1),
+      getStringFromWasm0(ptr_arg2, len_arg2),
+    );
+  },
   console_info: function (ptr, len) {
     console.info(getStringFromWasm0(ptr, len));
+  },
+  console_info2(ptr_arg1, len_arg1, ptr_arg2, len_arg2) {
+    console.info(
+      getStringFromWasm0(ptr_arg1, len_arg1),
+      getStringFromWasm0(ptr_arg2, len_arg2),
+    );
   },
   console_error: function (ptr, len) {
     console.error(getStringFromWasm0(ptr, len));
   },
+  console_error2(ptr_arg1, len_arg1, ptr_arg2, len_arg2) {
+    console.error(
+      getStringFromWasm0(ptr_arg1, len_arg1),
+      getStringFromWasm0(ptr_arg2, len_arg2),
+    );
+  },
+
+  console_trace: function (ptr, len) {
+    console.trace(getStringFromWasm0(ptr, len));
+  },
+  console_trace2(ptr_arg1, len_arg1, ptr_arg2, len_arg2) {
+    console.warn(
+      getStringFromWasm0(ptr_arg1, len_arg1),
+      getStringFromWasm0(ptr_arg2, len_arg2),
+    );
+  },
   console_warn: function (ptr, len) {
     console.warn(getStringFromWasm0(ptr, len));
+  },
+  console_warn2(ptr_arg1, len_arg1, ptr_arg2, len_arg2) {
+    console.warn(
+      getStringFromWasm0(ptr_arg1, len_arg1),
+      getStringFromWasm0(ptr_arg2, len_arg2),
+    );
   },
   rand: function () {
     return Math.floor(Math.random() * 2147483647);

@@ -32,6 +32,7 @@ xs-backend-wayland-xkb = { path = "crates/xs-backend-wayland-xkb" }
 xs-canvas = { path = "crates/xs-canvas" }
 xs-core = { path = "crates/xs-core" }
 xs-egl-sys = { path = "crates/xs-egl-sys" }
+xs-log = { path = "crates/xs-log" }
 xs-gl = { path = "crates/xs-gl" }
 xs-gl-sys = { path = "crates/xs-gl-sys" }
 xs-js-sys = { path = "crates/xs-js-sys" }
@@ -61,6 +62,8 @@ xs-websocket = { path = "crates/xs-websocket" }
 ab_glyph.path = "vendors/ab-glyph/glyph"
 ab_glyph.default-features = false
 ab_glyph.features = [ "small" ]
+
+log.version = "0.4"
 
 nanoserde.path = "vendors/nanoserde"
 nanoserde.default-features = false

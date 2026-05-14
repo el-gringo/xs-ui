@@ -1,0 +1,11 @@
+[package]
+name = "xs-log"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+log = "0.4.29"
+
+[target.wasm32-unknown-unknown.dependencies]
+xs-js-sys.workspace = true
