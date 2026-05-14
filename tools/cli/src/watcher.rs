@@ -62,7 +62,7 @@ fn build(target_directory: String, args: Vec<String>, sender: Sender<String>) {
     let start = target_directory.len();
     let command = std::process::Command::new("cargo")
         .env("RUSTFLAGS", "-Ctarget-feature=-reference-types")
-        .args(args)
+        .args(args.clone())
         .stdout(std::process::Stdio::piped())
         //.stderr(std::process::Stdio::null())
         .spawn()
@@ -170,11 +170,11 @@ pub fn watch(target_directory: String, additional_args: Vec<String>, sender: Sen
         "-d",
         "0.1",
         "-x",
-        "build --target wasm32-unknown-unknown --message-format=json"
+        "build --target wasm32-unknown-unknown --message-format=json",
     ]
-        .iter()
-        .map(|arg| arg.to_string())
-        .collect();
+    .iter()
+    .map(|arg| arg.to_string())
+    .collect();
     args.extend(additional_args);
     std::thread::spawn(|| {
         build(target_directory, args, sender);

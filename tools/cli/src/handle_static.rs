@@ -1,8 +1,5 @@
 use std::io::Read;
-use xs_http::{
-    client::HttpRequest,
-    response::{HttpHeaders, HttpResponse},
-};
+use xs_http::{HttpHeaders, HttpRequest, HttpResponse};
 
 use crate::cargo_metadata::CargoMetadata;
 
@@ -29,27 +26,24 @@ fn get_content_type(path: &std::path::PathBuf) -> &'static str {
     }
 }
 
-pub fn handle_static(request: HttpRequest, config: &CargoMetadata, package: Option<&String>) {
+pub fn handle_static(request: HttpRequest, config: &CargoMetadata, package: &String) {
     let pathname = match request.pathname.split_once('?') {
         Some((path, _)) => &path[1..],
         None => &request.pathname[1..],
     };
-    println!("pathname: {:?}", pathname);
     let path = if pathname == "" {
         &std::path::Path::new("tools/cli/src/html").join("index.html")
     } else if pathname.starts_with("assets/") {
         &std::path::Path::new("tools/cli/src/html").join(pathname)
     } else if pathname == "app.wasm" {
-        let binary_name = package.unwrap_or(&config.packages[0].name);
         &std::path::Path::new("tools/cli/src")
             .join(&config.target_directory)
             .join("wasm32-unknown-unknown")
             .join("debug")
-            .join(binary_name.to_owned() + ".wasm")
+            .join(package.to_owned() + ".wasm")
     } else {
         &std::path::Path::new(&config.target_directory).join(pathname)
     };
-    println!("path: {:?}", path);
     let file = std::fs::File::open(path);
     let response = if file.is_ok() && path.is_file() {
         let mut file = file.unwrap();

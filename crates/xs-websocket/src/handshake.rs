@@ -1,9 +1,10 @@
 use std::io::{BufWriter, Write};
 
 use xs_http::{
-    client::HttpRequest,
+    HttpRequest,
     digest::{Sha1, base64_encode},
-    response::{HttpHeaders, HttpResponse},
+    headers::HttpHeaders,
+    response::HttpResponse,
 };
 
 use crate::{message::WebSocketMessage, server::WebSocketServer};
@@ -38,8 +39,8 @@ pub fn handshake(request: HttpRequest) -> Option<WebSocketServer> {
             "Welcome".as_bytes().to_vec(),
         );
         let mut writer = BufWriter::new(wss.stream.try_clone().unwrap());
-        let mut buffer: Vec<u8> = message.into();
-        writer.write_all(&mut buffer).unwrap();
+        let buffer: Vec<u8> = message.into();
+        writer.write_all(&buffer).unwrap();
         return Some(wss);
     }
     None

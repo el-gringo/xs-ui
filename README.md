@@ -65,8 +65,8 @@ Other notable crates. They are designed to be used in any project.
 ## Examples
 
 ```bash
-# Run the playground example
-cargo run -p playground
+# Run the peertube example
+cargo run -p peertube
 ```
 
 ## Getting started
@@ -79,6 +79,17 @@ There is 2 ways about starting an application.
 - With the crate `xs-canvas`: This give you a minimal API to create an application allowing you to call low level graphics (OpenGl/webGl bindings abstraction). 
   This is ideal for testing shaders in seconds. [examples](crates/xs-canvas/examples/)
 
+## CLI
+
+The development of the CLI is stalled and the current version is very limited. The goal is to provide a tool to manage `xs-ui` projects: serve, build, package...
+
+It automatically reloads the wasm on code change, and requires `cargo-watch`.
+
+```bash
+# Serves the peertube example
+cargo run -p xs-cli -- peertube
+```
+
 ## Dependencies
 
 - [log](https://crates.io/crates/log)
@@ -90,7 +101,7 @@ There is 2 ways about starting an application.
 
 - Why the name `xs-ui` ? 
 
-  The name is not definitive and I didn't spend time on searching for a name. Inspired by Diocus, I wanted a name that can be reduced in 2 to 3 letters for the CLI tool.
+  The name is not definitive and I didn't spend time looking for one. Inspired by Diocus, I wanted a name that can be reduced in 2 to 3 letters for the CLI tool.
 
   Futur name candidate: *joona* which stands for *fast* in Malinké.
 
