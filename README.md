@@ -16,7 +16,7 @@ Discord: [https://discord.gg/8VYgS7aD](https://discord.gg/8VYgS7aD)
 - Minimal dependencies - No `wasm-bindgen`, `winit` nor `wgpu`
 - Compile for Linux Wayland & WASM
 - OpenGl / WebGl renderer
-- Arrow key navition
+- Arrow key navigation
 - HTTP Client
 - Text rendering from alpha glyph atlas
 - Flex layout
