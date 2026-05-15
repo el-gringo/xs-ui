@@ -12,7 +12,13 @@ jobs:
         run: cargo check --target wasm32-unknown-unknown
 
       - name: Build
-        run: cargo build --package peertube --target wasm32-unknown-unknown --release
+        run: >
+          RUSTFLAGS="-Ctarget-cpu=mvp"
+          cargo build
+          -Zbuild-std=panic_abort,std
+          --target wasm32-unknown-unknown
+          --release
+          --package peertube
 
       - name: Create dist
         run: mkdir dist;

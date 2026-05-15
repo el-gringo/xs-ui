@@ -61,7 +61,7 @@ impl Default for CargoBuildOutput {
 fn build(target_directory: String, args: Vec<String>, sender: Sender<String>) {
     let start = target_directory.len();
     let command = std::process::Command::new("cargo")
-        .env("RUSTFLAGS", "-Ctarget-feature=-reference-types")
+        .env("RUSTFLAGS", "-Ctarget-cpu=mvp")
         .args(args.clone())
         .stdout(std::process::Stdio::piped())
         //.stderr(std::process::Stdio::null())

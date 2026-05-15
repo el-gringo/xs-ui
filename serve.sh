@@ -8,8 +8,10 @@ if [ -z "$EXAMPLE" ]; then
     exit 0
 fi
 
-cargo watch \
-  --exec "build --target wasm32-unknown-unknown --target-dir ./target --bin $EXAMPLE" \
+# We need to target-cpu=mvp because older chrome from SmartTv do not support some features
+# This requires to rebuild the Rust's std
+RUSTFLAGS="-Ctarget-cpu=mvp" cargo watch \
+  --exec "build -Zbuild-std=panic_abort,std --target wasm32-unknown-unknown --target-dir ./target --bin $EXAMPLE" \
   --shell "
     cp -vr tools/cli/src/html/* $TARGET && \
     sed -i \"s/app.wasm/${EXAMPLE}.wasm/\" $TARGET/index.html && \
