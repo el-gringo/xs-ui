@@ -13,6 +13,8 @@ jobs:
 
       - name: Build
         run: >
+          rustup toolchain list
+
           RUSTFLAGS="-Ctarget-cpu=mvp"
           cargo build
           -Zbuild-std=panic_abort,std
