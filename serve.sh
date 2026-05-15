@@ -12,6 +12,6 @@ cargo watch \
   --exec "build --target wasm32-unknown-unknown --target-dir ./target --bin $EXAMPLE" \
   --shell "
     cp -vr tools/cli/src/html/* $TARGET && \
-    sed -i \"s/{wasm-file}/$EXAMPLE/\" $TARGET/index.html && \
+    sed -i \"s/app.wasm/${EXAMPLE}.wasm/\" $TARGET/index.html && \
     python3 -m http.server -d $TARGET 8421
   "

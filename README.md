@@ -72,6 +72,11 @@ Other notable crates. They are designed to be used in any project.
 cargo run -p peertube
 ```
 
+```bash
+# Start a server that build & watch peertube
+./serve.sh peertube
+```
+
 ## Getting started
 
 There is 2 ways about starting an application. 
