@@ -239,7 +239,7 @@ impl LayoutTree {
                     };
                     format!("{color:?}")
                 } else {
-                    String::from("")
+                    String::new()
                 }
             );
         }
@@ -276,14 +276,9 @@ impl<'a> Iterator for LayoutTreeIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        Color,
-        colors::{GREEN, RED},
-        decoration::Material,
-    };
+    use crate::{Color, decoration::Material};
 
     #[test]
-    #[ignore]
     fn layout_tree_iter_nested() {
         let mut tree = LayoutTree::new();
         let a = LayoutBox {
@@ -336,7 +331,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn layout_tree_iter_works() {
         let mut tree = LayoutTree::new();
         let a_child = LayoutBox {
@@ -400,11 +394,11 @@ mod tests {
     #[test]
     fn lbox_partial_eq_with_different_materials_returns_false() {
         let lbox_a = LayoutBox {
-            material: Some(Material::filled(RED)),
+            material: Some(Material::filled(Color::RED)),
             ..a_layout_box()
         };
         let lbox_b = LayoutBox {
-            material: Some(Material::filled(GREEN)),
+            material: Some(Material::filled(Color::GREEN)),
             ..a_layout_box()
         };
         assert_ne!(lbox_a, lbox_b);
@@ -414,7 +408,7 @@ mod tests {
         LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, 10.0, 10.0),
             children: vec![],
-            material: Some(Material::filled(Color::rgba(0, 0, 0, 0))),
+            material: Some(Material::filled(Color::TRANSPARENT)),
             ..Default::default()
         }
     }

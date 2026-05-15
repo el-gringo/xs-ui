@@ -148,14 +148,16 @@ mod tests {
 
     fn listen() {
         let address = std::net::SocketAddr::new(TEST_HOST.parse().unwrap(), TEST_PORT);
-        let listener = std::net::TcpListener::bind(address).expect(&format!(
-            "unable to bind port {:?} {}",
-            TEST_HOST, TEST_PORT
-        ));
+        let listener = std::net::TcpListener::bind(address).unwrap_or_else(|err| {
+            panic!(
+                "unable to bind port {:?} {}\nERROR: {:?}",
+                TEST_HOST, TEST_PORT, err
+            )
+        });
         std::thread::spawn(move || {
             let (mut tcp_stream, _) = listener.accept().expect("unable to accept connections");
             tcp_stream
-                .write(
+                .write_all(
                     "HTTP/1.1 200\r\n
                 content-length: 10\r\n
                 \r\n

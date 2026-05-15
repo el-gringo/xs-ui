@@ -77,9 +77,9 @@ fn log(record: &log::Record) {
 /// ## Example
 ///
 /// ```
-/// use log::Level;
+/// use xs_log::Level;
 /// fn main() {
-///     logger::init_with_level(Level::Debug).expect("error initializing logger");
+///     xs_log::init_with_level(Level::Debug).expect("error initializing logger");
 /// }
 /// ```
 #[inline]
@@ -93,8 +93,9 @@ pub fn init_with_level(level: Level) {
 /// ## Example
 ///
 /// ```
+/// use xs_log;
 /// fn main() {
-///     logger::init().expect("error initializing logger");
+///     xs_log::init().expect("error initializing logger");
 /// }
 /// ```
 #[inline]

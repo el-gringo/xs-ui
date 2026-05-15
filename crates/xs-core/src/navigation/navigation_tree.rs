@@ -37,12 +37,12 @@ impl NavigationTree {
     pub fn iter_from_node(&self, root: Option<NavigationNodeId>) -> NavigationTreeIterator<'_> {
         let mut parents = VecDeque::new();
         let mut remaining = VecDeque::new();
-        if let Some(root) = root {
-            if let Some(node) = self.get(root) {
-                for (index, child) in node.borrow().children.iter().enumerate() {
-                    parents.push_back(root);
-                    remaining.push_back((index, *child));
-                }
+        if let Some(root) = root
+            && let Some(node) = self.get(root)
+        {
+            for (index, child) in node.borrow().children.iter().enumerate() {
+                parents.push_back(root);
+                remaining.push_back((index, *child));
             }
         }
         NavigationTreeIterator {

@@ -15,10 +15,7 @@ impl Iterator for IncomingRequests<'_> {
         let mut incoming = self.listener.incoming();
         match incoming.next() {
             Some(next) => match next {
-                Ok(tcp_listener) => match HttpRequest::read(tcp_listener) {
-                    Ok(request) => Some(request),
-                    _ => None,
-                },
+                Ok(tcp_listener) => HttpRequest::read(tcp_listener).ok(),
                 Err(_) => None,
             },
             None => None,
@@ -29,8 +26,9 @@ impl Iterator for IncomingRequests<'_> {
 impl HttpServer {
     pub fn listen(host: &str, port: u16) -> Self {
         let address = std::net::SocketAddr::new(host.parse().unwrap(), port);
-        let listener = std::net::TcpListener::bind(address)
-            .expect(&format!("unable to bind port {:?} {}", host, port));
+        let listener = std::net::TcpListener::bind(address).unwrap_or_else(|err| {
+            panic!("unable to bind port {:?} {}\nERROR: {:?}", host, port, err)
+        });
         Self { listener }
     }
 

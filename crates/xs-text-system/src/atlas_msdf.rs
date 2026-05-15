@@ -15,7 +15,7 @@ impl Atlas for AtlasMsdf {
     }
 
     fn generate_with_options(font_data: &[u8], atlas_options: Option<AtlasOptions>) -> Self {
-        let font = &FontRef::try_from_slice(&font_data).unwrap();
+        let font = &FontRef::try_from_slice(font_data).unwrap();
         let (font_size, padding) =
             atlas_options.map_or((42., 4.0), |options| (options.font_size, options.padding));
         let scale = PxScale::from(font_size);

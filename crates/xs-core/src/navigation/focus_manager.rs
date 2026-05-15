@@ -133,10 +133,13 @@ impl FocusManager {
                 if index == selected_index && index < children_len {
                     let should_have_focus = true;
                     let mut child_node = child.borrow_mut();
-                    let prev = child_node.has_focus;
+                    let had_focus = child_node.has_focus;
                     child_node.has_focus = should_have_focus;
-                    if should_have_focus && !prev {
-                        child_node.focus_callback.clone().map(|cb| cb());
+                    if should_have_focus
+                        && !had_focus
+                        && let Some(cb) = child_node.focus_callback.clone()
+                    {
+                        cb()
                     }
                     drop(child_node);
                     if child.borrow().children.is_empty() {
