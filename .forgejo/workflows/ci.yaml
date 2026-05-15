@@ -6,7 +6,9 @@ jobs:
       image: registry:5000/debian-rust-wasm-vercel
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          show-progress: true
 
       - name: Check
         run: cargo check --target wasm32-unknown-unknown
@@ -20,14 +22,16 @@ jobs:
           --release
           --package peertube
 
-      - name: Create dist
+      - name: Package
         run: mkdir dist;
           cp -v target/wasm32-unknown-unknown/release/peertube.wasm dist/;
           cp -rv tools/cli/src/html/* dist/;
           sed -i "s/{wasm-file}/peertube/" dist/index.html;
 
-      - if: github.ref != 'refs/heads/main'
+      - name: Publish
+        if: github.ref != 'refs/heads/main'
         run: vercel -y --token ${{ secrets.VERCEL_TOKEN }}
 
-      - if: github.ref == 'refs/heads/main'
+      - name: Publish release
+        if: github.ref == 'refs/heads/main'
         run: vercel -y --prod --token ${{ secrets.VERCEL_TOKEN }}
