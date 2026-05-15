@@ -3,8 +3,8 @@ use std::{any::TypeId, rc::Rc};
 use xs_core::{AppContext, Context, Element, Render, TextProperties};
 use xs_layout::{
     AlignItems, BorderRadius, BorderSide, Borders, BoxShadow, Color, EdgeInsets, Flex,
-    FlexDirection, FlexWrap, JustifyContent, Material, Overflow, Positioned, Style, StyleDisplay,
-    StylePosition, View,
+    FlexDirection, FlexWrap, JustifyContent, Material, Overflow, Positioned, QuadProps, Style,
+    StyleDisplay, StylePosition, View,
 };
 
 #[derive(Default, Clone)]
@@ -365,8 +365,14 @@ impl Element for Div {
     }
 
     fn paint(&self, app_context: &mut AppContext, children: &[View]) -> View {
-        let image = app_context.load_image(self.style.background_image.clone());
-        let material = Material::Quad(Rc::new(self.style.clone()), image);
+        let material = Material::Quad(Rc::new(QuadProps {
+            background: self.style.background,
+            border: self.style.border,
+            border_radius: self.style.border_radius,
+            box_shadow: self.style.box_shadow,
+            overflow: self.style.overflow,
+            background_image: app_context.load_image(self.style.background_image.clone()),
+        }));
         match self.style.position {
             StylePosition::Absolute => {
                 let mut style = self.style.clone();

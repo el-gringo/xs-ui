@@ -4,7 +4,7 @@ use xs_gl::{
     Buffer, GL_FLOAT, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, GL_UNSIGNED_SHORT, Shader,
     glActiveTexture, glBindTexture, glDrawElements,
 };
-use xs_layout::{Background, Image, Style};
+use xs_layout::{Background, QuadProps};
 use xs_math::Rectangle;
 
 #[rustfmt::skip]
@@ -40,18 +40,17 @@ impl RendererOpenGl {
         &mut self,
         ctx: &AppContext,
         quad: &Rectangle,
-        style: &Style,
-        image: &Option<Image>,
+        props: &QuadProps,
         clip: Option<Rectangle>,
     ) {
         let texture_place_holder = self.texture_place_holder;
         let shader = self.get_shader("quad");
         shader.use_program();
         let borders = [
-            style.border.top,
-            style.border.right,
-            style.border.bottom,
-            style.border.left,
+            props.border.top,
+            props.border.right,
+            props.border.bottom,
+            props.border.left,
         ];
         let border_color = borders
             .iter()
@@ -60,7 +59,8 @@ impl RendererOpenGl {
                 b.map_or(Color::TRANSPARENT, |b| b.color)
             });
         let border_width = borders.map(|b| b.map_or(0.0, |b| b.width));
-        let texture = image
+        let texture = props
+            .background_image
             .clone()
             .map_or(texture_place_holder, |img| img.texture);
         glActiveTexture(GL_TEXTURE0);
@@ -71,7 +71,7 @@ impl RendererOpenGl {
             ctx.screen.height as _,
         );
         shader.uniform_4fv("u_box", *quad);
-        match style.background {
+        match props.background {
             Background::Color(c) => {
                 shader.uniform_4fv("u_color", c);
                 shader.uniform_1f("u_gradientAngle", -1.0);
@@ -84,10 +84,10 @@ impl RendererOpenGl {
             }
         }
         shader.uniform_1f("u_colorAlpha", 1.0);
-        shader.uniform_4fv("u_shadow", style.box_shadow);
-        shader.uniform_4fv("u_shadowColor", style.box_shadow.color);
+        shader.uniform_4fv("u_shadow", props.box_shadow);
+        shader.uniform_4fv("u_shadowColor", props.box_shadow.color);
         shader.uniform_4fv("u_borderWidth", border_width);
-        shader.uniform_4fv("u_borderRadius", style.border_radius);
+        shader.uniform_4fv("u_borderRadius", props.border_radius);
         shader.uniform_4fv("u_borderColor", border_color);
         shader.uniform_1i("u_texture", 0);
 

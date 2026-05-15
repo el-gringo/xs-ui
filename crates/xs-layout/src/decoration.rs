@@ -1,22 +1,44 @@
 use std::rc::Rc;
 
-use crate::{Background, Color, Image, Style, TextProperties, TextVertices};
+use crate::{Background, Color, Image, TextProperties, TextVertices};
 use xs_math::Vector2;
 
 #[derive(Clone, PartialEq, Debug)]
+pub struct QuadProps {
+    pub background: Background,
+    pub border: Borders,
+    pub border_radius: BorderRadius,
+    pub box_shadow: BoxShadow,
+    pub overflow: crate::Overflow,
+    pub background_image: Option<Image>,
+}
+
+impl Default for QuadProps {
+    fn default() -> Self {
+        Self {
+            background: Background::Color(Color::TRANSPARENT),
+            border: Borders::none(),
+            border_radius: BorderRadius::default(),
+            box_shadow: BoxShadow::default(),
+            overflow: crate::Overflow::default(),
+            background_image: None,
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub enum Material {
-    Quad(Rc<Style>, Option<Image>),
+    Quad(Rc<QuadProps>),
     Text(Color, TextProperties, TextVertices),
 }
 
 impl Material {
     #[must_use]
     pub fn filled(background: impl Into<Background>) -> Material {
-        let style = Style {
+        Material::Quad(Rc::new(QuadProps {
             background: background.into(),
             ..Default::default()
-        };
-        Material::Quad(Rc::new(style), None)
+        }))
     }
 }
 

@@ -9,7 +9,7 @@ use xs_gl::{
 use xs_layout::{
     BoxConstraints, LayoutBox, LayoutTree,
     Material::{Quad, Text},
-    Overflow, View,
+    View,
 };
 use xs_math::{Rectangle, Vector2};
 
@@ -96,8 +96,8 @@ impl Renderer for RendererOpenGl {
             let quad = Rectangle::new(min.x, min.y, child.bounds.width, child.bounds.height);
 
             let parent_clip = clip_rects[parent_id];
-            let clip = if let Some(Quad(style, _)) = &child.material
-                && style.overflow == Overflow::Hidden
+            let clip = if let Some(Quad(props)) = &child.material
+                && props.overflow == xs_layout::Overflow::Hidden
             {
                 let box_clip = Rectangle::new(min.x, min.y, quad.width, quad.height);
                 Some(match parent_clip {
@@ -113,8 +113,8 @@ impl Renderer for RendererOpenGl {
                 && let Some(material) = &child.material
             {
                 match material {
-                    Quad(style, image) => {
-                        self.render_quad(ctx, &quad, style, image, clip);
+                    Quad(props) => {
+                        self.render_quad(ctx, &quad, props, clip);
                     }
                     Text(color, text_properties, text_vertices) => {
                         let (atlas_texture, _atlas_font_size) = self

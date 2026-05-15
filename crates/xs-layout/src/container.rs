@@ -3,9 +3,9 @@ use std::rc::Rc;
 use xs_math::Vector2;
 
 use crate::base::{Alignment, EdgeInsets};
-use crate::decoration::{Borders, Material};
+use crate::decoration::{Borders, Material, QuadProps};
 use crate::tree::{BoxConstraints, Layout, LayoutBox, LayoutTree, SizedLayoutBox};
-use crate::{Background, Color, Image, Style, View};
+use crate::{Background, Color, Image, View};
 
 fn clamp_f32(value: f32, min: f32, max: f32) -> f32 {
     if value < min {
@@ -112,31 +112,15 @@ impl Container {
         let position = pos + self.margin.min() + self.padding.min() + self.borders.min();
         let lbox = LayoutBox::from_child(sbox, position);
         let id = tree.insert(lbox);
-        let mut style = Style::default();
-        style.left = Some(self.alignment.x);
-        style.top = Some(self.alignment.y);
-        style.width = self.width;
-        style.height = self.height;
-        style.border = self.borders;
-        style.padding = self.padding;
-        style.margin = self.margin;
-        style.padding = self.padding;
-        style.background = Background::Color(self.color);
-
-        /*
-        *     pub width: Option<f32>,
-        pub height: Option<f32>,
-        pub alignment: Alignment,
-        pub padding: EdgeInsets,
-        pub borders: Borders,
-        pub margin: EdgeInsets,
-        pub color: Color,
-        pub image: Option<Image>,
-        */
         SizedLayoutBox {
             size,
             children: vec![id],
-            material: Some(Material::Quad(Rc::new(style), self.image.clone())),
+            material: Some(Material::Quad(Rc::new(QuadProps {
+                background: Background::Color(self.color),
+                border: self.borders,
+                background_image: self.image.clone(),
+                ..Default::default()
+            }))),
             margin: self.margin,
         }
     }
@@ -147,20 +131,15 @@ impl Container {
         let width = Container::calculate_size(self.width, h_axis_constraints);
         let height = Container::calculate_size(self.height, v_axis_constraints);
         let size = Vector2::new(width, height) + self.margin.total();
-        let mut style = Style::default();
-        style.left = Some(self.alignment.x);
-        style.top = Some(self.alignment.y);
-        style.width = self.width;
-        style.height = self.height;
-        style.border = self.borders;
-        style.padding = self.padding;
-        style.margin = self.margin;
-        style.padding = self.padding;
-        style.background = Background::Color(self.color);
         SizedLayoutBox {
             size,
             children: vec![],
-            material: Some(Material::Quad(Rc::new(style), self.image.clone())),
+            material: Some(Material::Quad(Rc::new(QuadProps {
+                background: Background::Color(self.color),
+                border: self.borders,
+                background_image: self.image.clone(),
+                ..Default::default()
+            }))),
             margin: self.margin,
         }
     }
@@ -179,7 +158,7 @@ impl Container {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::colors::{GREEN, RED};
+    use crate::Color;
     use std::rc::Rc;
     use test_utils::assert_slice_eq;
     use xs_math::Rectangle;
@@ -187,7 +166,7 @@ mod tests {
     #[test]
     pub fn container_with_no_child_fills_constraints() {
         let container = Container {
-            color: GREEN,
+            color: Color::GREEN,
             ..Container::default()
         };
 
@@ -195,7 +174,7 @@ mod tests {
         let actual_layout = layout_with_constraints(&container, &constraints);
         let expected_layout = vec![LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, 100.0, 100.0),
-            ..fixed_child_lbox(GREEN)
+            ..fixed_child_lbox(Color::GREEN)
         }];
         assert_slice_eq(&expected_layout, &actual_layout);
     }
@@ -204,7 +183,7 @@ mod tests {
     pub fn container_with_no_child_and_has_height_fills_container_width() {
         let container = Container {
             height: Some(50.0),
-            color: GREEN,
+            color: Color::GREEN,
             ..Container::default()
         };
 
@@ -212,7 +191,7 @@ mod tests {
         let actual_layout = layout_with_constraints(&container, &constraints);
         let expected_layout = vec![LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, 100.0, 50.0),
-            ..fixed_child_lbox(GREEN)
+            ..fixed_child_lbox(Color::GREEN)
         }];
         assert_slice_eq(&expected_layout, &actual_layout);
     }
@@ -221,7 +200,7 @@ mod tests {
     pub fn container_with_no_child_and_has_width_fills_container_height() {
         let container = Container {
             width: Some(50.0),
-            color: GREEN,
+            color: Color::GREEN,
             ..Container::default()
         };
 
@@ -229,7 +208,7 @@ mod tests {
         let actual_layout = layout_with_constraints(&container, &constraints);
         let expected_layout = vec![LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, 50.0, 100.0),
-            ..fixed_child_lbox(GREEN)
+            ..fixed_child_lbox(Color::GREEN)
         }];
         assert_slice_eq(&expected_layout, &actual_layout);
     }
@@ -237,11 +216,11 @@ mod tests {
     #[test]
     pub fn container_with_child_has_same_size_as_child_in_unbounded_parent() {
         let container = Container {
-            color: GREEN,
+            color: Color::GREEN,
             child: Some(Rc::new(Container {
                 width: Some(50.0),
                 height: Some(50.0),
-                color: RED,
+                color: Color::RED,
                 ..Container::default()
             })),
             ..Container::default()
@@ -252,12 +231,12 @@ mod tests {
         let expected_layout = vec![
             LayoutBox {
                 bounds: Rectangle::new(0.0, 0.0, 50.0, 50.0),
-                ..fixed_child_lbox(RED)
+                ..fixed_child_lbox(Color::RED)
             },
             LayoutBox {
                 bounds: Rectangle::new(0.0, 0.0, 50.0, 50.0),
                 children: vec![0],
-                ..fixed_child_lbox(GREEN)
+                ..fixed_child_lbox(Color::GREEN)
             },
         ];
         assert_slice_eq(&expected_layout, &actual_layout);

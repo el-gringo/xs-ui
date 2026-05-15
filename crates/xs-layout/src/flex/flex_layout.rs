@@ -380,64 +380,66 @@ impl Layout for Flex {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{Borders, Color, FlexDirection, Style, View};
-    use std::rc::Rc;
+use super::*;
+use crate::{
+    Background, Borders, Color, FlexDirection, QuadProps, Style, View,
+};
+use std::rc::Rc;
 
-    fn flex(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
-        Flex {
-            style: Style {
-                width,
-                height,
-                ..Default::default()
-            },
-            material: None,
-            children,
-        }
+fn flex(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
+    Flex {
+        style: Style {
+            width,
+            height,
+            ..Default::default()
+        },
+        material: None,
+        children,
     }
+}
 
-    fn child(w: f32, h: f32) -> View {
-        let mut flex = flex(Some(w), Some(h), vec![]);
-        flex.material = Some(Material::Quad(
-            Borders::none(),
-            Color::rgba(255, 0, 0, 255),
-            None,
-        ));
-        Rc::new(flex)
-    }
+fn child(w: f32, h: f32) -> View {
+    let mut flex = flex(Some(w), Some(h), vec![]);
+    flex.material = Some(Material::Quad(Rc::new(QuadProps {
+        background: Background::Color(Color::rgba(255.0, 0.0, 0.0, 255.0)),
+        border: Borders::none(),
+        ..Default::default()
+    })));
+    Rc::new(flex)
+}
 
-    fn child_with_margin(w: f32, h: f32, margin: EdgeInsets) -> Flex {
-        let mut flex = flex(Some(w), Some(h), vec![]);
-        flex.style.margin = margin;
-        flex.material = Some(Material::Quad(
-            Borders::none(),
-            Color::rgba(255, 0, 0, 255),
-            None,
-        ));
-        flex
-    }
+fn child_with_margin(w: f32, h: f32, margin: EdgeInsets) -> Flex {
+    let mut flex = flex(Some(w), Some(h), vec![]);
+    flex.style.margin = margin;
+    flex.material = Some(Material::Quad(Rc::new(QuadProps {
+        background: Background::Color(Color::rgba(255.0, 0.0, 0.0, 255.0)),
+        border: Borders::none(),
+        ..Default::default()
+    })));
+    flex
+}
 
-    fn row(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
-        let mut flex = flex(width, height, children);
-        flex.style.flex_direction = FlexDirection::Row;
-        flex
-    }
+fn row(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
+    let mut flex = flex(width, height, children);
+    flex.style.flex_direction = FlexDirection::Row;
+    flex
+}
 
-    fn column(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
-        let mut flex = flex(width, height, children);
-        flex.style.flex_direction = FlexDirection::Column;
-        flex
-    }
+fn column(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
+    let mut flex = flex(width, height, children);
+    flex.style.flex_direction = FlexDirection::Column;
+    flex
+}
 
-    fn card(width: Option<f32>, height: Option<f32>) -> Flex {
-        let mut flex = flex(width, height, Vec::new());
-        flex.material = Some(Material::Quad(
-            Borders::all(Color::rgba(178, 178, 178, 255), 1.0),
-            Color::rgba(255, 255, 255, 255),
-            None,
-        ));
-        flex
-    }
+fn card(width: Option<f32>, height: Option<f32>) -> Flex {
+    let mut flex = flex(width, height, Vec::new());
+    flex.material = Some(Material::Quad(Rc::new(QuadProps {
+        background: Background::Color(Color::rgba(255.0, 255.0, 255.0, 255.0)),
+        border: Borders::all(Color::rgba(178.0, 178.0, 178.0, 255.0), 1.0),
+        ..Default::default()
+    })));
+    flex
+}
 
     #[test]
     fn empty_flex_fills_parent() {
@@ -1068,18 +1070,18 @@ mod tests {
         let mut sidebar_header = row(None, Some(60.0), vec![child(100., 30.)]);
         sidebar_header.style.justify_content = JustifyContent::Center;
         sidebar_header.style.align_items = AlignItems::Center;
-        sidebar_header.material = Some(Material::Quad(
-            Borders::none(),
-            Color::rgba(229, 229, 229, 255),
-            None,
-        ));
+        sidebar_header.material = Some(Material::Quad(Rc::new(QuadProps {
+            background: Background::Color(Color::rgba(229.0, 229.0, 229.0, 255.0)),
+            border: Borders::none(),
+            ..Default::default()
+        })));
 
         let mut btn = row(Some(218.0), Some(40.0), vec![]);
-        btn.material = Some(Material::Quad(
-            Borders::all(Color::rgba(128, 128, 128, 255), 1.0),
-            Color::rgba(204, 204, 204, 255),
-            None,
-        ));
+        btn.material = Some(Material::Quad(Rc::new(QuadProps {
+            background: Background::Color(Color::rgba(204.0, 204.0, 204.0, 255.0)),
+            border: Borders::all(Color::rgba(128.0, 128.0, 128.0, 255.0), 1.0),
+            ..Default::default()
+        })));
         let mut sidebar_body = column(
             None,
             None,
@@ -1098,25 +1100,25 @@ mod tests {
             None,
             vec![Rc::new(sidebar_header), Rc::new(sidebar_body)],
         );
-        sidebar.material = Some(Material::Quad(
-            Borders::none(),
-            Color::rgba(217, 217, 217, 255),
-            None,
-        ));
+        sidebar.material = Some(Material::Quad(Rc::new(QuadProps {
+            background: Background::Color(Color::rgba(217.0, 217.0, 217.0, 255.0)),
+            border: Borders::none(),
+            ..Default::default()
+        })));
 
         let mut app_header = row(None, Some(60.0), vec![]);
-        app_header.material = Some(Material::Quad(
-            Borders::none(),
-            Color::rgba(242, 242, 242, 255),
-            None,
-        ));
+        app_header.material = Some(Material::Quad(Rc::new(QuadProps {
+            background: Background::Color(Color::rgba(242.0, 242.0, 242.0, 255.0)),
+            border: Borders::none(),
+            ..Default::default()
+        })));
 
         let mut card = card(Some(280.0), Some(200.0));
-        card.material = Some(Material::Quad(
-            Borders::all(Color::rgba(178, 178, 178, 255), 1.0),
-            Color::rgba(255, 255, 255, 255),
-            None,
-        ));
+        card.material = Some(Material::Quad(Rc::new(QuadProps {
+            background: Background::Color(Color::rgba(255.0, 255.0, 255.0, 255.0)),
+            border: Borders::all(Color::rgba(178.0, 178.0, 178.0, 255.0), 1.0),
+            ..Default::default()
+        })));
 
         let mut cards_grid = row(
             Some(280.0),
@@ -1163,11 +1165,15 @@ mod tests {
             sidebar_box.material.is_some(),
             "sidebar should have material"
         );
-        if let Some(Material::Quad(_, fill, _)) = &sidebar_box.material {
-            let expected = 217;
-            assert_eq!(fill.r, expected, "sidebar should have gray fill");
-            assert_eq!(fill.g, expected);
-            assert_eq!(fill.b, expected);
+        if let Some(Material::Quad(props)) = &sidebar_box.material {
+            if let Background::Color(fill) = props.background {
+                let expected = 217.0;
+                assert_eq!(fill.r, expected, "sidebar should have gray fill");
+                assert_eq!(fill.g, expected);
+                assert_eq!(fill.b, expected);
+            } else {
+                panic!("sidebar should have Background::Color");
+            }
         }
 
         assert_eq!(app_body_box.bounds.x, 250.0);
@@ -1187,15 +1193,15 @@ mod tests {
         let sidebar_body_box = tree.get(sidebar_box.children[1]).unwrap();
         let btn1_box = tree.get(sidebar_body_box.children[0]).unwrap();
         assert!(btn1_box.material.is_some(), "button should have material");
-        if let Some(Material::Quad(borders, _, _)) = &btn1_box.material {
-            assert!(borders.top.is_some(), "button should have border");
+        if let Some(Material::Quad(props)) = &btn1_box.material {
+            assert!(props.border.top.is_some(), "button should have border");
         }
 
         assert_eq!(btn1_box.bounds.width, 218.0, "button1 width should be 218");
         assert_eq!(btn1_box.bounds.height, 40.0, "button1 height should be 40");
 
-        if let Some(Material::Quad(borders, _, _)) = &btn1_box.material {
-            if let Some(border) = &borders.top {
+        if let Some(Material::Quad(props)) = &btn1_box.material {
+            if let Some(border) = &props.border.top {
                 assert_eq!(border.width, 1.0, "button1 top border width should be 1.0");
             }
         }
@@ -1219,8 +1225,8 @@ mod tests {
 
         let card1_box = tree.get(cards_grid_box.children[0]).unwrap();
         assert!(card1_box.material.is_some(), "card should have material");
-        if let Some(Material::Quad(borders, _, _)) = &card1_box.material {
-            assert!(borders.top.is_some(), "card should have border");
+        if let Some(Material::Quad(props)) = &card1_box.material {
+            assert!(props.border.top.is_some(), "card should have border");
         }
     }
 

@@ -228,7 +228,7 @@ impl LayoutTree {
                 child.clone().bounds,
                 if let Some(m) = material {
                     let color = match m {
-                        Material::Quad(style, _) => match style.background {
+                        Material::Quad(props) => match props.background {
                             Background::Color(c) => c,
                             Background::Gradient(g) => g.start,
                         },
