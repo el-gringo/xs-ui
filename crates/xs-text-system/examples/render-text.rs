@@ -1,7 +1,7 @@
 use std::{fs::File, io::Read};
 
-use xs_core::{TextProperties, TextVertices};
-use xs_text_system::{AtlasAlpha, TextSystem};
+use xs_core::{TextProperties, TextSystem, TextVertices};
+use xs_text_system::AtlasAlpha;
 
 const TEXT: &str = r"Un text avec plusieurs mots
 et un retour à la ligne";
@@ -74,10 +74,10 @@ fn main() {
         font_size,
         font_weight,
     } = Cli::parse();
-    let mut text_system: TextSystem<AtlasAlpha> = TextSystem::new();
+    let mut text_system: xs_text_system::TextSystem<AtlasAlpha> = xs_text_system::TextSystem::new();
     let font_family = "no-name";
     let font_style = xs_core::FontStyle::Normal;
-    text_system.load_font(font_family, font_weight, font_size as f32, 0.0, font);
+    text_system.load_font(font_family.to_string(), font_weight, font);
 
     let text_properties =
         TextProperties::new(font_family.into(), font_size, font_weight, font_style);

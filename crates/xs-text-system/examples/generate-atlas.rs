@@ -1,13 +1,12 @@
 use std::{fs::File, io::Write};
 
-use xs_text_system::{Atlas, AtlasAlpha, AtlasMsdf, AtlasSdf, FontRef};
+use xs_text_system::{Atlas, AtlasAlpha, AtlasMsdf, AtlasSdf};
 
 pub fn main() {
     let binary_font = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
 
     let filename = "atlas_alpha.pgm";
-    let font = FontRef::try_from_slice(binary_font).unwrap();
-    let atlas = AtlasAlpha::generate(&font);
+    let atlas = AtlasAlpha::generate(binary_font);
     let atlas_image = &atlas.info().image;
     let width = atlas_image.width;
     let height = atlas_image.height;
@@ -18,7 +17,7 @@ pub fn main() {
     }
 
     let filename = "atlas_sdf.ppm";
-    let atlas = AtlasSdf::generate(&font);
+    let atlas = AtlasSdf::generate(binary_font);
     let atlas_image = &atlas.info().image;
     let width = atlas_image.width;
     let height = atlas_image.height;
@@ -29,7 +28,7 @@ pub fn main() {
     }
 
     let filename = "atlas_msdf.ppm";
-    let atlas = AtlasMsdf::generate(&font);
+    let atlas = AtlasMsdf::generate(binary_font);
     let atlas_image = &atlas.info().image;
     let width = atlas_image.width;
     let height = atlas_image.height;
