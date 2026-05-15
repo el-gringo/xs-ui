@@ -119,7 +119,6 @@ pub struct SizedLayoutBox {
     pub size: Vector2,
     pub children: Vec<LayoutBoxId>,
     pub material: Option<Material>,
-    pub text_material: Option<Material>,
 }
 
 /// An element that has finished layout. It has been been sized and positioned.
@@ -129,7 +128,6 @@ pub struct LayoutBox {
     pub margin: EdgeInsets,
     pub children: Vec<LayoutBoxId>,
     pub material: Option<Material>,
-    pub text_material: Option<Material>,
 }
 
 impl Eq for LayoutBox {}
@@ -148,7 +146,6 @@ impl LayoutBox {
             margin: child.margin,
             children: child.children,
             material: child.material,
-            text_material: child.text_material,
         }
     }
 }

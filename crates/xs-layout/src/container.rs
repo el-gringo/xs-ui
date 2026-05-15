@@ -25,7 +25,6 @@ impl Layout for DummyContainer {
             size: constraints.max,
             children: Vec::new(),
             material: None,
-            text_material: None,
         }
     }
 }
@@ -138,7 +137,6 @@ impl Container {
             size,
             children: vec![id],
             material: Some(Material::Quad(Rc::new(style), self.image.clone())),
-            text_material: None,
             margin: self.margin,
         }
     }
@@ -163,7 +161,6 @@ impl Container {
             size,
             children: vec![],
             material: Some(Material::Quad(Rc::new(style), self.image.clone())),
-            text_material: None,
             margin: self.margin,
         }
     }

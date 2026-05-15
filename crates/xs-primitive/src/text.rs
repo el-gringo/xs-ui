@@ -52,7 +52,6 @@ impl Layout for TextElement {
             margin: Default::default(),
             children: vec![],
             material: self.material.clone(),
-            text_material: None,
         }
     }
 }

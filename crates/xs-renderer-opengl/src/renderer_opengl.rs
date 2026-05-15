@@ -109,7 +109,7 @@ impl Renderer for RendererOpenGl {
             };
             clip_rects[child_id] = clip;
 
-            if (child.material.is_some() || child.text_material.is_some())
+            if child.material.is_some()
                 && let Some(material) = &child.material
             {
                 match material {

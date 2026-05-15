@@ -5,7 +5,6 @@ pub struct Flex {
     pub style: Style,
     pub children: Vec<View>,
     pub material: Option<Material>,
-    pub text_material: Option<Material>,
 }
 
 impl Flex {

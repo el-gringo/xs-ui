@@ -15,7 +15,7 @@ struct FlexItem {
     padding: EdgeInsets,
     children: Vec<LayoutBoxId>,
     material: Option<Material>,
-    text_material: Option<Material>,
+
     is_absolute: bool,
 }
 
@@ -130,12 +130,16 @@ impl Layout for Flex {
                 };
                 FlexItem {
                     size,
-                    flex_grow: if is_absolute { [0.0, 0.0] } else { child.flex_grow() },
+                    flex_grow: if is_absolute {
+                        [0.0, 0.0]
+                    } else {
+                        child.flex_grow()
+                    },
                     min_main: if is_absolute { 0.0 } else { child.min_main() },
                     max_main: if is_absolute { 0.0 } else { child.max_main() },
                     children: layout.children,
                     material: layout.material,
-                    text_material: layout.text_material,
+
                     margin: child.margin(),
                     padding: child.padding(),
                     is_absolute,
@@ -266,12 +270,10 @@ impl Layout for Flex {
             let line_cross_start = cross_pos;
 
             // Per-line justify: each wrapped line is justified independently
-            let line_content_main: f32 = line
-                .iter()
-                .map(|i| i.main(main_is_x))
-                .sum::<f32>()
+            let line_content_main: f32 = line.iter().map(|i| i.main(main_is_x)).sum::<f32>()
                 + gap * (line.len().saturating_sub(1)) as f32;
-            let line_main_start = justify_offset(container_main, line_content_main, style.justify_content);
+            let line_main_start =
+                justify_offset(container_main, line_content_main, style.justify_content);
 
             let (line_ids, _new_cursor) =
                 line.iter()
@@ -311,7 +313,6 @@ impl Layout for Flex {
                             margin: item.margin,
                             children: item.children.clone(),
                             material: item.material.clone(),
-                            text_material: item.text_material.clone(),
                         });
                         ids.push(box_id);
                         (
@@ -360,7 +361,6 @@ impl Layout for Flex {
             margin: style.margin,
             children: child_ids.clone(),
             material: self.material.clone(),
-            text_material: self.text_material.clone(),
         });
 
         SizedLayoutBox {
@@ -368,7 +368,6 @@ impl Layout for Flex {
             size: Vector2::new(final_w, final_h),
             children: child_ids,
             material: self.material.clone(),
-            text_material: self.text_material.clone(),
         }
     }
     fn margin(&self) -> EdgeInsets {
@@ -393,7 +392,6 @@ mod tests {
                 ..Default::default()
             },
             material: None,
-            text_material: None,
             children,
         }
     }

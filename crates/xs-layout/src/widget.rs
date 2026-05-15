@@ -58,7 +58,6 @@ impl Layout for FixedSize {
             margin: EdgeInsets::zero(),
             children: vec![child_id],
             material: self.material.clone(),
-            text_material: None,
         }
     }
 }

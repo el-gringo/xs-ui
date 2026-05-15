@@ -377,7 +377,6 @@ impl Element for Div {
                     child: Rc::new(Flex {
                         style,
                         material,
-                        text_material: None,
                         children: children.to_vec(),
                     }),
                 })
@@ -388,7 +387,6 @@ impl Element for Div {
                 Rc::new(Flex {
                     style,
                     material,
-                    text_material: None,
                     children: children.to_vec(),
                 })
             }
