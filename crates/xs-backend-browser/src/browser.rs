@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc::Sender};
 
 use crate::bindings;
 
-use xs_core::{AppConfig, AppContext, Backend, BackendResponse, EventLoop, set_app_context};
+use xs_core::{AppConfig, AppContext, Backend, BackendResponse, EventLoop};
 use xs_js_sys::{Closure, request_animation_frame};
 
 #[derive(Default)]
@@ -24,7 +24,6 @@ impl Backend for BackendBrowser {
         event_loop.initialize(&mut app_context);
         app_context.screen.width = app.width as _;
         app_context.screen.height = app.height as _;
-        set_app_context(&mut app_context);
         let app_context = Rc::new(RefCell::new(app_context));
         bindings::initialize(app.width, app.height);
         let f = Rc::new(RefCell::new(None));

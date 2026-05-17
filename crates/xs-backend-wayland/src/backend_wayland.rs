@@ -3,7 +3,7 @@ use std::{ptr::null_mut, sync::mpsc::Sender, time::Instant};
 use xs_backend_wayland_client::{
     WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
 };
-use xs_core::{AppConfig, AppContext, Backend, BackendResponse, EventLoop, set_app_context};
+use xs_core::{AppConfig, AppContext, Backend, BackendResponse, EventLoop};
 
 use crate::{
     config::WaylandConfig, context::WaylandContext, egl::create_egl_window,
@@ -69,7 +69,6 @@ impl Backend for BackendWayland {
         create_xdg(&mut ctx, app_id, app_title);
         create_egl_window(&mut ctx, config.window_width, config.window_height);
         event_loop.initialize(ctx.app_context);
-        set_app_context(ctx.app_context);
         let start = Instant::now();
         while ctx.dispatch_pending() != -1 && ctx.app_context.running {
             ctx.app_context.now = (Instant::now() - start).as_millis();

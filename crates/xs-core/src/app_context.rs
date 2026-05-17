@@ -1,7 +1,6 @@
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
-    sync::atomic::{AtomicPtr, Ordering},
 };
 
 use xs_layout::{Image, TextProperties};
@@ -13,17 +12,6 @@ use crate::{
     navigation::NavigationNodeId,
     state::{AnyState, StateId},
 };
-
-// Global AppContext storage
-static APP_CONTEXT: AtomicPtr<AppContext> = AtomicPtr::new(std::ptr::null_mut());
-
-pub fn set_app_context(ctx: &mut AppContext) {
-    APP_CONTEXT.store(ctx as *mut AppContext, Ordering::SeqCst);
-}
-
-pub fn get_app_context() -> &'static mut AppContext {
-    unsafe { &mut *APP_CONTEXT.load(Ordering::SeqCst) }
-}
 
 pub struct Screen {
     pub width: u32,

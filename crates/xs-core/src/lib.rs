@@ -12,7 +12,7 @@ mod state;
 mod text_system;
 
 pub use app_config::AppConfig;
-pub use app_context::{AppContext, get_app_context, set_app_context};
+pub use app_context::AppContext;
 pub use backend::{Backend, BackendDummy, BackendRequest, BackendResponse, EventLoop};
 pub use context::Context;
 pub use core::Undefined;
