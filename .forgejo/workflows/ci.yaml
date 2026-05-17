@@ -1,9 +1,7 @@
 on: [push]
 jobs:
   build:
-    runs-on: linux
-    container:
-      image: registry:5000/debian-rust-wasm-vercel
+    runs-on: freebox
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
