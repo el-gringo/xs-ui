@@ -2,12 +2,9 @@
 
 Highly  **experimental**. 
 
-An extra small Rust GPU accelerated UI framework with minimal dependencies. 
+An extra small Rust GPU accelerated UI framework with minimal dependencies. Focusing on compatibility for STB / SmartTVs.
 
-Targeting STB / SmartTVs. 
-
-Inspired by [GPUI](https://github.com/zed-industries/gpui) and [Iced](https://github.com/iced-rs/iced). With a builder API. 
-
+Creates UI with a builder API inspired by [GPUI](https://github.com/zed-industries/gpui) and [Iced](https://github.com/iced-rs/iced).
 
 Discord: [https://discord.gg/8VYgS7aD](https://discord.gg/8VYgS7aD)
 
@@ -28,15 +25,16 @@ Discord: [https://discord.gg/8VYgS7aD](https://discord.gg/8VYgS7aD)
 
 ## Demo
 
-Only arrow key navigation work for now
+Only arrow keys navigation works for now.
 
-https://xs-ui.vercel.app/
+[https://xs-ui.vercel.app/](https://xs-ui.vercel.app/)
 
 ![Screenhot of XS Peertube](docs/screenshots/peertube.png)
 
 ## TODO
 
-- [ ] MSDF text rendering (currently using alpha atlas)
+- [ ] Improved event handling with more user inputs
+- [ ] MSDF text rendering (currently using alpha glyph atlas)
 - [ ] E2E Testing
 - [ ] UI Components set
 - [ ] Inspector
@@ -87,6 +85,14 @@ There is 2 ways about starting an application.
 - With the crate `xs-canvas`: This give you a minimal API to create an application allowing you to call low level graphics (OpenGl/webGl bindings abstraction). 
   This is ideal for testing shaders in seconds. [examples](crates/xs-canvas/examples/)
 
+## Compatibilty with SmartTVs
+
+Most SmartTVs do not support features enabled in recent Rust versions. It is required to disable those features and rebuild the Rust's std which, by default, enable them.
+
+```bash
+RUSTFLAGS="-Ctarget-cpu=mvp" cargo build -Zbuild-std=panic_abort,std --target wasm32-unknown-unknown --package peertube
+```
+
 ## CLI
 
 The development of the CLI is stalled and the current version is very limited. The goal is to provide a tool to manage `xs-ui` projects: serve, build, package...
@@ -117,7 +123,7 @@ cargo run -p xs-cli -- peertube
 
   Because already knew OpenGl/GLSL.
 
-  And, as I am aiming to target SmartTVs, the WebGl is the only compatible API. Also, OpenGl & WebGl share the same shader language and almost the same API. I managed to create only one renderer for both. 
+  And, as I am focused on SmartTV compatibility, the WebGl is the only compatible API. Also, OpenGl & WebGl share the same shader language and almost the same API. I can write one renderer for both. 
 
 ## Thanks
 
