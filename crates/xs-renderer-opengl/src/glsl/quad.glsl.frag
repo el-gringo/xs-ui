@@ -39,8 +39,7 @@ float gaussian(float x, float sigma) {
 
 float roundedBoxShadowX(float x, float y, float sigma, vec4 radius, vec2 halfSize) {
     float corner = x < 0.0
-        ? (y < 0.0 ? radius.x : radius.w)
-        : (y < 0.0 ? radius.y : radius.z);
+        ? (y < 0.0 ? radius.x : radius.w) : (y < 0.0 ? radius.y : radius.z);
     float delta = min(halfSize.y - corner - abs(y), 0.0);
     float curved = halfSize.x - corner + sqrt(max(0.0, corner * corner - delta * delta));
     vec2 integral = 0.5 + 0.5 * erf((x + vec2(-curved, curved)) * (sqrt(0.5) / sigma));
@@ -51,6 +50,11 @@ float roundedBoxShadow(vec2 lower, vec2 upper, vec2 point, float sigma, vec4 rad
     vec2 center = (lower + upper) * 0.5;
     vec2 halfSize = (upper - lower) * 0.5;
     point -= center;
+
+    if (sigma < 0.5) {
+        if (abs(point.y) > halfSize.y) return 0.0;
+        return roundedBoxShadowX(point.x, point.y, sigma, radius, halfSize);
+    }
 
     float low = point.y - halfSize.y;
     float high = point.y + halfSize.y;
@@ -88,7 +92,10 @@ void main() {
 
     float box = roundedBoxShadow(contentL, contentU, vertex, 0.25, u_borderRadius);
     float border = roundedBoxShadow(boxL, boxU, vertex, 0.25, u_borderRadius);
-    float shadow = roundedBoxShadow(shadowL, shadowU, vertex, shadowBlur + 0.25, u_borderRadius);
+    float shadow = 0.0;
+    if (shadowBlur > 0.0) {
+        shadow = roundedBoxShadow(shadowL, shadowU, vertex, shadowBlur + 0.25, u_borderRadius);
+    }
 
     vec4 fillColor = u_color;
     if (u_gradientAngle >= 0.0) {
@@ -113,7 +120,7 @@ void main() {
     vec2 clipL = u_clip.xy;
     vec2 clipU = u_clip.xy + u_clip.zw;
     if (v_pixelPos.x < clipL.x || v_pixelPos.x > clipU.x ||
-        v_pixelPos.y < clipL.y || v_pixelPos.y > clipU.y) {
+            v_pixelPos.y < clipL.y || v_pixelPos.y > clipU.y) {
         discard;
     }
 
