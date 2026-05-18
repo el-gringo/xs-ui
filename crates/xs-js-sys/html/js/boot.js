@@ -54,6 +54,7 @@ function loadWasm(wasmUrl) {
       "js/bindings/canvas.js",
       "js/bindings/console.js",
       "js/bindings/document.js",
+      "js/bindings/element.js",
       "js/bindings/event.js",
       "js/bindings/webgl.js",
       "js/bindings/window.js",

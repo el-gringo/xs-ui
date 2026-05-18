@@ -21,6 +21,23 @@ function initializeEventBindings(app) {
       }
       obj.addEventListener(event_name, handleEvent);
     },
+
+    event_key_down(eventPtr, bufPtr) {
+      const { wasm, heap, utf8 } = app;
+      const e = heap.get(eventPtr);
+      const key = e.key;
+      const keyResult = utf8.toWasm(key);
+      const view = new DataView(wasm.memory.buffer);
+      view.setUint32(bufPtr, e.keyCode, true);
+      let mods = 0;
+      if (e.shiftKey) mods |= 1;
+      if (e.ctrlKey) mods |= 2;
+      if (e.altKey) mods |= 4;
+      if (e.metaKey) mods |= 8;
+      view.setUint32(bufPtr + 4, mods, true);
+      view.setUint32(bufPtr + 8, keyResult.ptr, true);
+      view.setUint32(bufPtr + 12, keyResult.len, true);
+    },
   };
 }
 

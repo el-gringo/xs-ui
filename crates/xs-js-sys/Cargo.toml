@@ -14,4 +14,6 @@ name = "request-animation-frame"
 path = "examples/request-animation-frame.rs"
 crate-type = [ "bin" ]
 
+
+
 [dependencies]

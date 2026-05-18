@@ -13,15 +13,6 @@ function initializeCanvasBindings(app) {
       const context = heap.add(ptr);
       return context;
     },
-    canvas_width(canvasPtr) {
-      const { heap } = app;
-      console.log("canvas_width(canvasPtr)", canvasPtr, heap.get(canvasPtr));
-      return heap.get(canvasPtr).width;
-    },
-    canvas_height(canvasPtr) {
-      const { heap } = app;
-      return heap.get(canvasPtr).height;
-    },
   };
 }
 

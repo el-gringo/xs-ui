@@ -1,6 +1,6 @@
-use xs_js_sys::{Document, document};
+use xs_js_sys::{Closure, EventEmitter, EventKeyDown, Node, document, log};
 
 pub fn main() {
     let document = document();
-    document.query_selector("#canvas");
+    let canvas = document.query_selector("canvas");
 }

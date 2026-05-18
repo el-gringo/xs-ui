@@ -26,8 +26,3 @@ impl Drop for JsValue {
         unsafe { js::heap_drop(self.idx) }
     }
 }
-
-pub struct Object<T = JsValue> {
-    _obj: JsValue,
-    generics: PhantomData<(T,)>,
-}
