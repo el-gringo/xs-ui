@@ -4,7 +4,7 @@ use xs_core::{AppContext, AtlasInfo, ImageFormat, Renderer};
 use xs_gl::{
     GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_ELEMENT_ARRAY_BUFFER, GL_ONE_MINUS_SRC_ALPHA,
     GL_SRC_ALPHA, GL_STATIC_DRAW, Shader, glBindBuffer, glBlendFunc, glBufferData, glClear,
-    glClearColor, glDisable, glEnable, glFlush, glGenBuffers, glViewport, load_texture,
+    glClearColor, glDisable, glEnable, glGenBuffers, glViewport, load_texture,
 };
 use xs_layout::{
     BoxConstraints, LayoutBox, LayoutTree,
@@ -63,6 +63,12 @@ impl Renderer for RendererOpenGl {
         self.index_buffer = index_buffer;
         self.texture_place_holder =
             load_texture(&[0, 0, 0, 0], -1, 1, 1, xs_core::ImageFormat::Rgba);
+
+        glClearColor(0., 0., 0., 0.);
+        glEnable(GL_BLEND);
+        glDisable(GL_DEPTH_TEST);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         self.initialize_quad_shader();
         self.initialize_text_shader();
     }
@@ -70,11 +76,6 @@ impl Renderer for RendererOpenGl {
     fn draw_frame(&mut self, ctx: &AppContext, widget_tree: &View) {
         glViewport(0, 0, ctx.screen.width as _, ctx.screen.height as _);
         glClear(GL_COLOR_BUFFER_BIT);
-        glClearColor(0., 0., 0., 0.);
-
-        glEnable(GL_BLEND);
-        glDisable(GL_DEPTH_TEST);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         let mut tree = LayoutTree::new();
         let constraints = BoxConstraints {
@@ -126,7 +127,6 @@ impl Renderer for RendererOpenGl {
                 }
             }
         }
-        glFlush();
     }
 
     fn load_font_atlas(

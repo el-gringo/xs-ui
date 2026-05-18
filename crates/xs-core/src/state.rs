@@ -2,7 +2,10 @@ use std::{
     any::Any,
     cell::{Ref, RefCell},
     rc::Rc,
+    sync::atomic::{AtomicBool, Ordering},
 };
+
+pub static PENDING_UPDATE: AtomicBool = AtomicBool::new(false);
 
 pub type StateId = String;
 
@@ -50,10 +53,12 @@ impl<S: 'static> State<S> {
 
     pub fn update(&self, mutator: impl FnOnce() -> S) {
         *self.inner.borrow_mut() = mutator();
+        PENDING_UPDATE.store(true, Ordering::Relaxed);
     }
 
     pub fn mutate(&self, f: impl FnOnce(&mut S)) {
         f(&mut *self.inner.borrow_mut());
+        PENDING_UPDATE.store(true, Ordering::Relaxed);
     }
 }
 

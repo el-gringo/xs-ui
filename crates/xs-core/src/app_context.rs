@@ -33,6 +33,7 @@ pub struct AppContext {
     pub textures: HashMap<String, Option<Image>>,
     pub requests: HashMap<(String, String), Option<String>>,
     pub messages: Vec<BackendRequest>,
+    pub dirty: bool,
 }
 
 impl Default for AppContext {
@@ -56,6 +57,7 @@ impl Default for AppContext {
             texts: Default::default(),
             requests: Default::default(),
             messages: Default::default(),
+            dirty: true,
         }
     }
 }
@@ -72,6 +74,7 @@ impl AppContext {
         if let Some(KeyEvent { code, .. }) = self.key_down {
             self.nav.process_key(code);
             self.key_down = None;
+            self.dirty = true;
         }
     }
 
