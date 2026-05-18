@@ -61,7 +61,7 @@ impl AppEventLoop {
 
 impl EventLoop for AppEventLoop {
     fn initialize(&mut self, ctx: &mut AppContext) {
-        self.renderer.init();
+        self.renderer.init(ctx);
         let font_family = "sans-serif";
         let font_data =
             include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf").to_vec();

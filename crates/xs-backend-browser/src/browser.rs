@@ -22,9 +22,9 @@ impl Backend for BackendBrowser {
         mut app_context: AppContext,
         mut event_loop: Box<dyn EventLoop>,
     ) {
-        event_loop.initialize(&mut app_context);
         app_context.screen.width = app.width as _;
         app_context.screen.height = app.height as _;
+        event_loop.initialize(&mut app_context);
         let app_context = Rc::new(RefCell::new(app_context));
         bindings::initialize(app.width, app.height);
 

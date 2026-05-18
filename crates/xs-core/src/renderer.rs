@@ -21,7 +21,7 @@ struct StackItem {
 }
 
 pub trait Renderer {
-    fn init(&mut self);
+    fn init(&mut self, ctx: &AppContext);
     fn draw_frame(&mut self, ctx: &AppContext, widget_tree: &View);
 
     /// Called on frames where the scene hasn't changed.
@@ -122,7 +122,7 @@ pub trait Renderer {
 
 pub struct RendererDummy;
 impl Renderer for RendererDummy {
-    fn init(&mut self) {}
+    fn init(&mut self, _ctx: &AppContext) {}
 
     fn draw_frame(&mut self, _ctx: &AppContext, _widget_tree: &View) {}
 
