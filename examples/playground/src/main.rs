@@ -29,6 +29,15 @@ impl Render for App {
                     .height(100.)
                     .background(Color::RED),
             )
+            .child(
+                div()
+                    .absolute()
+                    .left(700. - animated_offset)
+                    .top(250.)
+                    .width(100.)
+                    .height(100.)
+                    .background(Color::BLUE),
+            )
             .into()
     }
 }

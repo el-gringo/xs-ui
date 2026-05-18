@@ -50,7 +50,7 @@ impl Render for Peertube {
                         .font_size(60)
                         .child(text("Monsieur Bidouille")),
                     div()
-                        .padding_top(64.)
+                        .padding_top(48.)
                         .overflow(Overflow::Hidden)
                         .width(1200.)
                         .justify_content(JustifyContent::Center)
@@ -58,7 +58,7 @@ impl Render for Peertube {
                             grid()
                                 .items(videos.read().clone())
                                 .columns(3)
-                                .rows(4)
+                                .rows(3)
                                 .cell_width(320.)
                                 .cell_height(320.)
                                 .gap(48.)

@@ -57,7 +57,7 @@ impl Render for Card {
                 if focus_handle.has_focus() {
                     theme::BRIGHT_RED
                 } else {
-                    Color::TRANSPARENT
+                    Color::WHITE
                 },
                 4.,
             )
@@ -71,9 +71,9 @@ impl Render for Card {
                     .background_image(self.thumbnail.clone()),
             )
             .child(
-                div().width(280.).height(60.).margin_top(16.).child(
+                div().width(280.).height(60.).margin_top(8.).child(
                     div()
-                        .font_size(26)
+                        .font_size(24)
                         .color(theme::GRAY3)
                         .child(text(self.title.clone())),
                 ),

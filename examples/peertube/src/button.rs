@@ -35,7 +35,7 @@ impl Render for Button {
                 },
                 4.,
             )
-            .font_size(40)
+            .font_size(32)
             .child(text(self.text))
             .into()
     }
