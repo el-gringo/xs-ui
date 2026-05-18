@@ -11,6 +11,7 @@ mod js {
         pub fn console_warn2(ptr_arg1: u32, len_arg1: u32, ptr_arg2: u32, len_arg2: u32);
         pub fn request_animation_frame(closure: *mut (), vcall: usize);
         pub fn window() -> u32;
+        pub fn performance_now() -> u32;
     }
 }
 
@@ -32,6 +33,10 @@ pub fn window() -> impl Window {
         let ptr = js::window();
         JsValue::new(ptr)
     }
+}
+
+pub fn performance_now() -> u32 {
+    unsafe { js::performance_now() }
 }
 
 pub fn log(message: &str) {
