@@ -79,7 +79,8 @@ impl HttpClient {
             let response = HttpResponse::new(200, Default::default(), body);
             on_response(response);
         });
-        fetch(&url.to_string(), None, wrapped);
+        let url_str = url.to_string();
+        fetch(&url_str, None, wrapped);
         FakeJoinHandle
     }
 }

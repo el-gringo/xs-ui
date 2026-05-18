@@ -39,11 +39,14 @@ const cachedTextDecoder = new TextDecoder("utf-8", {
 
 cachedTextDecoder.decode();
 
+let cachedBuffer = null;
 let cachedUint8Memory0 = null;
 
 function getUint8Memory0() {
-  if (cachedUint8Memory0 === null || cachedUint8Memory0.byteLength === 0) {
-    cachedUint8Memory0 = new Uint8Array(wasm.memory.buffer);
+  const buf = wasm.memory.buffer;
+  if (cachedUint8Memory0 === null || cachedBuffer !== buf) {
+    cachedBuffer = buf;
+    cachedUint8Memory0 = new Uint8Array(buf);
   }
   return cachedUint8Memory0;
 }
@@ -55,13 +58,16 @@ function getStringFromWasm0(ptr, len) {
 let WASM_VECTOR_LEN = 0;
 const cachedTextEncoder = new TextEncoder("utf-8");
 
+let cachedBuffer2 = null;
 let cachedUint8ArrayMemory0 = null;
 function getUint8ArrayMemory0() {
+  const buf = wasm.memory.buffer;
   if (
     cachedUint8ArrayMemory0 === null ||
-    cachedUint8ArrayMemory0.byteLength === 0
+    cachedBuffer2 !== buf
   ) {
-    cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
+    cachedBuffer2 = buf;
+    cachedUint8ArrayMemory0 = new Uint8Array(buf);
   }
   return cachedUint8ArrayMemory0;
 }
@@ -336,7 +342,7 @@ const env = {
     fetch(url)
       .then((response) => response.arrayBuffer())
       .then((body) => {
-        const ptr = passBytesToWasm0(body, wasm.__xs_malloc, wasm.__xs_realloc);
+        const ptr = passBytesToWasm0(body, wasm.__xs_malloc);
         const len = WASM_VECTOR_LEN;
         wasm.fetch_callback(handle, ptr, len);
       });

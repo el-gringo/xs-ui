@@ -3,9 +3,9 @@
 EXAMPLE=$1
 TARGET=target/wasm32-unknown-unknown/debug/examples/
 
-cargo watch \
+RUSTFLAGS="-Ctarget-cpu=mvp" cargo watch \
   --package xs-js-sys \
-  --exec "build --package xs-js-sys --target wasm32-unknown-unknown --target-dir ./target --example $EXAMPLE" \
+  --exec "build -Zbuild-std=panic_abort,std --package xs-js-sys --target wasm32-unknown-unknown --target-dir ./target --example $EXAMPLE" \
   --shell "
     cp -rv html/* $TARGET && \
     sed -i \"s/{wasm-pathname}/$EXAMPLE/\" $TARGET/index.html && \

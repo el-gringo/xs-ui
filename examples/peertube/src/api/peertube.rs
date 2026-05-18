@@ -1,6 +1,6 @@
 use nanoserde::DeJson;
 
-use crate::api::rest_api::{RestApi, body_string};
+use crate::api::rest_api::RestApi;
 
 const PEERTUBE_BASE_URL: &str = "https://video.monsieurbidouille.fr";
 const PEERTUBE_API_PREFIX: &str = "/api/v1";
@@ -45,10 +45,8 @@ impl PeerTubeClient {
         self.api.get(
             &format!("/videos?start={offset}&count={count}"),
             move |response| {
-                let json_str = body_string(&response);
-                if let Ok(VideoListResponse { data }) =
-                    VideoListResponse::deserialize_json(&json_str)
-                {
+                let json = response.body_lossy();
+                if let Ok(VideoListResponse { data }) = VideoListResponse::deserialize_json(&json) {
                     let new_videos: Vec<Video> = data
                         .into_iter()
                         .filter(|v| {

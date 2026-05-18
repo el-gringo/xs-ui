@@ -1,7 +1,6 @@
-use std::{error::Error};
+use std::{borrow::Cow, error::Error};
 
 use crate::headers::HttpHeaders;
-
 
 #[derive(Debug)]
 pub struct HttpResponse {
@@ -17,6 +16,10 @@ impl HttpResponse {
             headers,
             body,
         }
+    }
+
+    pub fn body_lossy(&self) -> Cow<'_, str> {
+        String::from_utf8_lossy(&self.body)
     }
 }
 

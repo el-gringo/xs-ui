@@ -18,7 +18,3 @@ impl RestApi {
         let _ = self.client.get(url, on_response);
     }
 }
-
-pub fn body_string(response: &xs_http::response::HttpResponse) -> String {
-    String::from_utf8_lossy(&response.body).to_string()
-}

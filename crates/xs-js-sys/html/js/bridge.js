@@ -11,7 +11,9 @@ function WasmBridge(app) {
   });
   const cachedTextEncoder = new TextEncoder("utf-8");
 
+  let cachedMemoryBuffer = null;
   let cachedUint8Memory = null;
+  let cachedMemoryBuffer2 = null;
   let cachedUint8ArrayMemory = null;
   let WASM_VECTOR_LEN = 0;
 
@@ -92,18 +94,22 @@ function WasmBridge(app) {
   }
 
   function getUint8Memory() {
-    if (cachedUint8Memory === null || cachedUint8Memory.byteLength === 0) {
-      cachedUint8Memory = new Uint8Array(app.wasm.memory.buffer);
+    const buf = app.wasm.memory.buffer;
+    if (cachedUint8Memory === null || cachedMemoryBuffer !== buf) {
+      cachedMemoryBuffer = buf;
+      cachedUint8Memory = new Uint8Array(buf);
     }
     return cachedUint8Memory;
   }
 
   function getUint8ArrayMemory() {
+    const buf = app.wasm.memory.buffer;
     if (
       cachedUint8ArrayMemory === null ||
-      cachedUint8ArrayMemory.byteLength === 0
+      cachedMemoryBuffer2 !== buf
     ) {
-      cachedUint8ArrayMemory = new Uint8Array(app.wasm.memory.buffer);
+      cachedMemoryBuffer2 = buf;
+      cachedUint8ArrayMemory = new Uint8Array(buf);
     }
     return cachedUint8ArrayMemory;
   }
