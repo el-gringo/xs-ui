@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use xs_core::{AppContext, AtlasInfo, ImageFormat, Renderer};
 use xs_gl::{
-    GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_ELEMENT_ARRAY_BUFFER, GL_ONE_MINUS_SRC_ALPHA,
-    GL_SRC_ALPHA, GL_STATIC_DRAW, Shader, glBindBuffer, glBlendFunc, glBufferData, glClear,
-    glClearColor, glDisable, glEnable, glFlush, glGenBuffers, glViewport, load_texture,
+    GL_BLEND, GL_DEPTH_TEST, GL_ELEMENT_ARRAY_BUFFER, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
+    GL_STATIC_DRAW, Shader, glBindBuffer, glBlendFunc, glBufferData, glClearColor, glDisable,
+    glEnable, glFlush, glGenBuffers, glViewport, load_texture,
 };
 use xs_layout::{
     BoxConstraints, LayoutBox, LayoutTree,

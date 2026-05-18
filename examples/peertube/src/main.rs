@@ -2,8 +2,6 @@ mod api;
 mod body;
 mod button;
 mod card;
-mod grid;
-mod scroller;
 mod sidebar;
 mod theme;
 
@@ -11,10 +9,10 @@ use std::any::TypeId;
 
 use xs::{
     AlignItems, Application, Color, Context, Element, Gradient, JustifyContent, NavigationNode,
-    Overflow, Render, div, text,
+    Overflow, Render, div, grid, text,
 };
 
-use crate::{api::peertube::PeerTubeClient, body::body, card::card, grid::grid, sidebar::sidebar};
+use crate::{api::peertube::PeerTubeClient, body::body, card::card, sidebar::sidebar};
 
 struct Peertube;
 impl Render for Peertube {
