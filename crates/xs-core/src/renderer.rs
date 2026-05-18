@@ -23,6 +23,11 @@ struct StackItem {
 pub trait Renderer {
     fn init(&mut self);
     fn draw_frame(&mut self, ctx: &AppContext, widget_tree: &View);
+
+    /// Called on frames where the scene hasn't changed.
+    /// Should issue a lightweight GPU command to keep the compositor alive.
+    fn present(&mut self) {}
+
     fn load_font_atlas(
         &mut self,
         font_family: &'static str,

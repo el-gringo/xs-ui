@@ -4,7 +4,7 @@ use xs_core::{AppContext, AtlasInfo, ImageFormat, Renderer};
 use xs_gl::{
     GL_BLEND, GL_COLOR_BUFFER_BIT, GL_DEPTH_TEST, GL_ELEMENT_ARRAY_BUFFER, GL_ONE_MINUS_SRC_ALPHA,
     GL_SRC_ALPHA, GL_STATIC_DRAW, Shader, glBindBuffer, glBlendFunc, glBufferData, glClear,
-    glClearColor, glDisable, glEnable, glGenBuffers, glViewport, load_texture,
+    glClearColor, glDisable, glEnable, glFlush, glGenBuffers, glViewport, load_texture,
 };
 use xs_layout::{
     BoxConstraints, LayoutBox, LayoutTree,
@@ -73,7 +73,12 @@ impl Renderer for RendererOpenGl {
         self.initialize_text_shader();
     }
 
+    fn present(&mut self) {
+        glFlush();
+    }
+
     fn draw_frame(&mut self, ctx: &AppContext, widget_tree: &View) {
+        eprintln!("draw_frame");
         glViewport(0, 0, ctx.screen.width as _, ctx.screen.height as _);
         glClear(GL_COLOR_BUFFER_BIT);
 
