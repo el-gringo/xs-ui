@@ -32,7 +32,7 @@ function WasmBridge(app) {
         getUint8ArrayMemory()
           .subarray(ptr, ptr + buf.length)
           .set(buf);
-        mem.offset = buf.length;
+        WASM_VECTOR_LEN = buf.length;
         const len = WASM_VECTOR_LEN;
         return { ptr, len };
       }
@@ -60,6 +60,7 @@ function WasmBridge(app) {
         offset += ret.written;
         ptr = realloc(ptr, len, offset, 1) >>> 0;
       }
+      WASM_VECTOR_LEN = offset;
       return { ptr, len: WASM_VECTOR_LEN };
     }
 

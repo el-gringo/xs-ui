@@ -57,6 +57,10 @@ impl EventKeyDown {
         &self.key
     }
 
+    pub fn modifiers(&self) -> u8 {
+        self.modifiers
+    }
+
     pub fn shift(&self) -> bool {
         self.modifiers & 1 != 0
     }

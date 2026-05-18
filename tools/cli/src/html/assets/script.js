@@ -232,6 +232,9 @@ const env = {
       getStringFromWasm0(ptr_arg2, len_arg2),
     );
   },
+  heap_drop(ptr) {
+    drop_object(ptr);
+  },
   rand: function () {
     return Math.floor(Math.random() * 2147483647);
   },
@@ -243,6 +246,10 @@ const env = {
   },
   canvas_height: function () {
     return Math.floor(canvas.height);
+  },
+  document() {
+    const ptr = add_heap_object(window.document);
+    return ptr;
   },
   new_string(ptr, len) {
     let str = getStringFromWasm0(ptr, len);
@@ -277,6 +284,37 @@ const env = {
     // for (let i = 0; i < 1000; ++i) {
     //   requestAnimationFrame(loop_frames);
     // }
+  },
+  element_query_selector(elementPtr, selectorPtr, selectorLen) {
+    const selector = getStringFromWasm0(selectorPtr, selectorLen);
+    const obj = get_object(elementPtr);
+    const element = obj.querySelector(selector);
+    const ptr = add_heap_object(element);
+    return ptr;
+  },
+  add_event_listener(obj_idx, event_name_ptr, event_name_len, closure_handle) {
+    const obj = get_object(obj_idx);
+    const event_name = getStringFromWasm0(event_name_ptr, event_name_len);
+    function handleEvent(event) {
+      const event_ptr = add_heap_object(event);
+      wasm.callback_event_handler(closure_handle, event_ptr);
+    }
+    obj.addEventListener(event_name, handleEvent);
+  },
+
+  event_key_down(eventPtr, bufPtr) {
+    const event = get_object(eventPtr);
+    const ptrKeyString = passStringToWasm0(event.key, wasm.__xs_malloc);
+    const view = new DataView(wasm.memory.buffer);
+    view.setUint32(bufPtr, event.keyCode, true);
+    let mods = 0;
+    if (event.shiftKey) mods |= 1;
+    if (event.ctrlKey) mods |= 2;
+    if (event.altKey) mods |= 4;
+    if (event.metaKey) mods |= 8;
+    view.setUint32(bufPtr + 4, mods, true);
+    view.setUint32(bufPtr + 8, ptrKeyString, true);
+    view.setUint32(bufPtr + 12, WASM_VECTOR_LEN, true);
   },
   load_image(closure, ptr_src, len_src) {
     let src = getStringFromWasm0(ptr_src, len_src);
@@ -761,6 +799,10 @@ function load(wasmUrl) {
     .then((response) => response.arrayBuffer())
     .then((bytes) => WebAssembly.instantiate(bytes, { env }))
     .then((res) => {
+      const canvas = document.querySelector("canvas");
+      canvas.onblur = () => {
+        canvas.focus();
+      };
       wasm = res.instance.exports;
       cachedInt32Memory0 = null;
       cachedUint32Memory0 = null;

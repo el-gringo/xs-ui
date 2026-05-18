@@ -9,12 +9,13 @@ pub fn translate_mouse_button(button: i32) -> MouseButton {
         _ => MouseButton::Unknown,
     }
 }
-pub fn _translate_mod(wasm_mods: i32) -> KeyMods {
-    const SAPP_MODIFIER_SHIFT: i32 = 1;
-    const SAPP_MODIFIER_CTRL: i32 = 2;
-    const SAPP_MODIFIER_ALT: i32 = 4;
-    const SAPP_MODIFIER_SUPER: i32 = 8;
 
+static SAPP_MODIFIER_SHIFT: u8 = 1;
+static SAPP_MODIFIER_CTRL: u8 = 2;
+static SAPP_MODIFIER_ALT: u8 = 4;
+static SAPP_MODIFIER_SUPER: u8 = 8;
+
+pub fn _translate_mod(wasm_mods: u8) -> KeyMods {
     let mut mods = KeyMods::default();
     if wasm_mods & SAPP_MODIFIER_SHIFT != 0 {
         mods.shift = true;
@@ -31,7 +32,7 @@ pub fn _translate_mod(wasm_mods: i32) -> KeyMods {
     mods
 }
 
-pub fn _translate_keycode(keycode: i32) -> KeyCode {
+pub fn _translate_keycode(keycode: u32) -> KeyCode {
     match keycode {
         8 => KeyCode::Backspace,
         13 => KeyCode::Enter,
