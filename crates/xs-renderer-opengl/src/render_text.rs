@@ -41,6 +41,7 @@ impl RendererOpenGl {
         color: &Color,
         text_vertices: &TextVertices,
         atlas_texture: u32,
+        clip: Option<Rectangle>,
     ) {
         let shader = self.get_shader("text_alpha");
         shader.use_program();
@@ -59,6 +60,10 @@ impl RendererOpenGl {
         );
         shader.uniform_1i("u_texture", 0);
         shader.uniform_4fv("u_color", *color);
+
+        let default_no_clip = Rectangle::new(0.0, 0.0, f32::INFINITY, f32::INFINITY);
+        let clip_rect = clip.as_ref().unwrap_or(&default_no_clip);
+        shader.uniform_4fv("u_clip", *clip_rect);
 
         let num_vertices = text_vertices.vertices.len() / 4;
         let buffer = shader.get_buffer(0);

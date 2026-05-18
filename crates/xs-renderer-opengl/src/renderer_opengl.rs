@@ -127,7 +127,7 @@ impl Renderer for RendererOpenGl {
                             .fonts
                             .get(&(&text_properties.font_family, text_properties.font_weight))
                             .unwrap();
-                        self.render_text(ctx, &quad, color, text_vertices, *atlas_texture);
+                        self.render_text(ctx, &quad, color, text_vertices, *atlas_texture, clip);
                     }
                 }
             }

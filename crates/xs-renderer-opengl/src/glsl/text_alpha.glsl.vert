@@ -12,6 +12,7 @@ uniform mat3 u_transform;
 uniform float u_pixelRatio;
 
 varying vec2 v_texcoord;
+varying vec2 v_position;
 
 void main() {
     vec2 scrolledPosition = a_position;
@@ -22,4 +23,5 @@ void main() {
 
     gl_Position = vec4(screenSpace, 0.0, 1.0);
     v_texcoord = a_textureCoords;
+    v_position = transformedPosition;
 }
