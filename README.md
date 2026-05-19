@@ -33,7 +33,8 @@ Only arrow keys navigation works for now.
 
 ## TODO
 
-- [ ] Improved event handling with more user inputs
+- [ ] Broader events handling with more user inputs
+- [ ] Vector graphics
 - [ ] MSDF text rendering (currently using alpha glyph atlas)
 - [ ] E2E Testing
 - [ ] UI Components set
