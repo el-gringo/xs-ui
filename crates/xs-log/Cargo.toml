@@ -4,6 +4,10 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+default = []
+color = []
+
 [dependencies]
 log.workspace = true
 

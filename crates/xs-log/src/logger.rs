@@ -45,31 +45,44 @@ fn log(record: &log::Record) {
         message
     };
 
-    let level_style = {
-        let color = match record.level() {
-            Level::Debug => "blue",
-            Level::Error => "darkred",
-            Level::Info => "green",
-            Level::Trace => "gray",
-            Level::Warn => "orange",
-        };
+    #[cfg(feature = "color")]
+    {
+        let level_style = {
+            let color = match record.level() {
+                Level::Debug => "blue",
+                Level::Error => "darkred",
+                Level::Info => "green",
+                Level::Trace => "gray",
+                Level::Warn => "orange",
+            };
 
-        "color: white; padding: 0 3px; background: ".to_owned() + color + ";"
-    };
-    console_log(&message, &level_style);
+            "color: white; padding: 0 3px; background: ".to_owned() + color + ";"
+        };
+        console_log(&message, &level_style);
+    }
+    #[cfg(not(feature = "color"))]
+    console_log(&message, "");
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 fn log(record: &log::Record) {
-    let color = match record.level() {
-        Level::Debug => "\u{1b}[0;34m",
-        Level::Info => "\u{1b}[0;32m",
-        Level::Error => "\u{1b}[0;31m",
-        Level::Trace => "\u{1b}[0;36m",
-        Level::Warn => "\u{1b}[0;33m",
-    };
-    let level = record.level().as_str();
-    println!("{color}[{}]\u{1b}[1;0m {}", level, record.args());
+    #[cfg(feature = "color")]
+    {
+        let color = match record.level() {
+            Level::Debug => "\u{1b}[0;34m",
+            Level::Info => "\u{1b}[0;32m",
+            Level::Error => "\u{1b}[0;31m",
+            Level::Trace => "\u{1b}[0;36m",
+            Level::Warn => "\u{1b}[0;33m",
+        };
+        let level = record.level().as_str();
+        println!("{color}[{}]\u{1b}[1;0m {}", level, record.args());
+    }
+    #[cfg(not(feature = "color"))]
+    {
+        let level = record.level().as_str();
+        println!("[{}] {}", level, record.args());
+    }
 }
 
 /// Initializes the global logger setting `max_log_level` to the given value.
