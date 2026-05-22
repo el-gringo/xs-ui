@@ -1,12 +1,15 @@
 use std::{
     rc::Rc,
-    sync::mpsc::{Receiver, Sender, channel},
+    sync::{
+        atomic::Ordering,
+        mpsc::{Receiver, Sender, channel},
+    },
 };
 
 use xs_backend::load_image;
 use xs_core::{
     AppConfig, AppContext, Backend, BackendRequest, BackendResponse, EventLoop, ImageFormat,
-    Render, Renderer,
+    PENDING_UPDATE, Render, Renderer,
 };
 use xs_layout::Image;
 use xs_text_system::{AtlasAlpha, TextSystem};
@@ -73,12 +76,14 @@ impl EventLoop for AppEventLoop {
 
     fn frame(&mut self, ctx: &mut AppContext) {
         self.read_messages(ctx);
-        // FIXME: need to find a way to set dirty to true on any state change
-        // if !ctx.dirty {
-        //     self.renderer.present();
-        //     return;
-        // }
-        // ctx.dirty = false;
+        if PENDING_UPDATE.swap(false, Ordering::Relaxed) {
+            ctx.dirty = true;
+        }
+        if !ctx.dirty {
+            self.renderer.present();
+            return;
+        }
+        ctx.dirty = false;
         let widget_tree = self.renderer.render(ctx, self.root.clone());
         self.renderer.draw_frame(ctx, &widget_tree);
     }

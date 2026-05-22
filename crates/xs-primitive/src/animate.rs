@@ -5,6 +5,10 @@ pub fn animate<T: Animate + 'static>(ctx: &mut Context, template: T, target: f32
     let anim = ctx.use_state::<T>(move |_| template);
     let prev_time = ctx.use_state::<u128>(|_| 0);
 
+    let current = anim.read().value();
+    if current == target {
+        return current;
+    }
     anim.mutate(|s| s.snap_to(target));
 
     let now = ctx.app_context.now;
