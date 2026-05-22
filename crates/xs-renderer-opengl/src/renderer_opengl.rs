@@ -7,15 +7,13 @@ use xs_gl::{
     glEnable, glFlush, glGenBuffers, glViewport, load_texture,
 };
 use xs_layout::{
-    BoxConstraints, LayoutBox, LayoutTree,
+    LayoutTree,
     Material::{Quad, Text},
-    View,
 };
 use xs_math::{Rectangle, Vector2};
 
+#[derive(Default)]
 pub struct RendererOpenGl {
-    width: i32,
-    height: i32,
     shaders: HashMap<&'static str, Shader>,
     fonts: HashMap<(&'static str, u16), (u32, f32)>,
     pub texture_place_holder: u32,
@@ -23,16 +21,8 @@ pub struct RendererOpenGl {
 }
 
 impl RendererOpenGl {
-    pub fn new(width: i32, height: i32) -> Self {
-        let shaders = Default::default();
-        Self {
-            width,
-            height,
-            shaders,
-            texture_place_holder: 0,
-            fonts: Default::default(),
-            index_buffer: 0,
-        }
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn add_shader(&mut self, name: &'static str, shader: Shader) {
@@ -79,22 +69,11 @@ impl Renderer for RendererOpenGl {
         glFlush();
     }
 
-    fn draw_frame(&mut self, ctx: &AppContext, widget_tree: &View) {
-        let mut tree = LayoutTree::new();
-        let constraints = BoxConstraints {
-            min: Vector2::new(0.0, 0.0),
-            max: Vector2::new(self.width as f32, self.height as f32),
-        };
-        let root_sbox = widget_tree.layout(&mut tree, &constraints);
-        let root_lbox = LayoutBox::from_child(root_sbox, (0.0, 0.0));
-        let root_id = tree.insert(root_lbox.clone());
-        tree.set_root(Some(root_id));
-
-        let node_count = tree.boxes.len();
+    fn render(&mut self, ctx: &AppContext, layout_tree: &LayoutTree) {
+        let node_count = layout_tree.boxes.len();
         let mut clip_rects: Vec<Option<Rectangle>> = vec![None; node_count];
 
-        //tree.debug();
-        for (_, parent_id, _, child_id, child, offset) in tree.iter() {
+        for (_, parent_id, _, child_id, child, offset) in layout_tree.iter() {
             let origin = Vector2::new(child.bounds.x, child.bounds.y);
             let min = offset + origin + child.margin.min();
             let quad = Rectangle::new(min.x, min.y, child.bounds.width, child.bounds.height);

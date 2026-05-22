@@ -84,8 +84,11 @@ impl EventLoop for AppEventLoop {
             return;
         }
         ctx.dirty = false;
-        let widget_tree = self.renderer.render(ctx, self.root.clone());
-        self.renderer.draw_frame(ctx, &widget_tree);
+        let widget_tree = self.renderer.build_widget_tree(ctx, self.root.clone());
+        let layout_tree =
+            self.renderer
+                .layout(&widget_tree, ctx.screen.width as _, ctx.screen.height as _);
+        self.renderer.render(ctx, &layout_tree);
     }
 }
 
@@ -121,7 +124,7 @@ impl Application {
     {
         let text_system = Box::new(TextSystem::<AtlasAlpha>::new());
         let mut app_context = AppContext::new(text_system);
-        let renderer = Box::new(xs_renderer::Renderer::new(self.0.width, self.0.height));
+        let renderer = Box::new(xs_renderer::Renderer::new());
         let root = Rc::new(on_initialize(&mut app_context));
         let mut backend = xs_backend::Backend::new();
         let event_loop = Box::new(AppEventLoop::new(renderer, root));
