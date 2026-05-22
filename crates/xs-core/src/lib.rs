@@ -4,7 +4,6 @@ mod backend;
 mod context;
 mod core;
 mod element;
-mod message;
 mod navigation;
 mod render;
 mod renderer;
@@ -17,7 +16,6 @@ pub use backend::{Backend, BackendDummy, BackendRequest, BackendResponse, EventL
 pub use context::Context;
 pub use core::Undefined;
 pub use element::{Element, RootElement};
-pub use message::Message;
 pub use navigation::{FocusHandle, FocusManager, NavigationNode};
 pub use render::Render;
 pub use renderer::{Renderer, RendererDummy};
