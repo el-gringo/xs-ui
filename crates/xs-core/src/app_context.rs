@@ -91,4 +91,9 @@ impl AppContext {
             None
         }
     }
+
+    pub fn add_texture(&mut self, src: String, image: Image) {
+        self.textures.insert(src.clone(), Some(image));
+        self.dirty = true;
+    }
 }

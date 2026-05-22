@@ -55,7 +55,7 @@ impl AppEventLoop {
                         ImageFormat::Rgba,
                     );
                     let image = Image::new(width, height, texture, bytes, ImageFormat::Rgba);
-                    app_context.textures.insert(src.clone(), Some(image));
+                    app_context.add_texture(src, image);
                 }
             }
         }
