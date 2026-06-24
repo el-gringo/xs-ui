@@ -66,8 +66,8 @@ impl Div {
     //
     // MARGIN
     //
-    pub fn margin(mut self, margin: EdgeInsets) -> Self {
-        self.style.margin = margin;
+    pub fn margin(mut self, margin: f32) -> Self {
+        self.style.margin = EdgeInsets::all(margin);
         self
     }
 
