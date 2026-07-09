@@ -8,8 +8,8 @@ mod theme;
 use std::any::TypeId;
 
 use xs::{
-    AlignItems, Application, Color, Context, Element, Gradient, JustifyContent, NavigationNode,
-    Overflow, Render, div, grid, text,
+    AlignItems, Application, Color, Context, Element, JustifyContent, NavigationNode, Overflow,
+    Render, div, grid, text,
 };
 
 use crate::{api::peertube::PeerTubeClient, body::body, card::card, sidebar::sidebar};
@@ -33,7 +33,7 @@ impl Render for Peertube {
             .row()
             .justify_content(xs::JustifyContent::FlexStart)
             .align_items(AlignItems::FlexStart)
-            .background(Gradient::angled(theme::ORANGE1, theme::ORANGE5, 0.5))
+            .background(theme::BACK_950)
             .child(
                 sidebar(), //.buttons([button(RED), button(GREEN), button(BLUE)].into())
             )

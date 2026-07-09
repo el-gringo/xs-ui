@@ -50,17 +50,14 @@ impl Render for Card {
             .column()
             .width(320.)
             .height(270.)
-            .background_color(Color::WHITE)
+            .background_color(Color::BLACK)
             .border_radius_all(8.)
             .box_shadow(4., 4., 8., 0., Color::BLACK)
-            .border(
-                if focus_handle.has_focus() {
-                    theme::BRIGHT_RED
-                } else {
-                    Color::WHITE
-                },
-                4.,
-            )
+            .border(Color::TRANSPARENT, 2.)
+            .when(focus_handle.has_focus(), |this| {
+                this.border(theme::ACCENT_400, 2.)
+                    .box_shadow(0.0, 0.0, 4., 4., theme::ACCENT_400)
+            })
             .align_items(AlignItems::Center)
             .child(
                 div()
@@ -74,7 +71,7 @@ impl Render for Card {
                 div().width(280.).height(60.).margin_top(8.).child(
                     div()
                         .font_size(24)
-                        .color(theme::GRAY3)
+                        .color(Color::WHITE)
                         .child(text(self.title.clone())),
                 ),
             )

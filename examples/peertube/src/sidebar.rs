@@ -1,8 +1,11 @@
 use std::rc::Rc;
 
-use xs::{AlignItems, Color, Context, Element, JustifyContent, NavigationNode, Render, div, text};
+use xs::{AlignItems, Context, Element, JustifyContent, NavigationNode, Render, div, text};
 
-use crate::button::{Button, button};
+use crate::{
+    button::{Button, button},
+    theme,
+};
 
 pub struct Sidebar {
     buttons: Vec<Button>,
@@ -39,15 +42,15 @@ impl Render for Sidebar {
             .column()
             .width(300.)
             .justify_content(xs::JustifyContent::FlexStart)
+            .background_color(theme::BACK_900)
             .child(
                 div()
                     .testid("sidebar-header")
                     .row()
                     .height(75.)
-                    .background_color(Color::rgba(0.0, 0.0, 0.0, 0.4))
                     .justify_content(JustifyContent::Center)
                     .align_items(AlignItems::Center)
-                    .color(Color::WHITE)
+                    .color(theme::NEUTRAL_300)
                     .font_size(40)
                     .child(text("PeerTube")),
             )
@@ -60,7 +63,6 @@ impl Render for Sidebar {
                     .width(300.)
                     .gap(16.)
                     .grow(1., 1.)
-                    .background_color(Color::rgba(0.0, 0.0, 0.0, 0.2))
                     .child(button("Movies"))
                     .child(button("Series"))
                     .child(button("Settings")),

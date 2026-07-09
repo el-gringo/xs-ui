@@ -24,17 +24,14 @@ impl Render for Button {
             .width(200.)
             .height(50.)
             .margin_top(16.)
-            .border_radius_all(8.)
-            .background_color(theme::ORANGE4)
-            .color(Color::BLACK)
-            .border(
-                if nav_node.has_focus() {
-                    theme::BRIGHT_RED
-                } else {
-                    Color::TRANSPARENT
-                },
-                4.,
-            )
+            .background_color(theme::BACK_900)
+            .color(theme::NEUTRAL_300)
+            .border_left(Color::TRANSPARENT, 4.)
+            .when(nav_node.has_focus(), |this| {
+                this.color(theme::ACCENT_400)
+                    .border_left(theme::ACCENT_400, 4.)
+                //.box_shadow(-4.0, 0.0, 16., 0., theme::ACCENT_400)
+            })
             .font_size(32)
             .child(text(self.text))
             .into()
