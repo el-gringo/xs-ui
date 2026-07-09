@@ -45,9 +45,7 @@ impl RendererOpenGl {
 }
 
 impl Renderer for RendererOpenGl {
-    fn init(&mut self, ctx: &AppContext) {
-        glViewport(0, 0, ctx.screen.width as _, ctx.screen.height as _);
-
+    fn init(&mut self, _ctx: &AppContext) {
         let index_buffer = glGenBuffers(1)[0];
         let indices: &[u16] = &[0, 1, 3, 1, 2, 3];
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
@@ -70,6 +68,8 @@ impl Renderer for RendererOpenGl {
     }
 
     fn render(&mut self, ctx: &AppContext, layout_tree: &LayoutTree) {
+        glViewport(0, 0, ctx.screen.width as _, ctx.screen.height as _);
+
         let node_count = layout_tree.boxes.len();
         let mut clip_rects: Vec<Option<Rectangle>> = vec![None; node_count];
 
