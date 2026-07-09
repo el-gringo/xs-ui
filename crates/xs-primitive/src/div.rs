@@ -316,6 +316,10 @@ impl Div {
             .extend(children.into_iter().map(|child| child.into()));
         self
     }
+
+    pub fn when(self, condition: bool, mut callback: impl FnMut(Self) -> Self) -> Self {
+        if condition { callback(self) } else { self }
+    }
 }
 
 // impl Element for Div {
