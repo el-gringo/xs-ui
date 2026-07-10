@@ -5,15 +5,7 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn child(mut self, child: impl Into<AnyElement>) -> Self {
-        self.children.push(child.into());
-        self
-    }
-
-    pub fn children(
-        mut self,
-        children: impl IntoIterator<Item = impl Into<AnyElement>>,
-    ) -> Self {
+    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<AnyElement>>) -> Self {
         self.children
             .extend(children.into_iter().map(|child| child.into()));
         self
@@ -27,7 +19,6 @@ impl Render for Body {
             .column()
             .children(self.children.clone())
     }
-
 }
 
 pub fn body() -> Body {

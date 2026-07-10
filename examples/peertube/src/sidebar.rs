@@ -1,31 +1,8 @@
 use xs::{AlignItems, Context, JustifyContent, NavigationNode, ParentElement, Render, div, text};
 
-use crate::{
-    button::{Button, button},
-    theme,
-};
+use crate::{button::button, theme};
 
-pub struct Sidebar {
-    buttons: Vec<Button>,
-}
-
-impl Sidebar {
-    pub fn new() -> Self {
-        Sidebar {
-            buttons: Vec::new(),
-        }
-    }
-
-    pub fn button(mut self, button: Button) -> Self {
-        self.buttons.push(button);
-        self
-    }
-
-    pub fn buttons(mut self, buttons: Vec<Button>) -> Self {
-        self.buttons.extend(buttons);
-        self
-    }
-}
+pub struct Sidebar;
 
 impl Render for Sidebar {
     fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
@@ -57,13 +34,13 @@ impl Render for Sidebar {
                     .width(300.)
                     .gap(16.)
                     .grow(1., 1.)
-                    .child(button("Movies"))
-                    .child(button("Series"))
-                    .child(button("Settings")),
+                    .child(button("Movies").id("button-movies"))
+                    .child(button("Series").id("button-shows"))
+                    .child(button("Settings").id("button-settings")),
             )
     }
 }
 
 pub fn sidebar() -> Sidebar {
-    Sidebar::new()
+    Sidebar
 }

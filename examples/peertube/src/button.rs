@@ -3,20 +3,26 @@ use xs::{Color, Context, NavigationNode, ParentElement, Render, div, text};
 use crate::theme;
 
 pub struct Button {
+    id: &'static str,
     text: &'static str,
 }
 
 impl Button {
     pub fn new(text: &'static str) -> Self {
-        Button { text }
+        Button { text, id: "button" }
+    }
+
+    pub fn id(mut self, id: &'static str) -> Self {
+        self.id = id;
+        self
     }
 }
 
 impl Render for Button {
     fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
-        let nav_node = ctx.focus_handle(NavigationNode::new().id("button"));
+        let nav_node = ctx.focus_handle(NavigationNode::new().id(self.id));
         div()
-            .testid("button")
+            .testid(self.id)
             .justify_content(xs::JustifyContent::Center)
             .align_items(xs::AlignItems::Center)
             .width(200.)

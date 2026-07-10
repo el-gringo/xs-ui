@@ -6,16 +6,11 @@ mod sidebar;
 mod theme;
 
 use xs::{
-    AlignItems, Application, Color, Context, JustifyContent, NavigationNode, Overflow, ParentElement,
-    Render, div, grid, text,
+    AlignItems, Application, Color, Context, JustifyContent, NavigationNode, Overflow,
+    ParentElement, Render, div, grid, text,
 };
 
-use crate::{
-    api::peertube::PeerTubeClient,
-    body::body,
-    card::card,
-    sidebar::sidebar,
-};
+use crate::{api::peertube::PeerTubeClient, body::body, card::card, sidebar::sidebar};
 
 struct Peertube;
 impl Render for Peertube {
@@ -59,8 +54,9 @@ impl Render for Peertube {
                                 .cell_width(320.)
                                 .cell_height(320.)
                                 .gap(48.)
-                                .cell_renderer(|_index, video, _ctx| -> xs::AnyElement {
+                                .cell_renderer(|index, video, _ctx| -> xs::AnyElement {
                                     card()
+                                        .id(format!("card-{index}").leak())
                                         .thumbnail(video.thumbnail_url())
                                         .title(video.name.clone())
                                         .into()
@@ -69,7 +65,6 @@ impl Render for Peertube {
                 ]),
             )
     }
-
 }
 
 pub fn main() {
