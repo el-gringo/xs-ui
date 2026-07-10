@@ -5,15 +5,13 @@ mod card;
 mod sidebar;
 mod theme;
 
-use std::any::TypeId;
-
 use xs::{
-    AlignItems, Application, Color, Context, Element, JustifyContent, NavigationNode, Overflow,
+    AlignItems, Application, Color, Context, JustifyContent, NavigationNode, Overflow, ParentElement,
     Render, div, grid, text,
 };
 
 use crate::{
-    api::peertube::{PeerTubeClient, Video},
+    api::peertube::PeerTubeClient,
     body::body,
     card::card,
     sidebar::sidebar,
@@ -21,7 +19,7 @@ use crate::{
 
 struct Peertube;
 impl Render for Peertube {
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
         ctx.focus_handle(NavigationNode::new().horizontal().id("root"));
         let videos = ctx.use_state(|_, set_videos| {
             let client = PeerTubeClient::new();
@@ -37,9 +35,7 @@ impl Render for Peertube {
             .justify_content(xs::JustifyContent::FlexStart)
             .align_items(AlignItems::FlexStart)
             .background(theme::BACK_950)
-            .child(
-                sidebar(), //.buttons([button(RED), button(GREEN), button(BLUE)].into())
-            )
+            .child(sidebar())
             .child(
                 body().children([
                     div()
@@ -63,8 +59,7 @@ impl Render for Peertube {
                                 .cell_width(320.)
                                 .cell_height(320.)
                                 .gap(48.)
-                                .cell_renderer(|_index, video| {
-                                    //eprintln!("{}", video.name.clone());
+                                .cell_renderer(|_index, video, _ctx| -> xs::AnyElement {
                                     card()
                                         .thumbnail(video.thumbnail_url())
                                         .title(video.name.clone())
@@ -73,12 +68,8 @@ impl Render for Peertube {
                         ),
                 ]),
             )
-            .into()
     }
 
-    fn tag(&self) -> std::any::TypeId {
-        TypeId::of::<Self>()
-    }
 }
 
 pub fn main() {

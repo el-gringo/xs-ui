@@ -1,10 +1,10 @@
-use std::{cmp::max, rc::Rc};
+use std::cmp::max;
 
-use xs_core::{Context, Element, NavigationNode, Render};
+use xs_core::{AnyElement, Context, IntoElement, NavigationNode, ParentElement, Render};
 
 use crate::{div, scroller::scroller};
 
-type CellRenderer<T> = dyn Fn(usize, &T) -> Rc<dyn Render>;
+type CellRenderer<T> = dyn Fn(usize, &T, &mut Context) -> AnyElement;
 
 #[derive(Default)]
 pub struct Grid<T> {
@@ -17,7 +17,7 @@ pub struct Grid<T> {
     pub height: f32,
     pub gap: f32,
     pub cell_renderer: Option<Box<CellRenderer<T>>>,
-    pub on_row_change: Option<Rc<dyn Fn(usize) + 'static>>,
+    pub on_row_change: Option<std::rc::Rc<dyn Fn(usize) + 'static>>,
 }
 
 impl<T: Default + 'static> Grid<T> {
@@ -51,7 +51,7 @@ impl<T: Default + 'static> Grid<T> {
     }
 
     pub fn on_row_change(mut self, callback: impl Fn(usize) + 'static) -> Self {
-        self.on_row_change = Some(Rc::new(callback));
+        self.on_row_change = Some(std::rc::Rc::new(callback));
         self
     }
 
@@ -72,7 +72,7 @@ impl<T: Default + 'static> Grid<T> {
 
     pub fn cell_renderer(
         mut self,
-        cell_renderer: impl Fn(usize, &T) -> Rc<dyn Render> + 'static,
+        cell_renderer: impl Fn(usize, &T, &mut Context) -> AnyElement + 'static,
     ) -> Self {
         self.cell_renderer = Some(Box::new(cell_renderer));
         self
@@ -80,11 +80,7 @@ impl<T: Default + 'static> Grid<T> {
 }
 
 impl<T: Default + 'static> Render for Grid<T> {
-    fn tag(&self) -> std::any::TypeId {
-        std::any::TypeId::of::<Self>()
-    }
-
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> impl IntoElement {
         let focus_handle =
             ctx.focus_handle(NavigationNode::new().grid(self.columns as usize).id("grid"));
         let cell_renderer = &self.cell_renderer;
@@ -131,12 +127,12 @@ impl<T: Default + 'static> Render for Grid<T> {
         let data_start = new_offset * columns;
         let data_end = data_start + render_cells;
 
-        let mut cell_rows: Vec<Vec<Rc<dyn Render>>> =
+        let mut cell_rows: Vec<Vec<AnyElement>> =
             vec![Vec::with_capacity(columns); render_rows];
         for i in data_start..data_end {
             let row = (i - data_start) / columns;
             if i < total_items {
-                cell_rows[row].push(cell_renderer.as_ref().unwrap()(i, &self.items[i]));
+                cell_rows[row].push(cell_renderer.as_ref().unwrap()(i, &self.items[i], ctx));
             }
         }
 
@@ -145,19 +141,18 @@ impl<T: Default + 'static> Render for Grid<T> {
         let data_row = new_offset + adjusted_row;
         let scroll_position = max(data_row as i32 - 1, 0) * cell_height as i32;
 
-        let rows: Vec<Rc<dyn Render>> = cell_rows
+        let rows: Vec<AnyElement> = cell_rows
             .into_iter()
             .enumerate()
             .map(|(row_index, cells)| {
                 let data_row_index = new_offset + row_index;
-                Rc::new(
-                    div()
-                        .absolute()
-                        .gap(gap)
-                        .top(data_row_index as f32 * cell_height)
-                        .height(cell_height)
-                        .children(cells),
-                ) as Rc<dyn Render>
+                div()
+                    .absolute()
+                    .gap(gap)
+                    .top(data_row_index as f32 * cell_height)
+                    .height(cell_height)
+                    .children(cells)
+                    .into()
             })
             .collect();
 
@@ -168,13 +163,6 @@ impl<T: Default + 'static> Render for Grid<T> {
                     .scroll_to(scroll_position as _)
                     .children(vec![div().children(rows)]),
             )
-            .into()
-    }
-}
-
-impl<T: Default + 'static> From<Grid<T>> for Rc<dyn Render> {
-    fn from(val: Grid<T>) -> Self {
-        Rc::new(val)
     }
 }
 

@@ -1,11 +1,8 @@
-use std::any::TypeId;
-
-use crate::{Context, element::Element};
+use crate::{Context, element::IntoElement};
 
 pub trait Render {
     fn id(&self) -> &'static str {
         "render"
     }
-    fn tag(&self) -> TypeId;
-    fn render(&self, app: &mut Context) -> Box<dyn Element>;
+    fn render(&self, ctx: &mut Context) -> impl IntoElement;
 }

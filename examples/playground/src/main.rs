@@ -1,13 +1,8 @@
-use std::any::TypeId;
-
-use xs::{Application, Color, Context, Element, Render, Spring, animate, div};
+use xs::{Application, Color, Context, ParentElement, Render, Spring, animate, div};
 
 struct App;
 impl Render for App {
-    fn tag(&self) -> std::any::TypeId {
-        TypeId::of::<Self>()
-    }
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
         let target = if ((ctx.app_context.now as f32) % 2000.) < 1000. {
             600.
         } else {
@@ -38,7 +33,6 @@ impl Render for App {
                     .height(100.)
                     .background(Color::BLUE),
             )
-            .into()
     }
 }
 

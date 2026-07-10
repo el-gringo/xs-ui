@@ -1,6 +1,6 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs_core::{AppContext, Context, Element, Render, TextProperties};
+use xs_core::{AnyElement, AppContext, Context, ElementObject, IntoElement, ParentElement, TextProperties};
 use xs_layout::{
     AlignItems, BorderRadius, BorderSide, Borders, BoxShadow, Color, EdgeInsets, Flex,
     FlexDirection, FlexWrap, JustifyContent, Material, Overflow, Positioned, QuadProps, Style,
@@ -11,7 +11,7 @@ use xs_layout::{
 pub struct Div {
     pub testid: Option<&'static str>,
     pub style: Style,
-    pub children: Vec<Rc<dyn Render>>,
+    pub children: Vec<AnyElement>,
 }
 
 impl Div {
@@ -300,58 +300,31 @@ impl Div {
         }
     }
 
-    //
-    // OTHER
-    //
-    pub fn child(mut self, child: impl Into<Rc<dyn Render>>) -> Self {
-        self.children.push(child.into());
-        self
-    }
-
-    pub fn children(
-        mut self,
-        children: impl IntoIterator<Item = impl Into<Rc<dyn Render>>>,
-    ) -> Self {
-        self.children
-            .extend(children.into_iter().map(|child| child.into()));
-        self
-    }
-
     pub fn when(self, condition: bool, mut callback: impl FnMut(Self) -> Self) -> Self {
         if condition { callback(self) } else { self }
     }
 }
 
-// impl Element for Div {
-//     fn id(&self) -> &'static str {
-//         self.id.unwrap_or("div")
-//     }
+impl IntoElement for Div {
+    fn into_element(self) -> AnyElement {
+        AnyElement::new(self)
+    }
+}
 
-//     fn children(&self) -> Vec<Rc<Box<dyn Render>>> {
-//         self.children.iter().map(|child| child.clone()).collect()
-//     }
-
-//     fn paint(&self, ctx: &mut AppContext, views: Vec<View>) -> View {
-//         self.style.paint(ctx, views)
-//     }
-// }
-
-impl Render for Div {
+impl ElementObject for Div {
     fn tag(&self) -> TypeId {
         TypeId::of::<Self>()
     }
 
-    fn render(&self, _ctx: &mut Context) -> Box<dyn Element> {
+    fn clone_box(&self) -> Box<dyn ElementObject> {
         Box::new(self.clone())
     }
-}
 
-impl Element for Div {
     fn id(&self) -> &'static str {
         self.testid.unwrap_or("div")
     }
 
-    fn children(&self) -> &[Rc<dyn Render>] {
+    fn children(&self) -> &[AnyElement] {
         &self.children
     }
 
@@ -404,15 +377,19 @@ impl Element for Div {
     }
 }
 
-impl From<Div> for Box<dyn Element> {
-    fn from(value: Div) -> Self {
-        Box::new(value)
+impl ParentElement for Div {
+    fn child(mut self, child: impl Into<AnyElement>) -> Self {
+        self.children.push(child.into());
+        self
     }
-}
 
-impl From<Div> for Rc<dyn Render> {
-    fn from(value: Div) -> Self {
-        Rc::new(value)
+    fn children(
+        mut self,
+        children: impl IntoIterator<Item = impl Into<AnyElement>>,
+    ) -> Self {
+        self.children
+            .extend(children.into_iter().map(|child| child.into()));
+        self
     }
 }
 

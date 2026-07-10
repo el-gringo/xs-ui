@@ -1,17 +1,15 @@
-use std::{collections::VecDeque, rc::Rc};
+use std::collections::VecDeque;
 
 use xs_layout::{BoxConstraints, Color, ImageFormat, LayoutBox, LayoutTree, TextProperties, View};
 use xs_math::Vector2;
 
 use crate::{
-    AppContext, AtlasInfo, Context, Element, Render, core::NodeId, navigation::NavigationNodeId,
+    AppContext, AtlasInfo, Context, core::NodeId, element::AnyElement, navigation::NavigationNodeId,
 };
-
-type RcWidget = Rc<dyn Render>;
 
 #[derive(Clone)]
 struct StackItem {
-    widget: RcWidget,
+    element: AnyElement,
     parent_index: Option<usize>,
     child_index: usize,
     nav_id: NavigationNodeId,
@@ -42,7 +40,7 @@ pub trait Renderer {
         image_format: ImageFormat,
     ) -> u32;
 
-    fn build_widget_tree(&mut self, app_context: &mut AppContext, widget: RcWidget) -> View {
+    fn build_element_tree(&mut self, app_context: &mut AppContext, root: AnyElement) -> View {
         app_context.nav.update();
         let constraints = BoxConstraints {
             min: Vector2::new(0.0, 0.0),
@@ -53,7 +51,7 @@ pub trait Renderer {
         };
         let mut stack: VecDeque<StackItem> = Default::default();
         stack.push_front(StackItem {
-            widget: widget.clone(),
+            element: root.clone(),
             parent_index: None,
             child_index: 0,
             nav_id: app_context.current_nav_node_id,
@@ -62,11 +60,10 @@ pub trait Renderer {
             constraints: constraints.clone(),
         });
 
-        // Store (parent_index, element) for each rendered element
-        let mut rendered_elements: Vec<(Option<usize>, Box<dyn Element>)> = Default::default();
+        let mut rendered_elements: Vec<(Option<usize>, AnyElement)> = Default::default();
         while let Some(item) = stack.pop_front() {
             let node_id: NodeId = (
-                item.widget.tag(),
+                item.element.inner.tag(),
                 item.parent_index.unwrap_or(0),
                 item.child_index,
             );
@@ -78,12 +75,22 @@ pub trait Renderer {
                 item.color,
                 item.constraints.clone(),
             );
-            let element = item.widget.render(&mut ctx);
-            element.post_render(&mut ctx);
 
-            for (child_index, child) in element.children().iter().enumerate() {
+            let mut element = item.element;
+            loop {
+                match element.inner.resolve(&mut ctx) {
+                    Some(resolved) => element = resolved,
+                    None => break,
+                }
+            }
+
+            element.inner.post_render(&mut ctx);
+
+            let children: Vec<AnyElement> =
+                element.inner.children().iter().cloned().collect();
+            for (child_index, child) in children.into_iter().enumerate() {
                 let new_item = StackItem {
-                    widget: child.clone(),
+                    element: child,
                     parent_index: Some(rendered_elements.len()),
                     child_index,
                     nav_id: ctx.nav_id,
@@ -111,7 +118,7 @@ pub trait Renderer {
                 .iter()
                 .map(|&child_idx| view_map[child_idx].clone().unwrap())
                 .collect();
-            view_map[i] = Some(element.paint(app_context, &child_views));
+            view_map[i] = Some(element.inner.paint(app_context, &child_views));
         }
 
         app_context.nav.update();
@@ -134,6 +141,65 @@ pub trait Renderer {
     }
 
     fn render(&mut self, ctx: &AppContext, layout_tree: &LayoutTree);
+}
+
+fn process_element(
+    app_context: &mut AppContext,
+    element: &AnyElement,
+    parent_index: usize,
+    counter: &mut usize,
+    nav_id: NavigationNodeId,
+    text_properties: TextProperties,
+    color: Color,
+    constraints: BoxConstraints,
+) -> View {
+    let my_index = *counter;
+    *counter += 1;
+    let node_id: NodeId = (element.inner.tag(), parent_index, my_index);
+    let mut ctx = Context::new(
+        app_context,
+        node_id,
+        nav_id,
+        text_properties,
+        color,
+        constraints,
+    );
+
+    let mut current = element.clone();
+    loop {
+        match current.inner.resolve(&mut ctx) {
+            Some(resolved) => current = resolved,
+            None => break,
+        }
+    }
+
+    current.inner.post_render(&mut ctx);
+
+    let child_nav_id = ctx.nav_id;
+    let child_text_properties = ctx.text_properties.clone();
+    let child_color = ctx.color;
+    let child_constraints = ctx.constraints.clone();
+    drop(ctx);
+
+    let child_views: Vec<View> = current
+        .inner
+        .children()
+        .iter()
+        .map(|child| {
+            process_element(
+                app_context,
+                child,
+                my_index,
+                counter,
+                child_nav_id,
+                child_text_properties.clone(),
+                child_color,
+                child_constraints.clone(),
+            )
+        })
+        .collect();
+
+    current.inner.paint(app_context, &child_views)
 }
 
 pub struct RendererDummy;

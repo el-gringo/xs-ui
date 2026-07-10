@@ -1,23 +1,19 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs_core::{Context, Element, Render};
+use xs_core::{AnyElement, Context, ElementObject, IntoElement, Render};
 use xs_layout::{BoxConstraints, Layout, LayoutTree, Material, SizedLayoutBox, Vector2, View};
 
 pub struct Text(pub String);
 
 impl Render for Text {
-    fn tag(&self) -> TypeId {
-        TypeId::of::<Self>()
-    }
-
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> impl IntoElement {
         let text_vertices = ctx.app_context.text_system.render_text(
             &self.0,
             &ctx.text_properties,
             ctx.constraints.max.x,
             ctx.constraints.max.y,
         );
-        Box::new(TextElement {
+        TextElement {
             width: text_vertices.width,
             height: text_vertices.height,
             material: Some(Material::Text(
@@ -25,7 +21,7 @@ impl Render for Text {
                 ctx.text_properties.clone(),
                 text_vertices.clone(),
             )),
-        })
+        }
     }
 }
 
@@ -35,7 +31,25 @@ pub struct TextElement {
     material: Option<Material>,
 }
 
-impl Element for TextElement {
+impl IntoElement for TextElement {
+    fn into_element(self) -> AnyElement {
+        AnyElement::new(self)
+    }
+}
+
+impl ElementObject for TextElement {
+    fn tag(&self) -> TypeId {
+        TypeId::of::<Self>()
+    }
+
+    fn clone_box(&self) -> Box<dyn ElementObject> {
+        Box::new(TextElement {
+            width: self.width,
+            height: self.height,
+            material: self.material.clone(),
+        })
+    }
+
     fn paint(&self, _app_context: &mut xs_core::AppContext, _views: &[View]) -> View {
         Rc::new(TextElement {
             width: self.width,
@@ -53,18 +67,6 @@ impl Layout for TextElement {
             children: vec![],
             material: self.material.clone(),
         }
-    }
-}
-
-impl From<Text> for Rc<dyn Render> {
-    fn from(value: Text) -> Self {
-        Rc::new(value)
-    }
-}
-
-impl From<Text> for String {
-    fn from(value: Text) -> Self {
-        value.0
     }
 }
 

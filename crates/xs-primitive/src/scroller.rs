@@ -1,13 +1,11 @@
-use std::rc::Rc;
-
 use xs_animation::Spring;
-use xs_core::{Context, Element, Render};
+use xs_core::{AnyElement, Context, IntoElement, ParentElement, Render};
 
 use crate::{animate, div};
 
 pub struct Scroller {
     offset_top: f32,
-    children: Vec<Rc<dyn Render>>,
+    children: Vec<AnyElement>,
 }
 
 impl Scroller {
@@ -22,36 +20,32 @@ impl Scroller {
         self.offset_top = offset_top;
         self
     }
-
-    pub fn children(
-        mut self,
-        children: impl IntoIterator<Item = impl Into<Rc<dyn Render>>>,
-    ) -> Self {
-        self.children
-            .extend(children.into_iter().map(|child| child.into()));
-        self
-    }
 }
 
 impl Render for Scroller {
-    fn tag(&self) -> std::any::TypeId {
-        std::any::TypeId::of::<Self>()
-    }
-
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> impl IntoElement {
         let animated_offset = animate(ctx, Spring::new(0.0), self.offset_top);
 
         div()
             .absolute()
             .top(-animated_offset)
             .children(self.children.clone())
-            .into()
     }
 }
 
-impl From<Scroller> for Rc<dyn Render> {
-    fn from(value: Scroller) -> Self {
-        Rc::new(value)
+impl ParentElement for Scroller {
+    fn child(mut self, child: impl Into<AnyElement>) -> Self {
+        self.children.push(child.into());
+        self
+    }
+
+    fn children(
+        mut self,
+        children: impl IntoIterator<Item = impl Into<AnyElement>>,
+    ) -> Self {
+        self.children
+            .extend(children.into_iter().map(|child| child.into()));
+        self
     }
 }
 

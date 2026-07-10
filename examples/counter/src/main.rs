@@ -1,13 +1,8 @@
-use std::any::TypeId;
-
-use xs::{Application, Color, Context, Element, Render, div, text};
+use xs::{Application, Color, Context, ParentElement, Render, div, text};
 
 struct Counter;
 impl Render for Counter {
-    fn tag(&self) -> std::any::TypeId {
-        TypeId::of::<Self>()
-    }
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
         div()
             .testid("root")
             .width(ctx.app_context.screen.width as _)
@@ -57,7 +52,6 @@ impl Render for Counter {
                             .child(text("Dec")),
                     ),
             )
-            .into()
     }
 }
 

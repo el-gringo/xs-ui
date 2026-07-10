@@ -15,7 +15,7 @@ pub use app_context::AppContext;
 pub use backend::{Backend, BackendDummy, BackendRequest, BackendResponse, EventLoop};
 pub use context::Context;
 pub use core::Undefined;
-pub use element::{Element, RootElement};
+pub use element::{AnyElement, DeferredRender, ElementObject, IntoElement, ParentElement};
 pub use navigation::{FocusHandle, FocusManager, NavigationNode};
 pub use render::Render;
 pub use renderer::{Renderer, RendererDummy};

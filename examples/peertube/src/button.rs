@@ -1,6 +1,4 @@
-use std::{any::TypeId, rc::Rc};
-
-use xs::{Color, Context, Element, NavigationNode, Render, div, text};
+use xs::{Color, Context, NavigationNode, ParentElement, Render, div, text};
 
 use crate::theme;
 
@@ -15,7 +13,7 @@ impl Button {
 }
 
 impl Render for Button {
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
         let nav_node = ctx.focus_handle(NavigationNode::new().id("button"));
         div()
             .testid("button")
@@ -30,20 +28,9 @@ impl Render for Button {
             .when(nav_node.has_focus(), |this| {
                 this.color(theme::ACCENT_400)
                     .border_left(theme::ACCENT_400, 4.)
-                //.box_shadow(-4.0, 0.0, 16., 0., theme::ACCENT_400)
             })
             .font_size(32)
             .child(text(self.text))
-            .into()
-    }
-    fn tag(&self) -> std::any::TypeId {
-        TypeId::of::<Self>()
-    }
-}
-
-impl From<Button> for Rc<dyn Render> {
-    fn from(value: Button) -> Self {
-        Rc::new(value)
     }
 }
 

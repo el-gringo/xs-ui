@@ -1,15 +1,12 @@
-use std::{
-    rc::Rc,
-    sync::{
-        atomic::Ordering,
-        mpsc::{Receiver, Sender, channel},
-    },
+use std::sync::{
+    atomic::Ordering,
+    mpsc::{Receiver, Sender, channel},
 };
 
 use xs_backend::load_image;
 use xs_core::{
     AppConfig, AppContext, Backend, BackendRequest, BackendResponse, EventLoop, ImageFormat,
-    PENDING_UPDATE, Render, Renderer,
+    IntoElement, PENDING_UPDATE, Render, Renderer,
 };
 use xs_layout::Image;
 use xs_text_system::{AtlasAlpha, TextSystem};
@@ -17,17 +14,17 @@ use xs_text_system::{AtlasAlpha, TextSystem};
 #[derive(Default)]
 pub struct Application(AppConfig);
 
-struct AppEventLoop {
+struct AppEventLoop<R: Render> {
     renderer: Box<dyn Renderer>,
-    root: Rc<dyn Render>,
+    root: R,
     tx: Sender<BackendResponse>,
-    rx: Rc<Receiver<BackendResponse>>,
+    rx: std::rc::Rc<Receiver<BackendResponse>>,
 }
 
-impl AppEventLoop {
-    pub fn new(renderer: Box<dyn Renderer>, root: Rc<dyn Render>) -> Self {
+impl<R: Render> AppEventLoop<R> {
+    pub fn new(renderer: Box<dyn Renderer>, root: R) -> Self {
         let (tx, rx) = channel();
-        let rx = Rc::new(rx);
+        let rx = std::rc::Rc::new(rx);
         Self {
             renderer,
             root,
@@ -62,7 +59,7 @@ impl AppEventLoop {
     }
 }
 
-impl EventLoop for AppEventLoop {
+impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
     fn initialize(&mut self, ctx: &mut AppContext) {
         self.renderer.init(ctx);
         let font_family = "sans-serif";
@@ -84,7 +81,26 @@ impl EventLoop for AppEventLoop {
             return;
         }
         ctx.dirty = false;
-        let widget_tree = self.renderer.build_widget_tree(ctx, self.root.clone());
+
+        let constraints = xs_core::BoxConstraints {
+            min: xs_layout::Vector2::new(0.0, 0.0),
+            max: xs_layout::Vector2::new(
+                ctx.screen.width as f32,
+                ctx.screen.height as f32,
+            ),
+        };
+        let mut node_ctx = xs_core::Context::new(
+            ctx,
+            (std::any::TypeId::of::<R>(), 0, 0),
+            ctx.current_nav_node_id,
+            xs_core::TextProperties::default(),
+            xs_core::Color::rgba(0.0, 0.0, 0.0, 1.0),
+            constraints,
+        );
+        let root_element = self.root.render(&mut node_ctx).into_element();
+        drop(node_ctx);
+
+        let widget_tree = self.renderer.build_element_tree(ctx, root_element);
         let layout_tree =
             self.renderer
                 .layout(&widget_tree, ctx.screen.width as _, ctx.screen.height as _);
@@ -125,7 +141,7 @@ impl Application {
         let text_system = Box::new(TextSystem::<AtlasAlpha>::new());
         let mut app_context = AppContext::new(text_system);
         let renderer = Box::new(xs_renderer::Renderer::new());
-        let root = Rc::new(on_initialize(&mut app_context));
+        let root = on_initialize(&mut app_context);
         let mut backend = xs_backend::Backend::new();
         let event_loop = Box::new(AppEventLoop::new(renderer, root));
         backend.run(&self.0, app_context, event_loop);

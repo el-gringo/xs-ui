@@ -1,6 +1,4 @@
-use std::rc::Rc;
-
-use xs::{AlignItems, Context, Element, JustifyContent, NavigationNode, Render, div, text};
+use xs::{AlignItems, Context, JustifyContent, NavigationNode, ParentElement, Render, div, text};
 
 use crate::{
     button::{Button, button},
@@ -30,11 +28,7 @@ impl Sidebar {
 }
 
 impl Render for Sidebar {
-    fn tag(&self) -> std::any::TypeId {
-        std::any::TypeId::of::<Self>()
-    }
-
-    fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
+    fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
         ctx.focus_handle(NavigationNode::new().vertical().id("sidebar"));
 
         div()
@@ -67,13 +61,6 @@ impl Render for Sidebar {
                     .child(button("Series"))
                     .child(button("Settings")),
             )
-            .into()
-    }
-}
-
-impl From<Sidebar> for Rc<dyn Render> {
-    fn from(val: Sidebar) -> Self {
-        Rc::new(val)
     }
 }
 
