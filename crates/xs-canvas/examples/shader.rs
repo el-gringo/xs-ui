@@ -53,7 +53,7 @@ impl EventLoop for SimpleCanvas {
         }
     }
 
-    fn frame(&mut self, ctx: &mut xs_core::AppContext) {
+    fn frame(&mut self, ctx: &mut xs_core::AppContext) -> bool {
         let shader = self.shader.as_mut().unwrap();
         shader.use_program();
         shader.uniform_2f("resolution", APP_WIDTH as _, APP_HEIGHT as _);
@@ -71,6 +71,7 @@ impl EventLoop for SimpleCanvas {
         let buffer = shader.get_buffer(0);
         buffer.push_data(vertices);
         glDrawArrays(GL_TRIANGLES, 0, 6);
+        true
     }
 }
 

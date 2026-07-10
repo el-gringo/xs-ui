@@ -71,14 +71,13 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
         self.renderer.load_font_atlas(font_family, 400, atlas_info);
     }
 
-    fn frame(&mut self, ctx: &mut AppContext) {
+    fn frame(&mut self, ctx: &mut AppContext) -> bool {
         self.read_messages(ctx);
         if PENDING_UPDATE.swap(false, Ordering::Relaxed) {
             ctx.dirty = true;
         }
         if !ctx.dirty {
-            self.renderer.present();
-            return;
+            return false;
         }
         ctx.dirty = false;
 
@@ -104,6 +103,7 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
             self.renderer
                 .layout(&widget_tree, ctx.screen.width as _, ctx.screen.height as _);
         self.renderer.render(ctx, &layout_tree);
+        true
     }
 }
 

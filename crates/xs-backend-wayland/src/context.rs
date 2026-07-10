@@ -91,6 +91,10 @@ impl<'a> WaylandContext<'a> {
         unsafe { (self.client.wl_display_dispatch_pending)(self.wl_display) }
     }
 
+    pub fn dispatch(&mut self) -> i32 {
+        unsafe { (self.client.wl_display_dispatch)(self.wl_display) }
+    }
+
     pub fn swap_buffers(&mut self) {
         unsafe {
             (self.lib_egl.eglSwapBuffers)(self.egl_display, self.egl_surface);

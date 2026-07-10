@@ -18,7 +18,7 @@ pub enum BackendRequest {
 
 pub trait EventLoop {
     fn initialize(&mut self, ctx: &mut AppContext);
-    fn frame(&mut self, ctx: &mut AppContext);
+    fn frame(&mut self, ctx: &mut AppContext) -> bool;
 }
 
 pub trait Backend {

@@ -158,7 +158,7 @@ impl EventLoop for TextCanvas {
         };
     }
 
-    fn frame(&mut self, ctx: &mut xs_core::AppContext) {
+    fn frame(&mut self, ctx: &mut xs_core::AppContext) -> bool {
         glViewport(0, 0, ctx.screen.width as _, ctx.screen.height as _);
         glClear(GL_COLOR_BUFFER_BIT);
         glClearColor(0.5, 0.5, 0.5, 1.0);
@@ -198,6 +198,7 @@ impl EventLoop for TextCanvas {
             &self.atlas_msdf,
             Color::rgba(1.0, 0.0, 0.0, 1.0),
         );
+        true
     }
 }
 

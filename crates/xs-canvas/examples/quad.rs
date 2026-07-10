@@ -100,7 +100,7 @@ impl EventLoop for ShadowCanvas {
         }
     }
 
-    fn frame(&mut self, _ctx: &mut xs_core::AppContext) {
+    fn frame(&mut self, _ctx: &mut xs_core::AppContext) -> bool {
         glViewport(0, 0, APP_WIDTH, APP_HEIGHT);
         glClear(GL_COLOR_BUFFER_BIT);
         glClearColor(0.75, 0.75, 0.75, 1.0);
@@ -145,6 +145,7 @@ impl EventLoop for ShadowCanvas {
             border_color,
             self.texture_place_holder,
         );
+        true
     }
 }
 

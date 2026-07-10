@@ -86,8 +86,7 @@ pub trait Renderer {
 
             element.inner.post_render(&mut ctx);
 
-            let children: Vec<AnyElement> =
-                element.inner.children().iter().cloned().collect();
+            let children: Vec<AnyElement> = element.inner.children().iter().cloned().collect();
             for (child_index, child) in children.into_iter().enumerate() {
                 let new_item = StackItem {
                     element: child,
@@ -141,65 +140,6 @@ pub trait Renderer {
     }
 
     fn render(&mut self, ctx: &AppContext, layout_tree: &LayoutTree);
-}
-
-fn process_element(
-    app_context: &mut AppContext,
-    element: &AnyElement,
-    parent_index: usize,
-    counter: &mut usize,
-    nav_id: NavigationNodeId,
-    text_properties: TextProperties,
-    color: Color,
-    constraints: BoxConstraints,
-) -> View {
-    let my_index = *counter;
-    *counter += 1;
-    let node_id: NodeId = (element.inner.tag(), parent_index, my_index);
-    let mut ctx = Context::new(
-        app_context,
-        node_id,
-        nav_id,
-        text_properties,
-        color,
-        constraints,
-    );
-
-    let mut current = element.clone();
-    loop {
-        match current.inner.resolve(&mut ctx) {
-            Some(resolved) => current = resolved,
-            None => break,
-        }
-    }
-
-    current.inner.post_render(&mut ctx);
-
-    let child_nav_id = ctx.nav_id;
-    let child_text_properties = ctx.text_properties.clone();
-    let child_color = ctx.color;
-    let child_constraints = ctx.constraints.clone();
-    drop(ctx);
-
-    let child_views: Vec<View> = current
-        .inner
-        .children()
-        .iter()
-        .map(|child| {
-            process_element(
-                app_context,
-                child,
-                my_index,
-                counter,
-                child_nav_id,
-                child_text_properties.clone(),
-                child_color,
-                child_constraints.clone(),
-            )
-        })
-        .collect();
-
-    current.inner.paint(app_context, &child_views)
 }
 
 pub struct RendererDummy;

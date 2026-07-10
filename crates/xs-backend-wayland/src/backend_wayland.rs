@@ -70,12 +70,16 @@ impl Backend for BackendWayland {
         create_egl_window(&mut ctx, config.window_width, config.window_height);
         event_loop.initialize(ctx.app_context);
         let start = Instant::now();
-        while ctx.dispatch_pending() != -1 && ctx.app_context.running {
+        while ctx.app_context.running {
             ctx.app_context.now = (Instant::now() - start).as_millis();
             self.elapsed = start.elapsed().as_millis();
-            event_loop.frame(ctx.app_context);
-            ctx.swap_buffers();
-            //std::thread::sleep(std::time::Duration::from_secs(3));
+            while ctx.dispatch_pending() > 0 {}
+            let rendered = event_loop.frame(ctx.app_context);
+            if rendered {
+                ctx.swap_buffers();
+            } else {
+                ctx.dispatch();
+            }
         }
     }
 
