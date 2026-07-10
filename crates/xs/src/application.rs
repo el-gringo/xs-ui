@@ -84,10 +84,7 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
 
         let constraints = xs_core::BoxConstraints {
             min: xs_layout::Vector2::new(0.0, 0.0),
-            max: xs_layout::Vector2::new(
-                ctx.screen.width as f32,
-                ctx.screen.height as f32,
-            ),
+            max: xs_layout::Vector2::new(ctx.screen.width as f32, ctx.screen.height as f32),
         };
         let mut node_ctx = xs_core::Context::new(
             ctx,
@@ -98,7 +95,9 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
             constraints,
         );
         let root_element = self.root.render(&mut node_ctx).into_element();
+        let root_nav_id = node_ctx.nav_id;
         drop(node_ctx);
+        ctx.current_nav_node_id = root_nav_id;
 
         let widget_tree = self.renderer.build_element_tree(ctx, root_element);
         let layout_tree =
