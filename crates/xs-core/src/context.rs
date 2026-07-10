@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, cell::RefCell, rc::Rc};
 
 use xs_layout::{BoxConstraints, Color, TextProperties, TextVertices};
 
@@ -39,7 +39,7 @@ impl<'a> Context<'a> {
     #[track_caller]
     pub fn use_state<S>(
         &mut self,
-        init: impl FnOnce(&mut Self) -> S,
+        init: impl FnOnce(&mut Self, State<S>) -> S,
     ) -> State<S>
     where
         S: Any + 'static,
@@ -53,7 +53,7 @@ impl<'a> Context<'a> {
     pub fn use_keyed_state<S>(
         &mut self,
         key: &str,
-        init: impl FnOnce(&mut Self) -> S,
+        init: impl FnOnce(&mut Self, State<S>) -> S,
     ) -> State<S>
     where
         S: Any + 'static,
@@ -67,12 +67,16 @@ impl<'a> Context<'a> {
             !entry.contains_key(key)
         };
         if needs_init {
-            let value = init(self);
+            let state = State {
+                inner: Rc::new(RefCell::new(None)),
+            };
+            let value = init(self, state.clone());
+            *state.inner.borrow_mut() = Some(value);
             self.app_context
                 .states
                 .entry(node_id)
                 .or_default()
-                .insert(key.into(), AnyState::new(State::new(value)));
+                .insert(key.into(), AnyState::new(state));
         }
         self.app_context
             .states
@@ -93,7 +97,7 @@ impl<'a> Context<'a> {
 
     pub fn focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
         let handle_state =
-            self.use_state::<FocusHandle>(|ctx| ctx.new_focus_handle(node));
+            self.use_state::<FocusHandle>(|ctx, _| ctx.new_focus_handle(node));
         let result = handle_state.read().clone();
         self.nav_id = result.id;
         result
@@ -101,7 +105,7 @@ impl<'a> Context<'a> {
 
     pub fn focus_handle_with_key(&mut self, key: &str, node: NavigationNode) -> FocusHandle {
         let state =
-            self.use_keyed_state::<FocusHandle>(key, |ctx| ctx.new_focus_handle(node));
+            self.use_keyed_state::<FocusHandle>(key, |ctx, _| ctx.new_focus_handle(node));
         let result = state.read().clone();
         self.nav_id = result.id;
         result

@@ -12,20 +12,23 @@ use xs::{
     Render, div, grid, text,
 };
 
-use crate::{api::peertube::PeerTubeClient, body::body, card::card, sidebar::sidebar};
+use crate::{
+    api::peertube::{PeerTubeClient, Video},
+    body::body,
+    card::card,
+    sidebar::sidebar,
+};
 
 struct Peertube;
 impl Render for Peertube {
     fn render(&self, ctx: &mut Context) -> Box<dyn Element> {
         ctx.focus_handle(NavigationNode::new().horizontal().id("root"));
-        let videos = ctx.use_state(|_| Vec::new());
-        let _ = ctx.use_state::<bool>(|_| {
-            let set_videos = videos.clone();
+        let videos = ctx.use_state(|_, set_videos| {
             let client = PeerTubeClient::new();
             client.get_videos(0, 100, move |new_videos| {
                 set_videos.update(|| new_videos);
             });
-            true
+            Vec::new()
         });
 
         div()

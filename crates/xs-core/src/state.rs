@@ -29,7 +29,7 @@ impl AnyState {
 }
 
 pub struct State<S> {
-    pub(crate) inner: Rc<RefCell<S>>,
+    pub(crate) inner: Rc<RefCell<Option<S>>>,
 }
 
 impl<S: 'static> Clone for State<S> {
@@ -43,21 +43,28 @@ impl<S: 'static> Clone for State<S> {
 impl<S: 'static> State<S> {
     pub fn new(value: S) -> Self {
         Self {
-            inner: Rc::new(RefCell::new(value)),
+            inner: Rc::new(RefCell::new(Some(value))),
         }
     }
 
     pub fn read(&self) -> Ref<'_, S> {
-        self.inner.borrow()
+        Ref::map(self.inner.borrow(), |opt| {
+            opt.as_ref()
+                .expect("State::read() called before initialization")
+        })
     }
 
     pub fn update(&self, mutator: impl FnOnce() -> S) {
-        *self.inner.borrow_mut() = mutator();
+        *self.inner.borrow_mut() = Some(mutator());
         PENDING_UPDATE.store(true, Ordering::Relaxed);
     }
 
     pub fn mutate(&self, f: impl FnOnce(&mut S)) {
-        f(&mut *self.inner.borrow_mut());
+        f(self
+            .inner
+            .borrow_mut()
+            .as_mut()
+            .expect("State::mutate() called before initialization"));
         PENDING_UPDATE.store(true, Ordering::Relaxed);
     }
 }
@@ -68,7 +75,7 @@ impl<S: 'static> State<S> {
 unsafe impl<S: 'static> Send for State<S> {}
 
 pub struct Setter<S> {
-    pub(crate) inner: Rc<RefCell<S>>,
+    pub(crate) inner: Rc<RefCell<Option<S>>>,
 }
 
 impl<S: 'static> Clone for Setter<S> {

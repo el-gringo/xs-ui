@@ -2,8 +2,8 @@ use xs_animation::Animate;
 use xs_core::Context;
 
 pub fn animate<T: Animate + 'static>(ctx: &mut Context, template: T, target: f32) -> f32 {
-    let anim = ctx.use_state::<T>(move |_| template);
-    let prev_time = ctx.use_state::<u128>(|_| 0);
+    let anim = ctx.use_state::<T>(move |_, _| template);
+    let prev_time = ctx.use_state::<u128>(|_, _| 0);
 
     let current = anim.read().value();
     if current == target {
