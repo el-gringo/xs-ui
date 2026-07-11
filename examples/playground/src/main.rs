@@ -14,7 +14,7 @@ impl Render for App {
             .testid("root")
             .width(ctx.app_context.screen.width as _)
             .height(ctx.app_context.screen.height as _)
-            .wrap()
+            .background_color(Color::GRAY)
             .child(
                 div()
                     .absolute()
