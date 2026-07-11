@@ -1,5 +1,6 @@
 use std::{any::Any, cell::RefCell, rc::Rc};
 
+use xs_animation::Animate;
 use xs_layout::{BoxConstraints, Color, TextProperties, TextVertices};
 
 use crate::{
@@ -37,10 +38,7 @@ impl<'a> Context<'a> {
     }
 
     #[track_caller]
-    pub fn use_state<S>(
-        &mut self,
-        init: impl FnOnce(&mut Self, State<S>) -> S,
-    ) -> State<S>
+    pub fn use_state<S>(&mut self, init: impl FnOnce(&mut Self, State<S>) -> S) -> State<S>
     where
         S: Any + 'static,
     {
@@ -60,7 +58,13 @@ impl<'a> Context<'a> {
     {
         let node_id = self.node_id;
         let caller = core::panic::Location::caller();
-        let prefixed = format!("{}:{}:{}:{}", caller.file(), caller.line(), caller.column(), key);
+        let prefixed = format!(
+            "{}:{}:{}:{}",
+            caller.file(),
+            caller.line(),
+            caller.column(),
+            key
+        );
         let key = &prefixed;
         let needs_init = {
             let entry = self.app_context.states.entry(node_id).or_default();
@@ -96,16 +100,14 @@ impl<'a> Context<'a> {
     }
 
     pub fn focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
-        let handle_state =
-            self.use_state::<FocusHandle>(|ctx, _| ctx.new_focus_handle(node));
+        let handle_state = self.use_state::<FocusHandle>(|ctx, _| ctx.new_focus_handle(node));
         let result = handle_state.read().clone();
         self.nav_id = result.id;
         result
     }
 
     pub fn focus_handle_with_key(&mut self, key: &str, node: NavigationNode) -> FocusHandle {
-        let state =
-            self.use_keyed_state::<FocusHandle>(key, |ctx, _| ctx.new_focus_handle(node));
+        let state = self.use_keyed_state::<FocusHandle>(key, |ctx, _| ctx.new_focus_handle(node));
         let result = state.read().clone();
         self.nav_id = result.id;
         result
@@ -121,5 +123,30 @@ impl<'a> Context<'a> {
         self.app_context
             .text_system
             .render_text(text, text_properties, max_width, max_height)
+    }
+
+    pub fn animate<T: Animate + 'static>(&mut self, template: T, target: f32) -> f32 {
+        let caller = core::panic::Location::caller();
+        let key = &format!("{}:{}:{}", caller.file(), caller.line(), caller.column());
+
+        let anim = self.use_keyed_state::<T>(&format!("{}-value", key), move |_, _| template);
+        let prev_time = self.use_keyed_state::<u128>(&format!("{}-value", key), |_, _| 0);
+
+        let current = anim.read().value();
+        if current == target {
+            return current;
+        }
+        anim.mutate(|s| s.snap_to(target));
+
+        let now = self.app_context.now;
+        let dt = now - *prev_time.read();
+        if dt > 0 && dt < 1000 {
+            anim.mutate(|s| {
+                s.tick(dt as f32 / 1000.0);
+            });
+        }
+        prev_time.update(|| now);
+
+        anim.read().value()
     }
 }

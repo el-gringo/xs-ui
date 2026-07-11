@@ -1,4 +1,4 @@
-use xs::{Application, Color, Context, ParentElement, Render, Spring, animate, div};
+use xs::{Application, Color, Context, ParentElement, Render, Spring, div};
 
 struct App;
 impl Render for App {
@@ -8,7 +8,7 @@ impl Render for App {
         } else {
             0.
         };
-        let animated_offset = animate(ctx, Spring::new(0.0), target);
+        let animated_offset = ctx.animate(Spring::new(0.0), target);
 
         div()
             .testid("root")

@@ -255,6 +255,7 @@ dependencies = [
 name = "xs-core"
 version = "0.1.0"
 dependencies = [
+ "xs-animation",
  "xs-layout",
  "xs-math",
  "xs-platform-event",
