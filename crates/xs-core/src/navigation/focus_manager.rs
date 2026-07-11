@@ -79,6 +79,12 @@ impl FocusManager {
             let mut current_element_id = self.active_element_id;
             loop {
                 let node = tree.get(current_element_id).unwrap();
+                if let Some(keydown_handler) = node.borrow_mut().keydown_handler.clone() {
+                    propagate = keydown_handler(key_code);
+                }
+                if !propagate {
+                    break;
+                }
                 let parent_id = node.borrow().parent;
                 current_element_id = parent_id;
                 let parent = tree.get(parent_id).unwrap();
@@ -137,7 +143,7 @@ impl FocusManager {
                     child_node.has_focus = should_have_focus;
                     if should_have_focus
                         && !had_focus
-                        && let Some(cb) = child_node.focus_callback.clone()
+                        && let Some(cb) = child_node.focus_handler.clone()
                     {
                         cb()
                     }

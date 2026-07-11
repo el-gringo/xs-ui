@@ -25,3 +25,4 @@ pub use xs_layout::{
     BoxConstraints, Color, FontStyle, Image, ImageFormat, Rectangle, TextProperties, TextVertices,
     Vector2,
 };
+pub use xs_platform_event::KeyCode;

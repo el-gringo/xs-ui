@@ -14,6 +14,7 @@ pub enum NavigationLayout {
 }
 
 pub use NavigationLayout::*;
+use xs_platform_event::KeyCode;
 
 #[derive(Default)]
 pub struct NavigationNode {
@@ -23,7 +24,8 @@ pub struct NavigationNode {
     pub has_focus: bool,
     pub children: Vec<NavigationNodeId>,
     pub parent: NavigationNodeId,
-    pub focus_callback: Option<Rc<dyn Fn() + 'static>>,
+    pub focus_handler: Option<Rc<dyn Fn() + 'static>>,
+    pub keydown_handler: Option<Rc<dyn Fn(KeyCode) -> bool + 'static>>,
 }
 
 impl NavigationNode {
