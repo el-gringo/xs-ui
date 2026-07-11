@@ -1,14 +1,12 @@
-use xs::{Application, Color, Context, ParentElement, Render, Spring, div};
+use xs::{
+    AnimationDirection::Alternate, Application, Color, Context, ParentElement, Render, Spring, div,
+};
 
 struct App;
 impl Render for App {
     fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
-        let target = if ((ctx.app_context.now as f32) % 2000.) < 1000. {
-            600.
-        } else {
-            0.
-        };
-        let animated_offset = ctx.animate(Spring::new(0.0), target);
+        let state = ctx.use_state(|_, _| 600.);
+        let value = *state.read();
 
         div()
             .testid("root")
@@ -18,20 +16,38 @@ impl Render for App {
             .child(
                 div()
                     .absolute()
-                    .left(100. + animated_offset)
                     .top(100.)
+                    .left(100.)
                     .width(100.)
                     .height(100.)
-                    .background(Color::RED),
+                    .background(Color::RED)
+                    .with_animation(
+                        "box1",
+                        Spring::new(0.0).repeat().direction(Alternate),
+                        value,
+                        |this, delta| {
+                            eprintln!("delta box1: {delta}");
+                            this.left(100. + delta)
+                        },
+                    ),
             )
             .child(
                 div()
                     .absolute()
-                    .left(700. - animated_offset)
                     .top(250.)
+                    .left(700.)
                     .width(100.)
                     .height(100.)
-                    .background(Color::BLUE),
+                    .background(Color::BLUE)
+                    .with_animation(
+                        "box2",
+                        Spring::new(700.0).repeat().direction(Alternate),
+                        100.,
+                        |this, delta| {
+                            eprintln!("delta box2: {delta}");
+                            this.left(delta)
+                        },
+                    ),
             )
     }
 }

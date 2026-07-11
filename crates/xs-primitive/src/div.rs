@@ -1,17 +1,54 @@
 use std::{any::TypeId, rc::Rc};
 
-use xs_core::{AnyElement, AppContext, Context, ElementObject, IntoElement, ParentElement, TextProperties};
+use xs_core::{
+    AnyElement, AppContext, Context, ElementObject, IntoElement, NodeId, ParentElement,
+    TextProperties,
+};
 use xs_layout::{
     AlignItems, BorderRadius, BorderSide, Borders, BoxShadow, Color, EdgeInsets, Flex,
     FlexDirection, FlexWrap, JustifyContent, Material, Overflow, Positioned, QuadProps, Style,
     StyleDisplay, StylePosition, View,
 };
 
+pub struct AnimationState {
+    pub last_tick: u128,
+    pub animate: Box<dyn xs_animation::Animate>,
+}
+
+impl xs_core::state::StateElement for AnimationState {
+    fn inner_element(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+}
+
+pub struct DivAnimation {
+    pub id: &'static str,
+    pub target: f32,
+    pub animate: Box<dyn xs_animation::Animate>,
+    pub callback: Rc<dyn Fn(Div, f32) -> Div>,
+}
+
+impl Clone for DivAnimation {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id,
+            target: self.target,
+            animate: self.animate.clone_box(),
+            callback: Rc::clone(&self.callback),
+        }
+    }
+}
+
 #[derive(Default, Clone)]
 pub struct Div {
     pub testid: Option<&'static str>,
     pub style: Style,
     pub children: Vec<AnyElement>,
+    pub animation: Option<DivAnimation>,
 }
 
 impl Div {
@@ -303,6 +340,25 @@ impl Div {
     pub fn when(self, condition: bool, mut callback: impl FnMut(Self) -> Self) -> Self {
         if condition { callback(self) } else { self }
     }
+
+    //
+    // ANIMATION
+    //
+    pub fn with_animation<A: xs_animation::Animate + 'static>(
+        mut self,
+        id: &'static str,
+        animate: A,
+        target: f32,
+        callback: impl Fn(Div, f32) -> Div + 'static,
+    ) -> Self {
+        self.animation = Some(DivAnimation {
+            id,
+            target,
+            animate: Box::new(animate),
+            callback: Rc::new(callback),
+        });
+        self
+    }
 }
 
 impl IntoElement for Div {
@@ -342,17 +398,90 @@ impl ElementObject for Div {
     }
 
     fn paint(&self, app_context: &mut AppContext, children: &[View]) -> View {
+        let effective_style = if let Some(ref anim) = self.animation {
+            use xs_core::state::{AnyState, State};
+
+            let anim_node_id: NodeId = {
+                let addr = anim.id.as_ptr() as usize;
+                (TypeId::of::<DivAnimation>(), addr, 0)
+            };
+            let state_id = anim.id.to_string();
+
+            let needs_init = !app_context
+                .states
+                .entry(anim_node_id)
+                .or_default()
+                .contains_key(&state_id);
+
+            if needs_init {
+                let mut animate = anim.animate.clone_box();
+                animate.snap_to(anim.target);
+                let state = AnimationState {
+                    last_tick: app_context.now,
+                    animate,
+                };
+                app_context
+                    .states
+                    .entry(anim_node_id)
+                    .or_default()
+                    .insert(state_id.clone(), AnyState::new(State::new(state)));
+            }
+
+            let dt = {
+                let entry = app_context
+                    .states
+                    .get_mut(&anim_node_id)
+                    .and_then(|m| m.get_mut(&state_id))
+                    .unwrap();
+                let state = entry.downcast::<AnimationState>().unwrap();
+                let last_tick = state.read().last_tick;
+                let dt = app_context.now.saturating_sub(last_tick) as f32 / 1000.0;
+                dt.min(1.0)
+            };
+
+            if dt > 0.0 {
+                let entry = app_context
+                    .states
+                    .get_mut(&anim_node_id)
+                    .and_then(|m| m.get_mut(&state_id))
+                    .unwrap();
+                let state = entry.downcast::<AnimationState>().unwrap();
+                state.mutate(|s| {
+                    s.animate.tick(dt);
+                    s.last_tick = app_context.now;
+                });
+            }
+            app_context.dirty = true;
+
+            let value = {
+                let entry = app_context
+                    .states
+                    .get_mut(&anim_node_id)
+                    .and_then(|m| m.get_mut(&state_id))
+                    .unwrap();
+                let state = entry.downcast::<AnimationState>().unwrap();
+                state.read().animate.value()
+            };
+
+            let mut div_for_callback = self.clone();
+            div_for_callback.animation = None;
+            let effective_div = (anim.callback)(div_for_callback, value);
+            effective_div.style
+        } else {
+            self.style.clone()
+        };
+
         let material = Material::Quad(Rc::new(QuadProps {
-            background: self.style.background,
-            border: self.style.border,
-            border_radius: self.style.border_radius,
-            box_shadow: self.style.box_shadow,
-            overflow: self.style.overflow,
-            background_image: app_context.load_image(self.style.background_image.clone()),
+            background: effective_style.background,
+            border: effective_style.border,
+            border_radius: effective_style.border_radius,
+            box_shadow: effective_style.box_shadow,
+            overflow: effective_style.overflow,
+            background_image: app_context.load_image(effective_style.background_image.clone()),
         }));
-        match self.style.position {
+        match effective_style.position {
             StylePosition::Absolute => {
-                let mut style = self.style.clone();
+                let mut style = effective_style;
                 style.position = StylePosition::Static;
                 let material = Some(material);
                 Rc::new(Positioned {
@@ -365,10 +494,9 @@ impl ElementObject for Div {
                 })
             }
             StylePosition::Static => {
-                let style = self.style.clone();
                 let material = Some(material);
                 Rc::new(Flex {
-                    style,
+                    style: effective_style,
                     material,
                     children: children.to_vec(),
                 })
@@ -383,10 +511,7 @@ impl ParentElement for Div {
         self
     }
 
-    fn children(
-        mut self,
-        children: impl IntoIterator<Item = impl Into<AnyElement>>,
-    ) -> Self {
+    fn children(mut self, children: impl IntoIterator<Item = impl Into<AnyElement>>) -> Self {
         self.children
             .extend(children.into_iter().map(|child| child.into()));
         self

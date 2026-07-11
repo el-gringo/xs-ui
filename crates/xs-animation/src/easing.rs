@@ -1,3 +1,6 @@
+use crate::AnimationDirection;
+
+#[derive(Clone, Copy)]
 enum EasingTiming {
     Ease,
     EaseIn,
@@ -6,6 +9,7 @@ enum EasingTiming {
     Linear,
 }
 
+#[derive(Clone)]
 pub struct Easing {
     start: f32,
     value: f32,
@@ -13,6 +17,9 @@ pub struct Easing {
     duration: f32,
     elapsed: f32,
     timing: EasingTiming,
+    repeat: bool,
+    direction: AnimationDirection,
+    forward: bool,
 }
 
 impl Easing {
@@ -24,11 +31,28 @@ impl Easing {
             duration: 250.0,
             elapsed: 0.0,
             timing: EasingTiming::Linear,
+            repeat: false,
+            direction: AnimationDirection::Normal,
+            forward: true,
         }
     }
 
     pub fn duration(mut self, duration: f32) -> Self {
         self.duration = duration;
+        self
+    }
+
+    pub fn repeat(mut self) -> Self {
+        self.repeat = true;
+        self
+    }
+
+    pub fn direction(mut self, direction: AnimationDirection) -> Self {
+        self.direction = direction;
+        match direction {
+            AnimationDirection::Normal | AnimationDirection::Alternate => self.forward = true,
+            AnimationDirection::Reverse | AnimationDirection::AlternateReverse => self.forward = false,
+        }
         self
     }
 
@@ -62,7 +86,15 @@ impl Easing {
 
     pub fn tick(&mut self, dt: f32) -> f32 {
         self.elapsed += dt * 1000.0;
-        let t = (self.elapsed / self.duration).clamp(0.0, 1.0);
+        if self.repeat && self.elapsed >= self.duration {
+            self.elapsed %= self.duration;
+            self.advance_direction();
+        }
+        let t = if self.forward {
+            (self.elapsed / self.duration).clamp(0.0, 1.0)
+        } else {
+            1.0 - (self.elapsed / self.duration).clamp(0.0, 1.0)
+        };
         let eased = match self.timing {
             EasingTiming::Linear => t,
             EasingTiming::EaseIn => ease_in(t),
@@ -74,12 +106,29 @@ impl Easing {
         self.value
     }
 
+    fn advance_direction(&mut self) {
+        match self.direction {
+            AnimationDirection::Normal => {
+                self.forward = true;
+            }
+            AnimationDirection::Reverse => {
+                self.forward = false;
+            }
+            AnimationDirection::Alternate => {
+                self.forward = !self.forward;
+            }
+            AnimationDirection::AlternateReverse => {
+                self.forward = !self.forward;
+            }
+        }
+    }
+
     pub fn value(&self) -> f32 {
         self.value
     }
 
     pub fn is_finished(&self) -> bool {
-        self.elapsed >= self.duration
+        !self.repeat && self.elapsed >= self.duration
     }
 }
 
@@ -94,6 +143,10 @@ impl crate::Animate for Easing {
 
     fn value(&self) -> f32 {
         self.value()
+    }
+
+    fn clone_box(&self) -> Box<dyn crate::Animate> {
+        Box::new(self.clone())
     }
 }
 

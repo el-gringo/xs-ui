@@ -1,7 +1,7 @@
 use xs_animation::Spring;
 use xs_core::{AnyElement, Context, IntoElement, ParentElement, Render};
 
-use crate::{animate, div};
+use crate::div;
 
 pub struct Scroller {
     offset_top: f32,
@@ -24,7 +24,7 @@ impl Scroller {
 
 impl Render for Scroller {
     fn render(&self, ctx: &mut Context) -> impl IntoElement {
-        let animated_offset = animate(ctx, Spring::new(0.0), self.offset_top);
+        let animated_offset = ctx.animate(Spring::new(0.0), self.offset_top);
 
         div()
             .absolute()
@@ -39,10 +39,7 @@ impl ParentElement for Scroller {
         self
     }
 
-    fn children(
-        mut self,
-        children: impl IntoIterator<Item = impl Into<AnyElement>>,
-    ) -> Self {
+    fn children(mut self, children: impl IntoIterator<Item = impl Into<AnyElement>>) -> Self {
         self.children
             .extend(children.into_iter().map(|child| child.into()));
         self

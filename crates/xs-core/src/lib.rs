@@ -7,14 +7,14 @@ mod element;
 mod navigation;
 mod render;
 mod renderer;
-mod state;
+pub mod state;
 mod text_system;
 
 pub use app_config::AppConfig;
 pub use app_context::AppContext;
 pub use backend::{Backend, BackendDummy, BackendRequest, BackendResponse, EventLoop};
 pub use context::Context;
-pub use core::Undefined;
+pub use core::{NodeId, Undefined};
 pub use element::{AnyElement, DeferredRender, ElementObject, IntoElement, ParentElement};
 pub use navigation::{FocusHandle, FocusManager, NavigationNode};
 pub use render::Render;

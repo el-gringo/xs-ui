@@ -1,4 +1,8 @@
+use crate::AnimationDirection;
+
+#[derive(Clone)]
 pub struct Spring {
+    start: f32,
     value: f32,
     velocity: f32,
     target: f32,
@@ -6,11 +10,14 @@ pub struct Spring {
     stiffness: f32,
     damping: f32,
     threshold: f32,
+    repeat: bool,
+    direction: AnimationDirection,
 }
 
 impl Spring {
     pub fn new(value: f32) -> Self {
         Self {
+            start: value,
             value,
             velocity: 0.0,
             target: value,
@@ -18,6 +25,8 @@ impl Spring {
             stiffness: 80.0,
             damping: 10.0,
             threshold: 0.01,
+            repeat: false,
+            direction: AnimationDirection::Normal,
         }
     }
 
@@ -36,6 +45,16 @@ impl Spring {
         self
     }
 
+    pub fn repeat(mut self) -> Self {
+        self.repeat = true;
+        self
+    }
+
+    pub fn direction(mut self, direction: AnimationDirection) -> Self {
+        self.direction = direction;
+        self
+    }
+
     pub fn snap_to(&mut self, target: f32) {
         self.target = target;
     }
@@ -48,11 +67,35 @@ impl Spring {
         self.value += self.velocity * dt;
 
         if self.is_at_rest() {
-            self.value = self.target;
-            self.velocity = 0.0;
+            if self.repeat {
+                self.value = self.target;
+                self.velocity = 0.0;
+                self.advance_direction();
+            } else {
+                self.value = self.target;
+                self.velocity = 0.0;
+            }
         }
 
         self.value
+    }
+
+    fn advance_direction(&mut self) {
+        match self.direction {
+            AnimationDirection::Normal => {
+                self.value = self.start;
+            }
+            AnimationDirection::Reverse => {
+                self.value = self.start;
+            }
+            AnimationDirection::Alternate => {
+                std::mem::swap(&mut self.start, &mut self.target);
+            }
+            AnimationDirection::AlternateReverse => {
+                std::mem::swap(&mut self.start, &mut self.target);
+            }
+        }
+        self.velocity = 0.0;
     }
 
     pub fn value(&self) -> f32 {
@@ -60,7 +103,8 @@ impl Spring {
     }
 
     pub fn is_at_rest(&self) -> bool {
-        (self.target - self.value).abs() < self.threshold && self.velocity.abs() < self.threshold
+        (self.target - self.value).abs() < self.threshold
+            && self.velocity.abs() < self.threshold
     }
 }
 
@@ -75,5 +119,9 @@ impl crate::Animate for Spring {
 
     fn value(&self) -> f32 {
         self.value()
+    }
+
+    fn clone_box(&self) -> Box<dyn crate::Animate> {
+        Box::new(self.clone())
     }
 }
