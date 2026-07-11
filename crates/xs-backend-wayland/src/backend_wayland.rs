@@ -70,6 +70,8 @@ impl Backend for BackendWayland {
         create_egl_window(&mut ctx, config.window_width, config.window_height);
         event_loop.initialize(ctx.app_context);
         let start = Instant::now();
+        ctx.swap_buffers();
+        ctx.swap_buffers();
         while ctx.app_context.running {
             ctx.app_context.now = (Instant::now() - start).as_millis();
             self.elapsed = start.elapsed().as_millis();
