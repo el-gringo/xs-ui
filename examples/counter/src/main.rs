@@ -1,30 +1,48 @@
+use std::time::Duration;
+
 use xs::{
-    Application, Color, Context, IntoElement, KeyCode, NavigationNode, ParentElement, Render, div,
-    text,
+    AnimationDirection::Alternate, Application, Color, Context, Easing, IntoElement, KeyCode,
+    NavigationNode, ParentElement, Render, div, text,
 };
+
+use crate::CounterState::{Decrement, Increment};
+
+#[derive(PartialEq, Clone, Copy)]
+enum CounterState {
+    None,
+    Increment,
+    Decrement,
+}
 
 struct Counter;
 impl Render for Counter {
     fn render(&self, ctx: &mut Context) -> impl IntoElement {
-        let state = ctx.use_state(|_, _| 0);
+        let state = ctx.use_state(|_, _| CounterState::None);
+        let state_value = ctx.use_state(|_, _| 0);
         let mut handle = ctx.focus_handle(NavigationNode::new().vertical().id("counter"));
+
         let s = state.clone();
+        let v = state_value.clone();
         handle.on_key_down(move |key_code| {
-            let state = s.clone();
-            let mut value = *state.read();
+            let v = v.clone();
+            let s = s.clone();
+            let mut value = *v.read();
             match key_code {
                 KeyCode::Up => {
                     value += 1;
+                    s.update(|| Increment);
                 }
                 KeyCode::Down => {
                     value -= 1;
+                    s.update(|| Decrement);
                 }
                 _ => {}
             };
-            state.update(|| value);
+            v.update(|| value);
             false
         });
-        let value = state.read().to_string();
+        let value = *state_value.read();
+        let state = *state.read();
         div()
             .testid("root")
             .width(ctx.app_context.screen.width as _)
@@ -49,6 +67,19 @@ impl Render for Counter {
                             .color(Color::WHITE)
                             .height(75.)
                             .font_size(36)
+                            .with_animation(
+                                "increment",
+                                Easing::new(Duration::from_millis(if Increment == state {
+                                    100
+                                } else {
+                                    0
+                                }))
+                                .repeat(1)
+                                .direction(Alternate),
+                                |this, delta| {
+                                    this.background_color(Color::rgba(delta, delta, delta, 1.0))
+                                },
+                            )
                             .child(text("Inc")),
                     )
                     .child(
@@ -60,7 +91,7 @@ impl Render for Counter {
                             .color(Color::BLACK)
                             .height(200.)
                             .font_size(64)
-                            .child(text(value)),
+                            .child(text(value.to_string())),
                     )
                     .child(
                         div()
@@ -72,7 +103,20 @@ impl Render for Counter {
                             .color(Color::WHITE)
                             .height(75.)
                             .font_size(36)
-                            .child(text("Dec")),
+                            .child(text("Dec"))
+                            .with_animation(
+                                "increment",
+                                Easing::new(Duration::from_millis(if Decrement == state {
+                                    100
+                                } else {
+                                    0
+                                }))
+                                .repeat(1)
+                                .direction(Alternate),
+                                |this, delta| {
+                                    this.background_color(Color::rgba(delta, delta, delta, 1.0))
+                                },
+                            ),
                     ),
             )
     }

@@ -47,7 +47,6 @@ impl<'a> Context<'a> {
         self.use_keyed_state(key, init)
     }
 
-    #[track_caller]
     pub fn use_keyed_state<S>(
         &mut self,
         key: &str,
@@ -57,15 +56,6 @@ impl<'a> Context<'a> {
         S: Any + 'static,
     {
         let node_id = self.node_id;
-        let caller = core::panic::Location::caller();
-        let prefixed = format!(
-            "{}:{}:{}:{}",
-            caller.file(),
-            caller.line(),
-            caller.column(),
-            key
-        );
-        let key = &prefixed;
         let needs_init = {
             let entry = self.app_context.states.entry(node_id).or_default();
             !entry.contains_key(key)

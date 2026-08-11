@@ -1,6 +1,8 @@
+use std::time::Duration;
+
 use crate::AnimationDirection;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum EasingTiming {
     Ease,
     EaseIn,
@@ -9,41 +11,30 @@ enum EasingTiming {
     Linear,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Easing {
-    start: f32,
-    value: f32,
-    target: f32,
-    duration: f32,
-    elapsed: f32,
+    duration: Duration,
+    elapsed: Duration,
     timing: EasingTiming,
-    repeat: bool,
+    repeat: u32,
     direction: AnimationDirection,
     forward: bool,
 }
 
 impl Easing {
-    pub fn new(value: f32) -> Self {
+    pub fn new(duration: Duration) -> Self {
         Self {
-            start: value,
-            value,
-            target: value,
-            duration: 250.0,
-            elapsed: 0.0,
+            duration,
+            elapsed: Duration::ZERO,
             timing: EasingTiming::Linear,
-            repeat: false,
+            repeat: 0,
             direction: AnimationDirection::Normal,
             forward: true,
         }
     }
 
-    pub fn duration(mut self, duration: f32) -> Self {
-        self.duration = duration;
-        self
-    }
-
-    pub fn repeat(mut self) -> Self {
-        self.repeat = true;
+    pub fn repeat(mut self, times: u32) -> Self {
+        self.repeat = times;
         self
     }
 
@@ -51,7 +42,9 @@ impl Easing {
         self.direction = direction;
         match direction {
             AnimationDirection::Normal | AnimationDirection::Alternate => self.forward = true,
-            AnimationDirection::Reverse | AnimationDirection::AlternateReverse => self.forward = false,
+            AnimationDirection::Reverse | AnimationDirection::AlternateReverse => {
+                self.forward = false;
+            }
         }
         self
     }
@@ -76,34 +69,34 @@ impl Easing {
         self
     }
 
-    pub fn snap_to(&mut self, target: f32) {
-        if (self.target - target).abs() > f32::EPSILON {
-            self.start = self.value;
-            self.target = target;
-            self.elapsed = 0.0;
+    fn progress(&self) -> f32 {
+        let t = (self.elapsed.as_secs_f32() / self.duration.as_secs_f32()).clamp(0.0, 1.0);
+        if self.forward {
+            t
+        } else {
+            1.0 - t
         }
     }
 
-    pub fn tick(&mut self, dt: f32) -> f32 {
-        self.elapsed += dt * 1000.0;
-        if self.repeat && self.elapsed >= self.duration {
-            self.elapsed %= self.duration;
-            self.advance_direction();
-        }
-        let t = if self.forward {
-            (self.elapsed / self.duration).clamp(0.0, 1.0)
-        } else {
-            1.0 - (self.elapsed / self.duration).clamp(0.0, 1.0)
-        };
-        let eased = match self.timing {
+    fn eased(&self) -> f32 {
+        let t = self.progress();
+        match self.timing {
             EasingTiming::Linear => t,
             EasingTiming::EaseIn => ease_in(t),
             EasingTiming::EaseOut => ease_out(t),
             EasingTiming::EaseInOut => ease_in_out(t),
             EasingTiming::Ease => ease_in_out(t),
-        };
-        self.value = self.start + (self.target - self.start) * eased;
-        self.value
+        }
+    }
+
+    pub fn tick(&mut self, dt: f32) -> f32 {
+        self.elapsed += Duration::from_secs_f32(dt);
+        while self.repeat > 0 && self.elapsed >= self.duration {
+            self.elapsed = self.elapsed.saturating_sub(self.duration);
+            self.repeat -= 1;
+            self.advance_direction();
+        }
+        self.eased()
     }
 
     fn advance_direction(&mut self) {
@@ -114,28 +107,23 @@ impl Easing {
             AnimationDirection::Reverse => {
                 self.forward = false;
             }
-            AnimationDirection::Alternate => {
-                self.forward = !self.forward;
-            }
-            AnimationDirection::AlternateReverse => {
+            AnimationDirection::Alternate | AnimationDirection::AlternateReverse => {
                 self.forward = !self.forward;
             }
         }
     }
 
     pub fn value(&self) -> f32 {
-        self.value
+        self.eased()
     }
 
     pub fn is_finished(&self) -> bool {
-        !self.repeat && self.elapsed >= self.duration
+        self.repeat == 0 && self.elapsed >= self.duration
     }
 }
 
 impl crate::Animate for Easing {
-    fn snap_to(&mut self, target: f32) {
-        self.snap_to(target);
-    }
+    fn snap_to(&mut self, _target: f32) {}
 
     fn tick(&mut self, dt: f32) -> f32 {
         self.tick(dt)
@@ -145,8 +133,63 @@ impl crate::Animate for Easing {
         self.value()
     }
 
+    fn is_finished(&self) -> bool {
+        self.repeat == 0 && self.elapsed >= self.duration
+    }
+
     fn clone_box(&self) -> Box<dyn crate::Animate> {
         Box::new(self.clone())
+    }
+
+    fn same_config(&self, other: &dyn crate::Animate) -> bool {
+        if std::any::Any::type_id(self) != std::any::Any::type_id(other) {
+            return false;
+        }
+        let other = (other as &dyn std::any::Any)
+            .downcast_ref::<Self>()
+            .unwrap();
+        self == other
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use super::*;
+    use crate::Animate;
+    use crate::AnimationDirection::Alternate;
+
+    #[test]
+    fn animates_from_zero_to_one_over_duration() {
+        let mut easing = Easing::new(Duration::from_millis(1000));
+        assert_eq!(easing.value(), 0.0);
+        assert!(!easing.is_finished());
+
+        let mut max = 0.0f32;
+        for _ in 0..120 {
+            let v = easing.tick(1.0 / 60.0);
+            max = max.max(v);
+        }
+        assert!((max - 1.0).abs() < 0.001, "peak should reach 1.0, got {max}");
+        assert!(easing.is_finished());
+        assert_eq!(easing.value(), 1.0);
+    }
+
+    #[test]
+    fn alternate_bounces_between_zero_and_one() {
+        let mut easing = Easing::new(Duration::from_millis(1000))
+            .repeat(u32::MAX)
+            .direction(Alternate);
+        let mut min = f32::MAX;
+        let mut max = f32::MIN;
+        for _ in 0..360 {
+            let v = easing.tick(1.0 / 60.0);
+            min = min.min(v);
+            max = max.max(v);
+        }
+        assert!((max - 1.0).abs() < 0.01, "peak should reach 1.0, got {max}");
+        assert!(min < 0.01, "should bounce back to zero, got {min}");
     }
 }
 

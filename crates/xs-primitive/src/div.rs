@@ -1,8 +1,8 @@
 use std::{any::TypeId, rc::Rc};
 
 use xs_core::{
-    AnyElement, AppContext, Context, ElementObject, IntoElement, NodeId, ParentElement,
-    TextProperties,
+    AnyElement, AppContext, Context, ElementObject, IntoElement, ParentElement, State,
+    TextProperties, state::AnyState,
 };
 use xs_layout::{
     AlignItems, BorderRadius, BorderSide, Borders, BoxShadow, Color, EdgeInsets, Flex,
@@ -10,9 +10,11 @@ use xs_layout::{
     StyleDisplay, StylePosition, View,
 };
 
+#[derive(Clone)]
 pub struct AnimationState {
     pub last_tick: u128,
     pub animate: Box<dyn xs_animation::Animate>,
+    pub template: Box<dyn xs_animation::Animate>,
 }
 
 impl xs_core::state::StateElement for AnimationState {
@@ -27,7 +29,6 @@ impl xs_core::state::StateElement for AnimationState {
 
 pub struct DivAnimation {
     pub id: &'static str,
-    pub target: f32,
     pub animate: Box<dyn xs_animation::Animate>,
     pub callback: Rc<dyn Fn(Div, f32) -> Div>,
 }
@@ -36,7 +37,6 @@ impl Clone for DivAnimation {
     fn clone(&self) -> Self {
         Self {
             id: self.id,
-            target: self.target,
             animate: self.animate.clone_box(),
             callback: Rc::clone(&self.callback),
         }
@@ -348,12 +348,10 @@ impl Div {
         mut self,
         id: &'static str,
         animate: A,
-        target: f32,
         callback: impl Fn(Div, f32) -> Div + 'static,
     ) -> Self {
         self.animation = Some(DivAnimation {
             id,
-            target,
             animate: Box::new(animate),
             callback: Rc::new(callback),
         });
@@ -384,7 +382,7 @@ impl ElementObject for Div {
         &self.children
     }
 
-    fn post_render(&self, ctx: &mut Context) {
+    fn post_render(&mut self, ctx: &mut Context) {
         if let Some(text_properties) = self.style.text_properties.clone() {
             ctx.text_properties = text_properties;
         }
@@ -395,93 +393,66 @@ impl ElementObject for Div {
         if let Some(h) = self.style.height {
             ctx.constraints.max.y = h;
         };
-    }
-
-    fn paint(&self, app_context: &mut AppContext, children: &[View]) -> View {
-        let effective_style = if let Some(ref anim) = self.animation {
-            use xs_core::state::{AnyState, State};
-
-            let anim_node_id: NodeId = {
-                let addr = anim.id.as_ptr() as usize;
-                (TypeId::of::<DivAnimation>(), addr, 0)
-            };
-            let state_id = anim.id.to_string();
-
-            let needs_init = !app_context
+        if let Some(ref anim) = self.animation {
+            let state_id = String::from(anim.id);
+            let anystate = ctx
+                .app_context
                 .states
-                .entry(anim_node_id)
+                .entry(ctx.node_id)
                 .or_default()
-                .contains_key(&state_id);
+                .entry(state_id)
+                .or_insert(AnyState::new(State::new(AnimationState {
+                    last_tick: ctx.app_context.now,
+                    animate: anim.animate.clone_box(),
+                    template: anim.animate.clone_box(),
+                })));
+            let state = anystate.downcast::<AnimationState>().unwrap();
 
-            if needs_init {
-                let mut animate = anim.animate.clone_box();
-                animate.snap_to(anim.target);
-                let state = AnimationState {
-                    last_tick: app_context.now,
-                    animate,
-                };
-                app_context
-                    .states
-                    .entry(anim_node_id)
-                    .or_default()
-                    .insert(state_id.clone(), AnyState::new(State::new(state)));
+            let incoming = anim.animate.clone_box();
+            let retrigger = !state.read().template.same_config(&*incoming);
+            if retrigger {
+                state.mutate(|s| {
+                    s.animate = incoming.clone_box();
+                    s.template = incoming;
+                    s.last_tick = ctx.app_context.now;
+                });
             }
 
             let dt = {
-                let entry = app_context
-                    .states
-                    .get_mut(&anim_node_id)
-                    .and_then(|m| m.get_mut(&state_id))
-                    .unwrap();
-                let state = entry.downcast::<AnimationState>().unwrap();
                 let last_tick = state.read().last_tick;
-                let dt = app_context.now.saturating_sub(last_tick) as f32 / 1000.0;
+                let dt = ctx.app_context.now.saturating_sub(last_tick) as f32 / 1000.0;
                 dt.min(1.0)
             };
-
             if dt > 0.0 {
-                let entry = app_context
-                    .states
-                    .get_mut(&anim_node_id)
-                    .and_then(|m| m.get_mut(&state_id))
-                    .unwrap();
-                let state = entry.downcast::<AnimationState>().unwrap();
                 state.mutate(|s| {
                     s.animate.tick(dt);
-                    s.last_tick = app_context.now;
+                    s.last_tick = ctx.app_context.now;
                 });
             }
-            app_context.dirty = true;
+            let value = state.read().animate.value();
 
-            let value = {
-                let entry = app_context
-                    .states
-                    .get_mut(&anim_node_id)
-                    .and_then(|m| m.get_mut(&state_id))
-                    .unwrap();
-                let state = entry.downcast::<AnimationState>().unwrap();
-                state.read().animate.value()
-            };
+            let callback = anim.callback.clone();
+            let this = (callback)(self.clone(), value);
+            let animating = !state.read().animate.is_finished();
+            if animating {
+                ctx.app_context.dirty = true;
+            }
+            self.style = this.style;
+        }
+    }
 
-            let mut div_for_callback = self.clone();
-            div_for_callback.animation = None;
-            let effective_div = (anim.callback)(div_for_callback, value);
-            effective_div.style
-        } else {
-            self.style.clone()
-        };
-
+    fn paint(&self, app_context: &mut AppContext, children: &[View]) -> View {
+        let mut style = self.style.clone();
         let material = Material::Quad(Rc::new(QuadProps {
-            background: effective_style.background,
-            border: effective_style.border,
-            border_radius: effective_style.border_radius,
-            box_shadow: effective_style.box_shadow,
-            overflow: effective_style.overflow,
-            background_image: app_context.load_image(effective_style.background_image.clone()),
+            background: style.background,
+            border: style.border,
+            border_radius: style.border_radius,
+            box_shadow: style.box_shadow,
+            overflow: style.overflow,
+            background_image: app_context.load_image(style.background_image.clone()),
         }));
-        match effective_style.position {
+        match style.position {
             StylePosition::Absolute => {
-                let mut style = effective_style;
                 style.position = StylePosition::Static;
                 let material = Some(material);
                 Rc::new(Positioned {
@@ -496,7 +467,7 @@ impl ElementObject for Div {
             StylePosition::Static => {
                 let material = Some(material);
                 Rc::new(Flex {
-                    style: effective_style,
+                    style,
                     material,
                     children: children.to_vec(),
                 })

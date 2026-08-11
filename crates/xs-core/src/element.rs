@@ -43,7 +43,7 @@ pub trait ElementObject {
     fn children(&self) -> &[AnyElement] {
         &[]
     }
-    fn post_render(&self, _ctx: &mut Context) {}
+    fn post_render(&mut self, _ctx: &mut Context) {}
     fn paint(&self, app_context: &mut AppContext, views: &[View]) -> View;
     fn resolve(&mut self, _ctx: &mut Context) -> Option<AnyElement> {
         None
@@ -78,9 +78,7 @@ impl<T: Render + 'static> From<T> for DeferredRender {
         let render = Rc::new(value);
         let render_clone = render.clone();
         Self {
-            render_fn: Rc::new(move |ctx: &mut Context| {
-                render_clone.render(ctx).into_element()
-            }),
+            render_fn: Rc::new(move |ctx: &mut Context| render_clone.render(ctx).into_element()),
             tag,
             render_id: id,
         }

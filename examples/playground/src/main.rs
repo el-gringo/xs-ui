@@ -1,13 +1,13 @@
+use std::time::Duration;
+
 use xs::{
-    AnimationDirection::Alternate, Application, Color, Context, ParentElement, Render, Spring, div,
+    AnimationDirection::Alternate, Application, Color, Context, Easing, ParentElement, Render,
+    Spring, div,
 };
 
 struct App;
 impl Render for App {
     fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
-        let state = ctx.use_state(|_, _| 600.);
-        let value = *state.read();
-
         div()
             .testid("root")
             .width(ctx.app_context.screen.width as _)
@@ -16,37 +16,60 @@ impl Render for App {
             .child(
                 div()
                     .absolute()
-                    .top(100.)
-                    .left(100.)
+                    .top(50.)
                     .width(100.)
                     .height(100.)
                     .background(Color::RED)
                     .with_animation(
-                        "box1",
-                        Spring::new(0.0).repeat().direction(Alternate),
-                        value,
+                        "spring-forward",
+                        Spring::new(600.).repeat(u32::MAX).direction(Alternate),
+                        |this, delta| this.left(100. + delta),
+                    ),
+            )
+            .child(
+                div()
+                    .absolute()
+                    .top(200.)
+                    .width(100.)
+                    .height(100.)
+                    .background(Color::BLUE)
+                    .with_animation(
+                        "spring-backward",
+                        Spring::new(600.).repeat(u32::MAX).direction(Alternate),
                         |this, delta| {
-                            eprintln!("delta box1: {delta}");
-                            this.left(100. + delta)
+                            eprintln!("delta box2: {delta}");
+                            this.left(700. - delta)
                         },
                     ),
             )
             .child(
                 div()
                     .absolute()
-                    .top(250.)
-                    .left(700.)
+                    .top(350.)
                     .width(100.)
                     .height(100.)
-                    .background(Color::BLUE)
+                    .background(Color::GREEN)
                     .with_animation(
-                        "box2",
-                        Spring::new(700.0).repeat().direction(Alternate),
-                        100.,
-                        |this, delta| {
-                            eprintln!("delta box2: {delta}");
-                            this.left(delta)
-                        },
+                        "easing-forward",
+                        Easing::new(Duration::from_millis(600))
+                            .repeat(u32::MAX)
+                            .direction(Alternate),
+                        |this, delta| this.left(100. + delta * 600.),
+                    ),
+            )
+            .child(
+                div()
+                    .absolute()
+                    .top(500.)
+                    .width(100.)
+                    .height(100.)
+                    .background(Color::YELLOW)
+                    .with_animation(
+                        "easing-backward",
+                        Easing::new(Duration::from_millis(600))
+                            .repeat(u32::MAX)
+                            .direction(Alternate),
+                        |this, delta| this.left(700. - delta * 600.),
                     ),
             )
     }

@@ -11,10 +11,16 @@ pub struct Gradient {
 }
 
 impl Gradient {
+    #[must_use]
     pub fn linear(start: Color, end: Color) -> Self {
-        Gradient { start, end, angle: 0.0 }
+        Gradient {
+            start,
+            end,
+            angle: 0.0,
+        }
     }
 
+    #[must_use]
     pub fn angled(start: Color, end: Color, angle: f32) -> Self {
         Gradient { start, end, angle }
     }
