@@ -127,8 +127,7 @@ impl<T: Default + 'static> Render for Grid<T> {
         let data_start = new_offset * columns;
         let data_end = data_start + render_cells;
 
-        let mut cell_rows: Vec<Vec<AnyElement>> =
-            vec![Vec::with_capacity(columns); render_rows];
+        let mut cell_rows: Vec<Vec<AnyElement>> = vec![Vec::with_capacity(columns); render_rows];
         for i in data_start..data_end {
             let row = (i - data_start) / columns;
             if i < total_items {
@@ -156,13 +155,11 @@ impl<T: Default + 'static> Render for Grid<T> {
             })
             .collect();
 
-        div()
-            .width((self.cell_width + gap) * columns as f32)
-            .child(
-                scroller()
-                    .scroll_to(scroll_position as _)
-                    .children(vec![div().children(rows)]),
-            )
+        div().width((self.cell_width + gap) * columns as f32).child(
+            scroller()
+                .scroll_to(scroll_position as _)
+                .children(vec![div().children(rows)]),
+        )
     }
 }
 

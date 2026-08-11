@@ -120,7 +120,7 @@ impl<'a> Context<'a> {
         let key = &format!("{}:{}:{}", caller.file(), caller.line(), caller.column());
 
         let anim = self.use_keyed_state::<T>(&format!("{}-value", key), move |_, _| template);
-        let prev_time = self.use_keyed_state::<u128>(&format!("{}-value", key), |_, _| 0);
+        let prev_time = self.use_keyed_state::<u128>(&format!("{}-prev-time", key), |_, _| 0);
 
         let current = anim.read().value();
         if current == target {
