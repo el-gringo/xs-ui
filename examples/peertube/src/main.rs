@@ -24,6 +24,7 @@ impl Render for Peertube {
             Vec::new()
         });
 
+        let count = videos.read().clone().len();
         div()
             .testid("app")
             .row()
@@ -46,22 +47,33 @@ impl Render for Peertube {
                         .overflow(Overflow::Hidden)
                         .width(1200.)
                         .justify_content(JustifyContent::Center)
-                        .child(
-                            grid()
-                                .items(videos.read().clone())
-                                .columns(3)
-                                .rows(3)
-                                .cell_width(320.)
-                                .cell_height(320.)
-                                .gap(48.)
-                                .cell_renderer(|index, video, _ctx| -> xs::AnyElement {
-                                    card()
-                                        .id(format!("card-{index}").leak())
-                                        .thumbnail(video.thumbnail_url())
-                                        .title(video.name.clone())
-                                        .into()
-                                }),
-                        ),
+                        .when(count == 0, |this| {
+                            this.child(
+                                div()
+                                    .font_size(32)
+                                    .color(Color::WHITE)
+                                    .justify_content(JustifyContent::Center)
+                                    .child(text("LOADING...")),
+                            )
+                        })
+                        .when(count > 0, |this| {
+                            this.child(
+                                grid()
+                                    .items(videos.read().clone())
+                                    .columns(3)
+                                    .rows(3)
+                                    .cell_width(320.)
+                                    .cell_height(320.)
+                                    .gap(48.)
+                                    .cell_renderer(|index, video, _ctx| -> xs::AnyElement {
+                                        card()
+                                            .id(format!("card-{index}").leak())
+                                            .thumbnail(video.thumbnail_url())
+                                            .title(video.name.clone())
+                                            .into()
+                                    }),
+                            )
+                        }),
                 ]),
             )
     }

@@ -4,6 +4,9 @@ pub use animate::animate;
 mod animation;
 pub use animation::WithAnimation;
 
+mod conditional;
+pub use conditional::Conditional;
+
 mod div;
 pub use div::{Div, div};
 
