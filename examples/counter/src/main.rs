@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use xs::{
     AnimationDirection::Alternate, Application, Color, Context, Easing, IntoElement, KeyCode,
-    NavigationNode, ParentElement, Render, div, text,
+    NavigationNode, ParentElement, Render, WithAnimation, div, text,
 };
 
 use crate::CounterState::{Decrement, Increment};

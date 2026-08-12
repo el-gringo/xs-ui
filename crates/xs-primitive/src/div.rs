@@ -340,23 +340,6 @@ impl Div {
     pub fn when(self, condition: bool, mut callback: impl FnMut(Self) -> Self) -> Self {
         if condition { callback(self) } else { self }
     }
-
-    //
-    // ANIMATION
-    //
-    pub fn with_animation<A: xs_animation::Animate + 'static>(
-        mut self,
-        id: &'static str,
-        animate: A,
-        callback: impl Fn(Div, f32) -> Div + 'static,
-    ) -> Self {
-        self.animation = Some(DivAnimation {
-            id,
-            animate: Box::new(animate),
-            callback: Rc::new(callback),
-        });
-        self
-    }
 }
 
 impl IntoElement for Div {

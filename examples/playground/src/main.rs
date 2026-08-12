@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use xs::{
     AnimationDirection::Alternate, Application, Color, Context, Easing, ParentElement, Render,
-    Spring, div,
+    Spring, WithAnimation, div,
 };
 
 struct App;

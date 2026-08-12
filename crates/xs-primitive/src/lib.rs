@@ -1,6 +1,9 @@
 mod animate;
 pub use animate::animate;
 
+mod animation;
+pub use animation::WithAnimation;
+
 mod div;
 pub use div::{Div, div};
 
