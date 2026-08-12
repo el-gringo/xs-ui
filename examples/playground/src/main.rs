@@ -1,9 +1,6 @@
 use std::time::Duration;
 
-use xs::{
-    AnimationDirection::Alternate, Application, Color, Context, Easing, ParentElement, Render,
-    Spring, WithAnimation, div,
-};
+use xs::{AnimationDirection::Alternate, Application, prelude::*};
 
 struct App;
 impl Render for App {

@@ -8,3 +8,10 @@ pub use xs_core::{
 };
 pub use xs_layout::*;
 pub use xs_primitive::*;
+
+pub mod prelude {
+    pub use crate::{
+        Animate, AnyElement, Color, Context, Easing, ElementObject, IntoElement, ParentElement,
+        Render, Spring, WithAnimation, div, grid, text,
+    };
+}

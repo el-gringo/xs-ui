@@ -1,9 +1,6 @@
 use std::time::Duration;
 
-use xs::{
-    AnimationDirection::Alternate, Application, Color, Context, Easing, IntoElement, KeyCode,
-    NavigationNode, ParentElement, Render, WithAnimation, div, text,
-};
+use xs::{AnimationDirection::Alternate, Application, KeyCode, NavigationNode, prelude::*};
 
 use crate::CounterState::{Decrement, Increment};
 
