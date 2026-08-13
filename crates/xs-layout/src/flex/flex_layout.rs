@@ -156,7 +156,8 @@ impl Layout for Flex {
             let mut current = Vec::new();
             let mut current_main = 0.0f32;
             for item in items.drain(..) {
-                let item_main = item.main(main_is_x);
+                let (mm_main_start, mm_main_end) = item.main_margin(main_is_x);
+                let item_main = item.main(main_is_x) + mm_main_start + mm_main_end;
                 if !current.is_empty() && current_main + gap + item_main > container_main {
                     lines.push(current);
                     current = Vec::new();
@@ -179,7 +180,12 @@ impl Layout for Flex {
         let total_main: f32 = lines
             .iter()
             .map(|l| {
-                l.iter().map(|i| i.main(main_is_x)).sum::<f32>()
+                l.iter()
+                    .map(|i| {
+                        let (mm_start, mm_end) = i.main_margin(main_is_x);
+                        i.main(main_is_x) + mm_start + mm_end
+                    })
+                    .sum::<f32>()
                     + gap * (l.len().saturating_sub(1)) as f32
             })
             .sum();
@@ -247,10 +253,14 @@ impl Layout for Flex {
             .iter()
             .map(|l| {
                 l.iter()
-                    .map(|i| i.cross(main_is_x))
+                    .map(|i| {
+                        let (mc_start, mc_end) = i.cross_margin(main_is_x);
+                        i.cross(main_is_x) + mc_start + mc_end
+                    })
                     .fold(0.0f32, |a, b| a.max(b))
             })
-            .sum();
+            .sum::<f32>()
+            + gap * (lines.len().saturating_sub(1)) as f32;
 
         let mut child_ids = Vec::new();
         let padding_min = style.padding.min();
@@ -264,7 +274,10 @@ impl Layout for Flex {
         for (_line_idx, line) in lines.iter().enumerate() {
             let line_cross: f32 = line
                 .iter()
-                .map(|i| i.cross(main_is_x))
+                .map(|i| {
+                    let (mc_start, mc_end) = i.cross_margin(main_is_x);
+                    i.cross(main_is_x) + mc_start + mc_end
+                })
                 .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                 .unwrap_or(0.0);
             let line_cross_start = cross_pos;
@@ -295,10 +308,10 @@ impl Layout for Flex {
                         let px = if main_is_x {
                             cursor + margin_main_start + style.padding.left + style.border.min().x
                         } else {
-                            cross_pos + cross_offset
+                            cross_pos + cross_offset + margin_cross_start
                         };
                         let py = if main_is_x {
-                            line_cross_start + cross_offset
+                            line_cross_start + cross_offset + margin_cross_start
                         } else {
                             cursor + margin_main_start + style.padding.top + style.border.min().y
                         };
@@ -380,66 +393,64 @@ impl Layout for Flex {
 
 #[cfg(test)]
 mod tests {
-use super::*;
-use crate::{
-    Background, Borders, Color, FlexDirection, QuadProps, Style, View,
-};
-use std::rc::Rc;
+    use super::*;
+    use crate::{Background, Borders, Color, FlexDirection, QuadProps, Style, View};
+    use std::rc::Rc;
 
-fn flex(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
-    Flex {
-        style: Style {
-            width,
-            height,
-            ..Default::default()
-        },
-        material: None,
-        children,
+    fn flex(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
+        Flex {
+            style: Style {
+                width,
+                height,
+                ..Default::default()
+            },
+            material: None,
+            children,
+        }
     }
-}
 
-fn child(w: f32, h: f32) -> View {
-    let mut flex = flex(Some(w), Some(h), vec![]);
-    flex.material = Some(Material::Quad(Rc::new(QuadProps {
-        background: Background::Color(Color::rgba(255.0, 0.0, 0.0, 255.0)),
-        border: Borders::none(),
-        ..Default::default()
-    })));
-    Rc::new(flex)
-}
+    fn child(w: f32, h: f32) -> View {
+        let mut flex = flex(Some(w), Some(h), vec![]);
+        flex.material = Some(Material::Quad(Rc::new(QuadProps {
+            background: Background::Color(Color::rgba(255.0, 0.0, 0.0, 255.0)),
+            border: Borders::none(),
+            ..Default::default()
+        })));
+        Rc::new(flex)
+    }
 
-fn child_with_margin(w: f32, h: f32, margin: EdgeInsets) -> Flex {
-    let mut flex = flex(Some(w), Some(h), vec![]);
-    flex.style.margin = margin;
-    flex.material = Some(Material::Quad(Rc::new(QuadProps {
-        background: Background::Color(Color::rgba(255.0, 0.0, 0.0, 255.0)),
-        border: Borders::none(),
-        ..Default::default()
-    })));
-    flex
-}
+    fn child_with_margin(w: f32, h: f32, margin: EdgeInsets) -> Flex {
+        let mut flex = flex(Some(w), Some(h), vec![]);
+        flex.style.margin = margin;
+        flex.material = Some(Material::Quad(Rc::new(QuadProps {
+            background: Background::Color(Color::rgba(255.0, 0.0, 0.0, 255.0)),
+            border: Borders::none(),
+            ..Default::default()
+        })));
+        flex
+    }
 
-fn row(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
-    let mut flex = flex(width, height, children);
-    flex.style.flex_direction = FlexDirection::Row;
-    flex
-}
+    fn row(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
+        let mut flex = flex(width, height, children);
+        flex.style.flex_direction = FlexDirection::Row;
+        flex
+    }
 
-fn column(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
-    let mut flex = flex(width, height, children);
-    flex.style.flex_direction = FlexDirection::Column;
-    flex
-}
+    fn column(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
+        let mut flex = flex(width, height, children);
+        flex.style.flex_direction = FlexDirection::Column;
+        flex
+    }
 
-fn card(width: Option<f32>, height: Option<f32>) -> Flex {
-    let mut flex = flex(width, height, Vec::new());
-    flex.material = Some(Material::Quad(Rc::new(QuadProps {
-        background: Background::Color(Color::rgba(255.0, 255.0, 255.0, 255.0)),
-        border: Borders::all(Color::rgba(178.0, 178.0, 178.0, 255.0), 1.0),
-        ..Default::default()
-    })));
-    flex
-}
+    fn card(width: Option<f32>, height: Option<f32>) -> Flex {
+        let mut flex = flex(width, height, Vec::new());
+        flex.material = Some(Material::Quad(Rc::new(QuadProps {
+            background: Background::Color(Color::rgba(255.0, 255.0, 255.0, 255.0)),
+            border: Borders::all(Color::rgba(178.0, 178.0, 178.0, 255.0), 1.0),
+            ..Default::default()
+        })));
+        flex
+    }
 
     #[test]
     fn empty_flex_fills_parent() {
@@ -606,6 +617,34 @@ fn card(width: Option<f32>, height: Option<f32>) -> Flex {
             c1.bounds.y, c2.bounds.y,
             "items should be on same line when no wrap"
         );
+    }
+
+    #[test]
+    fn flex_wrap_applies_vertical_margins() {
+        let mut flex = row(
+            Some(110.),
+            Some(400.),
+            vec![
+                Rc::new(child_with_margin(100.0, 100.0, EdgeInsets::all(5.0))),
+                Rc::new(child_with_margin(100.0, 100.0, EdgeInsets::all(5.0))),
+                Rc::new(child_with_margin(100.0, 100.0, EdgeInsets::all(5.0))),
+            ],
+        );
+        flex.style.flex_wrap = FlexWrap::Wrap;
+
+        let mut tree = LayoutTree::new();
+        let result = flex.layout(
+            &mut tree,
+            &BoxConstraints::from_max(Vector2::new(500.0, 500.0)),
+        );
+
+        let c1 = tree.get(result.children[0]).unwrap();
+        let c2 = tree.get(result.children[1]).unwrap();
+        let c3 = tree.get(result.children[2]).unwrap();
+
+        assert_eq!(c1.bounds.y, 5.0, "first item should keep its top margin");
+        assert_eq!(c2.bounds.y, 115.0, "second line should account for margins");
+        assert_eq!(c3.bounds.y, 225.0, "third line should account for margins");
     }
 
     #[test]
