@@ -1,19 +1,14 @@
 use crate::RendererOpenGl;
-use xs_core::{AppContext, Color};
-use xs_gl::{
-    Buffer, GL_FLOAT, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, GL_UNSIGNED_SHORT, Shader,
-    glActiveTexture, glBindTexture, glDrawElements,
-};
+use xs_core::Color;
+use xs_gl::{Buffer, GL_FLOAT, Shader};
 use xs_layout::{Background, QuadProps};
 use xs_math::Rectangle;
 
-#[rustfmt::skip]
-const QUAD_VERTICES: &[f32] = &[
-    0.0, 0.0,
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-];
+/// Number of f32 components in one interleaved quad vertex.
+pub(crate) const QUAD_VERTEX_FLOATS: usize = 46;
+/// Number of f32 components for a single corner (position + texture coords).
+const CORNER_FLOATS: usize = 4;
+const VERTICES_PER_QUAD: usize = 6;
 
 impl RendererOpenGl {
     pub fn initialize_quad_shader(&mut self) {
@@ -23,29 +18,47 @@ impl RendererOpenGl {
         ) {
             Ok(mut shader) => {
                 let size_of_float = std::mem::size_of::<f32>();
-                let stride = 2 * size_of_float as i32;
+                let stride = (QUAD_VERTEX_FLOATS * size_of_float) as i32;
+                let offset = |component: usize| (component * size_of_float) as i64;
                 let buffer = Buffer::new()
-                    .add_attribute("a_position", 2, GL_FLOAT, false, stride, 0)
-                    .add_attribute("a_textureCoords", 2, GL_FLOAT, false, stride, 0);
-                buffer.push_data(QUAD_VERTICES);
+                    .add_attribute("a_position", 2, GL_FLOAT, false, stride, offset(0))
+                    .add_attribute(
+                        "a_textureCoords",
+                        2,
+                        GL_FLOAT,
+                        false,
+                        stride,
+                        offset(2),
+                    )
+                    .add_attribute("a_box", 4, GL_FLOAT, false, stride, offset(4))
+                    .add_attribute("a_color", 4, GL_FLOAT, false, stride, offset(8))
+                    .add_attribute("a_gradientStart", 4, GL_FLOAT, false, stride, offset(12))
+                    .add_attribute("a_gradientEnd", 4, GL_FLOAT, false, stride, offset(16))
+                    .add_attribute("a_gradientAngle", 1, GL_FLOAT, false, stride, offset(20))
+                    .add_attribute("a_colorAlpha", 1, GL_FLOAT, false, stride, offset(21))
+                    .add_attribute("a_shadow", 4, GL_FLOAT, false, stride, offset(22))
+                    .add_attribute("a_shadowColor", 4, GL_FLOAT, false, stride, offset(26))
+                    .add_attribute("a_borderColor", 4, GL_FLOAT, false, stride, offset(30))
+                    .add_attribute("a_borderWidth", 4, GL_FLOAT, false, stride, offset(34))
+                    .add_attribute("a_borderRadius", 4, GL_FLOAT, false, stride, offset(38))
+                    .add_attribute("a_clip", 4, GL_FLOAT, false, stride, offset(42));
                 shader.add_buffer(buffer);
                 shader.use_program();
-                self.add_shader("quad", shader)
+                self.add_shader("quad", shader);
             }
             Err(error) => panic!("Error in quad shader: {}", error),
         }
     }
 
-    pub fn render_quad(
-        &mut self,
-        ctx: &AppContext,
+    /// Appends the six triangles of one quad to the batch, expanding the
+    /// shadow padding into the geometry so no per-quad uniforms are needed.
+    pub fn push_quad(
+        &self,
         quad: &Rectangle,
         props: &QuadProps,
         clip: Option<Rectangle>,
+        out: &mut Vec<f32>,
     ) {
-        let texture_place_holder = self.texture_place_holder;
-        let shader = self.get_shader("quad");
-        shader.use_program();
         let borders = [
             props.border.top,
             props.border.right,
@@ -59,43 +72,73 @@ impl RendererOpenGl {
                 b.map_or(Color::TRANSPARENT, |b| b.color)
             });
         let border_width = borders.map(|b| b.map_or(0.0, |b| b.width));
-        let texture = props
-            .background_image
-            .clone()
-            .map_or(texture_place_holder, |img| img.texture);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        shader.uniform_2f(
-            "u_resolution",
-            ctx.screen.width as _,
-            ctx.screen.height as _,
-        );
-        shader.uniform_4fv("u_box", *quad);
-        match props.background {
-            Background::Color(c) => {
-                shader.uniform_4fv("u_color", c);
-                shader.uniform_1f("u_gradientAngle", -1.0);
-            }
-            Background::Gradient(g) => {
-                shader.uniform_4fv("u_color", g.start);
-                shader.uniform_4fv("u_gradientStart", g.start);
-                shader.uniform_4fv("u_gradientEnd", g.end);
-                shader.uniform_1f("u_gradientAngle", g.angle);
-            }
-        }
-        shader.uniform_1f("u_colorAlpha", 1.0);
-        shader.uniform_4fv("u_shadow", props.box_shadow);
-        shader.uniform_4fv("u_shadowColor", props.box_shadow.color);
-        shader.uniform_4fv("u_borderWidth", border_width);
-        shader.uniform_4fv("u_borderRadius", props.border_radius);
-        shader.uniform_4fv("u_borderColor", border_color);
-        shader.uniform_1i("u_texture", 0);
+
+        let (color, gradient_start, gradient_end, gradient_angle) = match props.background {
+            Background::Color(c) => (c, c, c, -1.0),
+            Background::Gradient(g) => (g.start, g.start, g.end, g.angle),
+        };
+
+        let shadow: [f32; 4] = props.box_shadow.into();
+        let shadow_color: [f32; 4] = props.box_shadow.color.into();
+        let border_radius: [f32; 4] = props.border_radius.into();
+        let color: [f32; 4] = color.into();
+        let gradient_start: [f32; 4] = gradient_start.into();
+        let gradient_end: [f32; 4] = gradient_end.into();
+        let border_color: [f32; 4] = border_color.into();
 
         let default_no_clip = Rectangle::new(0.0, 0.0, f32::INFINITY, f32::INFINITY);
-        let clip_rect = clip.as_ref().unwrap_or(&default_no_clip);
-        shader.uniform_4fv("u_clip", *clip_rect);
+        let clip = clip.as_ref().unwrap_or(&default_no_clip);
+        let clip: [f32; 4] = [clip.x, clip.y, clip.width, clip.height];
 
-        shader.bind_buffers();
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+        let box_: [f32; 4] = [quad.x, quad.y, quad.width, quad.height];
+
+        // Shadow padding covers the box plus the gaussian falloff (the shader
+        // drops to <1% beyond 3 sigma), the shadow offset and the spread.
+        let sigma = shadow[2] + 0.25;
+        let padding =
+            4.0 * sigma + shadow[0].abs().max(shadow[1].abs()) + shadow[3].max(0.0);
+        let x1 = quad.x - padding;
+        let y1 = quad.y - padding;
+        let x2 = quad.x + quad.width + padding;
+        let y2 = quad.y + quad.height + padding;
+
+        let mut vertex = [0.0f32; QUAD_VERTEX_FLOATS];
+        vertex[4..8].copy_from_slice(&box_);
+        vertex[8..12].copy_from_slice(&color);
+        vertex[12..16].copy_from_slice(&gradient_start);
+        vertex[16..20].copy_from_slice(&gradient_end);
+        vertex[20] = gradient_angle;
+        vertex[21] = 1.0;
+        vertex[22..26].copy_from_slice(&shadow);
+        vertex[26..30].copy_from_slice(&shadow_color);
+        vertex[30..34].copy_from_slice(&border_color);
+        vertex[34..38].copy_from_slice(&border_width);
+        vertex[38..42].copy_from_slice(&border_radius);
+        vertex[42..46].copy_from_slice(&clip);
+
+        // UVs are mapped to the true box (not the padded geometry) so the
+        // shadow region samples the box edge texels via CLAMP_TO_EDGE.
+        let inv_w = if quad.width > 0.0 { 1.0 / quad.width } else { 0.0 };
+        let inv_h = if quad.height > 0.0 { 1.0 / quad.height } else { 0.0 };
+        let corners = [
+            (x1, y1, (x1 - quad.x) * inv_w, (y1 - quad.y) * inv_h),
+            (x2, y1, (x2 - quad.x) * inv_w, (y1 - quad.y) * inv_h),
+            (x2, y2, (x2 - quad.x) * inv_w, (y2 - quad.y) * inv_h),
+            (x1, y2, (x1 - quad.x) * inv_w, (y2 - quad.y) * inv_h),
+        ];
+        let triangle_order = [0usize, 1, 3, 1, 2, 3];
+
+        let base = out.len();
+        out.resize(base + VERTICES_PER_QUAD * QUAD_VERTEX_FLOATS, 0.0);
+        for (slot, &corner) in triangle_order.iter().enumerate() {
+            let (cx, cy, cu, cv) = corners[corner];
+            let start = base + slot * QUAD_VERTEX_FLOATS;
+            let (dst, head) = out[start..start + QUAD_VERTEX_FLOATS].split_at_mut(CORNER_FLOATS);
+            dst[0] = cx;
+            dst[1] = cy;
+            dst[2] = cu;
+            dst[3] = cv;
+            head.copy_from_slice(&vertex[CORNER_FLOATS..]);
+        }
     }
 }

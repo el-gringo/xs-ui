@@ -18,6 +18,11 @@ pub use decoration::*;
 mod flex;
 pub use flex::*;
 
+#[cfg(target_arch = "wasm32")]
+pub mod layout_prof {
+    pub use crate::flex::flex_layout::layout_prof::*;
+}
+
 mod image;
 pub use image::*;
 

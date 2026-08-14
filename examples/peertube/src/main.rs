@@ -19,12 +19,12 @@ impl Render for Peertube {
         let videos = ctx.use_state(|_, set_videos| {
             let client = PeerTubeClient::new();
             client.get_videos(0, 100, move |new_videos| {
-                set_videos.update(|| new_videos);
+                set_videos.update(|| std::rc::Rc::new(new_videos));
             });
-            Vec::new()
+            std::rc::Rc::new(Vec::new())
         });
 
-        let count = videos.read().clone().len();
+        let count = videos.read().len();
         div()
             .testid("app")
             .row()

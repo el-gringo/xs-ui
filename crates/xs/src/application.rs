@@ -11,6 +11,71 @@ use xs_core::{
 use xs_layout::Image;
 use xs_text_system::{AtlasAlpha, TextSystem};
 
+/// Temporary per-second max-duration profiler for the frame phases. Logs one
+/// line per second; remove once the slow frames are tracked down.
+#[cfg(target_arch = "wasm32")]
+mod frame_profile {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    static BE: AtomicU32 = AtomicU32::new(0);
+    static BET: AtomicU32 = AtomicU32::new(0);
+    static LAY: AtomicU32 = AtomicU32::new(0);
+    static REN: AtomicU32 = AtomicU32::new(0);
+    static TOT: AtomicU32 = AtomicU32::new(0);
+    static LAST: AtomicU32 = AtomicU32::new(0);
+
+    fn bump(max: &AtomicU32, v: u32) {
+        let mut cur = max.load(Ordering::Relaxed);
+        while v > cur {
+            match max.compare_exchange(cur, v, Ordering::Relaxed, Ordering::Relaxed) {
+                Ok(_) => break,
+                Err(actual) => cur = actual,
+            }
+        }
+    }
+
+    pub fn record(be: u32, bet: u32, lay: u32, ren: u32, tot: u32) {
+        bump(&BE, be);
+        bump(&BET, bet);
+        bump(&LAY, lay);
+        bump(&REN, ren);
+        bump(&TOT, tot);
+        let now = xs_js_sys::performance_now();
+        let last = LAST.load(Ordering::Relaxed);
+        if last == 0 {
+            LAST.store(now, Ordering::Relaxed);
+        } else if now.wrapping_sub(last) >= 1_000_000 {
+            let msg = format!(
+                "MAX be={}us bet={}us lay={}us ren={}us tot={}us",
+                BE.load(Ordering::Relaxed),
+                BET.load(Ordering::Relaxed),
+                LAY.load(Ordering::Relaxed),
+                REN.load(Ordering::Relaxed),
+                TOT.load(Ordering::Relaxed),
+            );
+            xs_js_sys::log(&msg);
+            let items = xs_layout::layout_prof::ITEMS_US.load(Ordering::Relaxed);
+            let place = xs_layout::layout_prof::PLACE_US.load(Ordering::Relaxed);
+            let frames = xs_layout::layout_prof::FRAMES.load(Ordering::Relaxed);
+            if frames > 0 {
+                xs_js_sys::log(&format!(
+                    "  flex items={}us place={}us frames={}",
+                    items,
+                    place,
+                    frames
+                ));
+                xs_layout::layout_prof::reset();
+            }
+            BE.store(0, Ordering::Relaxed);
+            BET.store(0, Ordering::Relaxed);
+            LAY.store(0, Ordering::Relaxed);
+            REN.store(0, Ordering::Relaxed);
+            TOT.store(0, Ordering::Relaxed);
+            LAST.store(now, Ordering::Relaxed);
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Application(AppConfig);
 
@@ -72,6 +137,8 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
     }
 
     fn frame(&mut self, ctx: &mut AppContext) -> bool {
+        #[cfg(target_arch = "wasm32")]
+        let frame_start = xs_js_sys::performance_now();
         self.read_messages(ctx);
         if PENDING_UPDATE.swap(false, Ordering::Relaxed) {
             ctx.dirty = true;
@@ -93,16 +160,45 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
             xs_core::Color::rgba(0.0, 0.0, 0.0, 1.0),
             constraints,
         );
+        #[cfg(target_arch = "wasm32")]
+        let t0 = xs_js_sys::performance_now();
         let root_element = self.root.render(&mut node_ctx).into_element();
+        #[cfg(target_arch = "wasm32")]
+        let build_ms = t0.wrapping_sub(frame_start).min(u32::MAX / 2);
         let root_nav_id = node_ctx.nav_id;
         drop(node_ctx);
         ctx.current_nav_node_id = root_nav_id;
-
+        #[cfg(target_arch = "wasm32")]
+        let t1 = xs_js_sys::performance_now();
         let widget_tree = self.renderer.build_element_tree(ctx, root_element);
+        #[cfg(target_arch = "wasm32")]
+        let build_tree_ms = t1.wrapping_sub(t0).min(u32::MAX / 2);
+        #[cfg(target_arch = "wasm32")]
+        let t2 = xs_js_sys::performance_now();
         let layout_tree =
             self.renderer
                 .layout(&widget_tree, ctx.screen.width as _, ctx.screen.height as _);
+        #[cfg(target_arch = "wasm32")]
+        let layout_ms = t2.wrapping_sub(t1).min(u32::MAX / 2);
+        #[cfg(target_arch = "wasm32")]
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static LOGGED: AtomicUsize = AtomicUsize::new(0);
+            if LOGGED.load(Ordering::Relaxed) < 3 {
+                LOGGED.fetch_add(1, Ordering::Relaxed);
+                xs_js_sys::log(&format!("layout boxes: {}", layout_tree.boxes.len()));
+            }
+        }
+        #[cfg(target_arch = "wasm32")]
+        let t3 = xs_js_sys::performance_now();
         self.renderer.render(ctx, &layout_tree);
+        #[cfg(target_arch = "wasm32")]
+        {
+            let render_ms = t3.wrapping_sub(t2).min(u32::MAX / 2);
+            let total_ms = t3.wrapping_sub(frame_start).min(u32::MAX / 2);
+            frame_profile::record(build_ms, build_tree_ms, layout_ms, render_ms, total_ms);
+        }
+
         true
     }
 }

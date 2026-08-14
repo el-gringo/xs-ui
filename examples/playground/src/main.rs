@@ -13,61 +13,33 @@ impl Render for App {
             .child(
                 div()
                     .absolute()
+                    .left(100.)
                     .top(50.)
-                    .width(100.)
-                    .height(100.)
-                    .background(Color::RED)
+                    .width(1105.)
+                    .height(2105.)
+                    .background(Color::rgba(0.1, 0.1, 0.1, 1.))
                     .with_animation(
                         "spring-forward",
-                        Spring::new(600.).repeat(u32::MAX).direction(Alternate),
-                        |this, delta| this.left(100. + delta),
-                    ),
-            )
-            .child(
-                div()
-                    .absolute()
-                    .top(200.)
-                    .width(100.)
-                    .height(100.)
-                    .background(Color::BLUE)
-                    .with_animation(
-                        "spring-backward",
-                        Spring::new(600.).repeat(u32::MAX).direction(Alternate),
-                        |this, delta| {
-                            eprintln!("delta box2: {delta}");
-                            this.left(700. - delta)
-                        },
-                    ),
-            )
-            .child(
-                div()
-                    .absolute()
-                    .top(350.)
-                    .width(100.)
-                    .height(100.)
-                    .background(Color::GREEN)
-                    .with_animation(
-                        "easing-forward",
-                        Easing::new(Duration::from_millis(600))
-                            .repeat(u32::MAX)
-                            .direction(Alternate),
-                        |this, delta| this.left(100. + delta * 600.),
-                    ),
-            )
-            .child(
-                div()
-                    .absolute()
-                    .top(500.)
-                    .width(100.)
-                    .height(100.)
-                    .background(Color::YELLOW)
-                    .with_animation(
-                        "easing-backward",
-                        Easing::new(Duration::from_millis(600))
-                            .repeat(u32::MAX)
-                            .direction(Alternate),
-                        |this, delta| this.left(700. - delta * 600.),
-                    ),
+                        Spring::new(1500.).repeat(u32::MAX).direction(Alternate),
+                        |this, delta| this.top(-1500. + delta),
+                    )
+                    .wrap()
+                    //.gap(5.)
+                    .padding(5.)
+                    .children((0..50).map(|_| {
+                        div()
+                            .wrap()
+                            .width(100.)
+                            .height(100.)
+                            .background(Color::RED)
+                            .border_radius_all(5.)
+                            .border(Color::WHITE, 2.)
+                            .gap(5.)
+                            .margin(5.)
+                            .child(div().height(10.).background(Color::BLUE))
+                            .child(div().height(10.).background(Color::GREEN))
+                            .child(div().height(10.).background(Color::YELLOW))
+                    })),
             )
     }
 }

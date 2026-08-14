@@ -247,6 +247,17 @@ const env = {
   now: function () {
     return Date.now() / 1000.0;
   },
+  performance_now() {
+    return performance.now() * 1000;
+  },
+  time: function (ptr, len) {
+    const label = getStringFromWasm0(ptr, len);
+    console.time(label);
+  },
+  time_end: function (ptr, len) {
+    const label = getStringFromWasm0(ptr, len);
+    console.timeEnd(label);
+  },
   canvas_width: function () {
     return Math.floor(canvas.width);
   },
@@ -349,7 +360,15 @@ const env = {
   },
   request_animation_frame(closure, vcall) {
     return requestAnimationFrame((now) => {
+      //const t0 = performance.now();
       wasm.callback_request_animation_frame(closure, vcall, now);
+      // const t1 = performance.now();
+      // console.log(
+      //   "raf_latency(ms):",
+      //   (t0 - now).toFixed(1),
+      //   "js_work(ms):",
+      //   (t1 - t0).toFixed(1),
+      // );
       const frame_duration = performance.now() - now;
       if (frame_duration > max_render_time) {
         max_render_time = frame_duration;
@@ -608,7 +627,8 @@ const env = {
     gl.bindBuffer(target, get_object(buffer));
   },
   glBufferData: function (target, size, ptr, usage) {
-    data = getArray(ptr, Float32Array, size);
+    // size is in bytes; Float32Array length is in elements (4 bytes each)
+    data = getArray(ptr, Float32Array, size >> 2);
     gl.bufferData(target, data, usage);
   },
   glBufferSubData: function (target, offset, size, data) {

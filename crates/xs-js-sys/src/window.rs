@@ -12,6 +12,8 @@ mod js {
         pub fn request_animation_frame(closure: *mut (), vcall: usize);
         pub fn window() -> u32;
         pub fn performance_now() -> u32;
+        pub fn time(ptr: u32, len: u32);
+        pub fn time_end(ptr: u32, len: u32);
     }
 }
 
@@ -37,6 +39,20 @@ pub fn window() -> impl Window {
 
 pub fn performance_now() -> u32 {
     unsafe { js::performance_now() }
+}
+
+pub fn time(label: &str) {
+    let bytes = label.as_bytes();
+    unsafe {
+        js::time(bytes.as_ptr() as u32, bytes.len() as u32);
+    }
+}
+
+pub fn time_end(label: &str) {
+    let bytes = label.as_bytes();
+    unsafe {
+        js::time_end(bytes.as_ptr() as u32, bytes.len() as u32);
+    }
 }
 
 pub fn log(message: &str) {

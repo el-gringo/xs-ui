@@ -6,6 +6,27 @@ use crate::{
 };
 use xs_math::{Rectangle, Vector2};
 
+#[cfg(target_arch = "wasm32")]
+pub mod layout_prof {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    pub static ITEMS_US: AtomicU32 = AtomicU32::new(0);
+    pub static PLACE_US: AtomicU32 = AtomicU32::new(0);
+    pub static FRAMES: AtomicU32 = AtomicU32::new(0);
+
+    #[inline]
+    pub fn add(acc: &AtomicU32, start: u32) {
+        let now = xs_js_sys::performance_now();
+        acc.fetch_add(now.wrapping_sub(start).min(200_000), Ordering::Relaxed);
+    }
+
+    pub fn reset() {
+        ITEMS_US.store(0, Ordering::Relaxed);
+        PLACE_US.store(0, Ordering::Relaxed);
+        FRAMES.store(0, Ordering::Relaxed);
+    }
+}
+
 struct FlexItem {
     size: Vector2,
     flex_grow: [f32; 2],
@@ -110,6 +131,8 @@ impl Layout for Flex {
         let container_main = if main_is_x { inner.x } else { inner.y };
         let inner_constraints = BoxConstraints::from_max(inner);
 
+        #[cfg(target_arch = "wasm32")]
+        let t_items = xs_js_sys::performance_now();
         let mut items: Vec<FlexItem> = self
             .children
             .iter()
@@ -146,6 +169,11 @@ impl Layout for Flex {
                 }
             })
             .collect();
+        #[cfg(target_arch = "wasm32")]
+        {
+            layout_prof::FRAMES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            layout_prof::add(&layout_prof::ITEMS_US, t_items);
+        }
 
         if is_reverse {
             items.reverse();
@@ -265,6 +293,8 @@ impl Layout for Flex {
         let mut child_ids = Vec::new();
         let padding_min = style.padding.min();
 
+        #[cfg(target_arch = "wasm32")]
+        let t_place = xs_js_sys::performance_now();
         let mut cross_pos = if main_is_x {
             padding_min.y + style.border.min().y
         } else {
@@ -340,6 +370,8 @@ impl Layout for Flex {
             child_ids.extend(line_ids);
             cross_pos += line_cross + gap;
         }
+        #[cfg(target_arch = "wasm32")]
+        layout_prof::add(&layout_prof::PLACE_US, t_place);
 
         if is_reverse {
             child_ids.reverse();
@@ -394,7 +426,11 @@ impl Layout for Flex {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Background, Borders, Color, FlexDirection, QuadProps, Style, View};
+    use crate::{
+        AlignItems, Background, BorderRadius, Borders, BoxShadow, Color, EdgeInsets,
+        FixedSize, FlexDirection, JustifyContent, QuadProps, Style, StylePosition,
+        TextProperties, TextVertices, View,
+    };
     use std::rc::Rc;
 
     fn flex(width: Option<f32>, height: Option<f32>, children: Vec<View>) -> Flex {
@@ -1343,5 +1379,205 @@ mod tests {
         assert_eq!(child_a.bounds.x, 0.0);
         assert_eq!(child_b.bounds.x, 80.0 + 10.0); // 80 width + 10 gap
         assert_eq!(child_c.bounds.x, 80.0 * 2.0 + 10.0 * 2.0);
+    }
+
+    #[test]
+    fn layout_bench_peertube_like_tree() {
+        fn text_node(w: f32, h: f32, verts: usize) -> View {
+            Rc::new(FixedSize {
+                width: w,
+                height: h,
+                material: Some(Material::Text(
+                    Color::WHITE,
+                    TextProperties::default(),
+                    Rc::new(TextVertices {
+                        vertices: vec![0.0; verts],
+                        width: w,
+                        height: h,
+                        ..Default::default()
+                    }),
+                )),
+            })
+        }
+
+        fn material_bg() -> Option<Material> {
+            Some(Material::Quad(Rc::new(QuadProps {
+                background: Background::Color(Color::BLACK),
+                border: Borders::all(Color::TRANSPARENT, 2.0),
+                border_radius: BorderRadius::new(8.0, 8.0, 8.0, 8.0),
+                box_shadow: BoxShadow::new(4.0, 4.0, 8.0, 0.0, Color::BLACK),
+                ..Default::default()
+            })))
+        }
+
+        fn card() -> View {
+            let thumbnail = Rc::new(Flex {
+                style: Style {
+                    width: Some(280.0),
+                    height: Some(157.0),
+                    margin: EdgeInsets {
+                        top: 8.0,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                children: vec![],
+                material: material_bg(),
+            });
+            let title_wrap = Rc::new(Flex {
+                style: Style {
+                    width: Some(280.0),
+                    height: Some(60.0),
+                    margin: EdgeInsets {
+                        top: 8.0,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                children: vec![text_node(280.0, 30.0, 300)],
+                material: None,
+            });
+            Rc::new(Flex {
+                style: Style {
+                    width: Some(320.0),
+                    height: Some(270.0),
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    ..Default::default()
+                },
+                children: vec![thumbnail, title_wrap],
+                material: material_bg(),
+            })
+        }
+
+        let mut rows: Vec<View> = Vec::new();
+        for row_index in 0..5 {
+            let mut cells = Vec::new();
+            for _ in 0..3 {
+                cells.push(card());
+            }
+            rows.push(Rc::new(Flex {
+                style: Style {
+                    flex_direction: FlexDirection::Row,
+                    gap: 48.0,
+                    height: Some(320.0),
+                    position: StylePosition::Absolute,
+                    top: Some(row_index as f32 * 320.0),
+                    ..Default::default()
+                },
+                children: cells,
+                material: None,
+            }));
+        }
+
+        let grid_rows = Rc::new(Flex {
+            style: Style::default(),
+            children: rows,
+            material: None,
+        });
+
+        let content = Rc::new(Flex {
+            style: Style {
+                flex_direction: FlexDirection::Column,
+                padding: EdgeInsets {
+                    top: 48.0,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            children: vec![grid_rows],
+            material: None,
+        });
+
+        let header = Rc::new(Flex {
+            style: Style {
+                flex_direction: FlexDirection::Column,
+                height: Some(80.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            children: vec![text_node(400.0, 60.0, 1200)],
+            material: material_bg(),
+        });
+
+        let body = Rc::new(Flex {
+            style: Style {
+                flex_direction: FlexDirection::Column,
+                ..Default::default()
+            },
+            children: vec![header, content],
+            material: None,
+        });
+
+        let mut sidebar_buttons: Vec<View> = Vec::new();
+        for _ in ["Movies", "Series", "Settings"] {
+            sidebar_buttons.push(Rc::new(Flex {
+                style: Style {
+                    width: Some(218.0),
+                    height: Some(40.0),
+                    flex_direction: FlexDirection::Row,
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..Default::default()
+                },
+                children: vec![text_node(100.0, 16.0, 150)],
+                material: material_bg(),
+            }));
+        }
+        let sidebar_body = Rc::new(Flex {
+            style: Style {
+                flex_direction: FlexDirection::Column,
+                gap: 16.0,
+                padding: EdgeInsets {
+                    top: 48.0,
+                    ..Default::default()
+                },
+                align_items: AlignItems::Center,
+                width: Some(300.0),
+                ..Default::default()
+            },
+            children: sidebar_buttons,
+            material: None,
+        });
+        let sidebar = Rc::new(Flex {
+            style: Style {
+                flex_direction: FlexDirection::Column,
+                width: Some(300.0),
+                ..Default::default()
+            },
+            children: vec![sidebar_body],
+            material: material_bg(),
+        });
+
+        let root = Rc::new(Flex {
+            style: Style {
+                flex_direction: FlexDirection::Row,
+                ..Default::default()
+            },
+            children: vec![sidebar, body],
+            material: material_bg(),
+        });
+
+        let constraints = BoxConstraints::from_max(Vector2::new(1600.0, 900.0));
+        for _ in 0..5 {
+            let mut tree = LayoutTree::new();
+            let _ = root.layout(&mut tree, &constraints);
+        }
+
+        const N: u32 = 1000;
+        let start = std::time::Instant::now();
+        let mut boxes = 0;
+        for _ in 0..N {
+            let mut tree = LayoutTree::new();
+            let _ = root.layout(&mut tree, &constraints);
+            boxes = tree.boxes.len();
+        }
+        let elapsed = start.elapsed().as_micros();
+        println!(
+            "layout bench: {boxes} boxes, {} us/frame ({} ms total for {N})",
+            elapsed / u128::from(N),
+            elapsed / 1000
+        );
     }
 }

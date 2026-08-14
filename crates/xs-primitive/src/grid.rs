@@ -1,4 +1,5 @@
 use std::cmp::max;
+use std::rc::Rc;
 
 use xs_core::{AnyElement, Context, IntoElement, NavigationNode, ParentElement, Render};
 
@@ -8,7 +9,7 @@ type CellRenderer<T> = dyn Fn(usize, &T, &mut Context) -> AnyElement;
 
 #[derive(Default)]
 pub struct Grid<T> {
-    pub items: Vec<T>,
+    pub items: Rc<Vec<T>>,
     pub columns: u32,
     pub rows: u32,
     pub cell_height: f32,
@@ -25,7 +26,7 @@ impl<T: Default + 'static> Grid<T> {
         Default::default()
     }
 
-    pub fn items(mut self, items: Vec<T>) -> Self {
+    pub fn items(mut self, items: Rc<Vec<T>>) -> Self {
         self.items = items;
         self
     }

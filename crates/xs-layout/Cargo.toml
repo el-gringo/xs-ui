@@ -7,5 +7,8 @@ edition.workspace = true
 [dependencies]
 xs-math.workspace = true
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+xs-js-sys.workspace = true
+
 [dev-dependencies]
 test_utils.workspace = true

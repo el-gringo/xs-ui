@@ -3,14 +3,18 @@ use std::collections::HashMap;
 use xs_core::{AppContext, AtlasInfo, ImageFormat, Renderer};
 use xs_gl::{
     GL_BLEND, GL_DEPTH_TEST, GL_ELEMENT_ARRAY_BUFFER, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
-    GL_STATIC_DRAW, Shader, glBindBuffer, glBlendFunc, glBufferData, glClearColor, glDisable,
-    glEnable, glFlush, glGenBuffers, glViewport, load_texture,
+    GL_STATIC_DRAW, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, Shader, glActiveTexture,
+    glBindBuffer, glBindTexture, glBlendFunc, glBufferData, glClearColor, glDisable,
+    glDrawArrays, glEnable, glFlush, glGenBuffers, glViewport, load_texture,
 };
 use xs_layout::{
     LayoutTree,
     Material::{Quad, Text},
 };
 use xs_math::{Rectangle, Vector2};
+
+use crate::render_quad::QUAD_VERTEX_FLOATS;
+use crate::render_text::TEXT_VERTEX_FLOATS;
 
 #[derive(Default)]
 pub struct RendererOpenGl {
@@ -73,6 +77,13 @@ impl Renderer for RendererOpenGl {
         let node_count = layout_tree.boxes.len();
         let mut clip_rects: Vec<Option<Rectangle>> = vec![None; node_count];
 
+        // Batch geometry per texture so all quads/text nodes sharing a
+        // texture are drawn in a single draw call.
+        let mut quad_batches: Vec<(u32, Vec<f32>)> = Vec::new();
+        let mut quad_indices: HashMap<u32, usize> = HashMap::new();
+        let mut text_batches: Vec<(u32, Vec<f32>)> = Vec::new();
+        let mut text_indices: HashMap<u32, usize> = HashMap::new();
+
         for (_, parent_id, _, child_id, child, offset) in layout_tree.iter() {
             let origin = Vector2::new(child.bounds.x, child.bounds.y);
             let min = offset + origin + child.margin.min();
@@ -97,17 +108,79 @@ impl Renderer for RendererOpenGl {
             {
                 match material {
                     Quad(props) => {
-                        self.render_quad(ctx, &quad, props, clip);
+                        let texture = props
+                            .background_image
+                            .as_ref()
+                            .map_or(self.texture_place_holder, |img| img.texture);
+                        let batch = match quad_indices.get(&texture) {
+                            Some(&index) => index,
+                            None => {
+                                quad_batches.push((texture, Vec::new()));
+                                let index = quad_batches.len() - 1;
+                                quad_indices.insert(texture, index);
+                                index
+                            }
+                        };
+                        self.push_quad(&quad, props, clip, &mut quad_batches[batch].1);
                     }
                     Text(color, text_properties, text_vertices) => {
                         let (atlas_texture, _atlas_font_size) = self
                             .fonts
                             .get(&(&text_properties.font_family, text_properties.font_weight))
                             .unwrap();
-                        self.render_text(ctx, &quad, color, text_vertices, *atlas_texture, clip);
+                        let batch = match text_indices.get(atlas_texture) {
+                            Some(&index) => index,
+                            None => {
+                                text_batches.push((*atlas_texture, Vec::new()));
+                                let index = text_batches.len() - 1;
+                                text_indices.insert(*atlas_texture, index);
+                                index
+                            }
+                        };
+                        self.push_text(
+                            &quad,
+                            color,
+                            text_vertices,
+                            clip,
+                            &mut text_batches[batch].1,
+                        );
                     }
                 }
             }
+        }
+
+        let quad_shader = self.get_shader("quad");
+        quad_shader.use_program();
+        quad_shader.uniform_2f(
+            "u_resolution",
+            ctx.screen.width as _,
+            ctx.screen.height as _,
+        );
+        for (texture, vertices) in &quad_batches {
+            if vertices.is_empty() {
+                continue;
+            }
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, *texture);
+            quad_shader.get_buffer(0).push_data(vertices);
+            glDrawArrays(GL_TRIANGLES, 0, (vertices.len() / QUAD_VERTEX_FLOATS) as _);
+        }
+
+        let text_shader = self.get_shader("text_alpha");
+        text_shader.use_program();
+        text_shader.uniform_2f(
+            "u_resolution",
+            ctx.screen.width as _,
+            ctx.screen.height as _,
+        );
+        for (texture, vertices) in &text_batches {
+            if vertices.is_empty() {
+                continue;
+            }
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, *texture);
+            text_shader.get_buffer(0).push_data(vertices);
+            glDrawArrays(GL_TRIANGLES, 0, (vertices.len() / TEXT_VERTEX_FLOATS) as _);
         }
     }
 

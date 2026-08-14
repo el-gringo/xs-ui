@@ -2,123 +2,104 @@ precision mediump float;
 
 varying vec2 v_pixelPos;
 varying vec2 v_textureCoords;
+varying vec4 v_box;
+varying vec4 v_color;
+varying vec4 v_gradientStart;
+varying vec4 v_gradientEnd;
+varying float v_gradientAngle;
+varying float v_colorAlpha;
+varying vec4 v_shadow;
+varying vec4 v_shadowColor;
+varying vec4 v_borderColor;
+varying vec4 v_borderWidth;
+varying vec4 v_borderRadius;
+varying vec4 v_clip;
 
 uniform sampler2D u_texture;
-uniform vec2 u_resolution;
-uniform vec4 u_box;
-uniform vec4 u_color;
-uniform vec4 u_gradientStart;
-uniform vec4 u_gradientEnd;
-uniform float u_gradientAngle;
-uniform float u_colorAlpha;
-uniform vec4 u_shadow;
-uniform vec4 u_shadowColor;
-uniform vec4 u_borderColor;
-uniform vec4 u_borderWidth;
-uniform vec4 u_borderRadius;
-uniform vec4 u_clip;
 
-vec4 erf(vec4 x) {
-    vec4 s = sign(x), a = abs(x);
-    x = 1.0 + (0.278393 + (0.230389 + 0.078108 * (a * a)) * a) * a;
-    x *= x;
-    return s - s / (x * x);
+// Signed distance of a rounded box centered at the origin.
+float sdRoundBox(vec2 p, vec2 b, vec4 r) {
+    vec2 q = abs(p) - b + r.xy;
+    float min_radius = min(min(r.x, r.y), min(r.z, r.w));
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - min_radius;
 }
 
-vec2 erf(vec2 x) {
-    vec2 s = sign(x), a = abs(x);
-    x = 1.0 + (0.278393 + (0.230389 + 0.078108 * (a * a)) * a) * a;
-    x *= x;
-    return s - s / (x * x);
-}
-
-float gaussian(float x, float sigma) {
-    const float pi = 3.141592653589793;
-    return exp(-(x * x) / (2.0 * sigma * sigma)) / (sqrt(2.0 * pi) * sigma);
-}
-
-float roundedBoxShadowX(float x, float y, float sigma, vec4 radius, vec2 halfSize) {
-    float corner = x < 0.0
-        ? (y < 0.0 ? radius.x : radius.w) : (y < 0.0 ? radius.y : radius.z);
-    float delta = min(halfSize.y - corner - abs(y), 0.0);
-    float curved = halfSize.x - corner + sqrt(max(0.0, corner * corner - delta * delta));
-    vec2 integral = 0.5 + 0.5 * erf((x + vec2(-curved, curved)) * (sqrt(0.5) / sigma));
-    return integral.y - integral.x;
-}
-
-float roundedBoxShadow(vec2 lower, vec2 upper, vec2 point, float sigma, vec4 radius) {
+// Anti-aliased coverage of a rounded box spanning [lower, upper].
+float boxAlpha(vec2 lower, vec2 upper, vec2 point, vec4 radius) {
     vec2 center = (lower + upper) * 0.5;
-    vec2 halfSize = (upper - lower) * 0.5;
-    point -= center;
+    vec2 half_size = (upper - lower) * 0.5;
+    float d = sdRoundBox(point - center, half_size, radius);
+    return 1.0 - smoothstep(-1.0, 1.0, d);
+}
 
-    if (sigma < 0.5) {
-        if (abs(point.y) > halfSize.y) return 0.0;
-        return roundedBoxShadowX(point.x, point.y, sigma, radius, halfSize);
-    }
-
-    float low = point.y - halfSize.y;
-    float high = point.y + halfSize.y;
-    float start = clamp(-3.0 * sigma, low, high);
-    float end = clamp(3.0 * sigma, low, high);
-
-    float step = (end - start) / 4.0;
-    float y = start + step * 0.5;
-    float value = 0.0;
-    for (int i = 0; i < 4; i++) {
-        value += roundedBoxShadowX(point.x, point.y - y, sigma, radius, halfSize) * gaussian(y, sigma) * step;
-        y += step;
-    }
-
-    return value;
+float erf(float x) {
+    float s = sign(x);
+    float a = abs(x);
+    x = 1.0 + (0.278393 + (0.230389 + 0.078108 * (a * a)) * a) * a;
+    x *= x;
+    return s - s / (x * x);
 }
 
 void main() {
     vec4 texColor = texture2D(u_texture, v_textureCoords);
 
     vec2 vertex = v_pixelPos.xy;
-    vec2 p = u_box.xy;
-    vec2 size = u_box.zw;
-    float shadowBlur = u_shadow.z;
+    vec2 p = v_box.xy;
+    vec2 size = v_box.zw;
 
     vec2 boxL = p;
     vec2 boxU = p + size;
 
-    vec2 contentL = boxL + vec2(u_borderWidth.w, u_borderWidth.z);
-    vec2 contentU = boxU - vec2(u_borderWidth.y, u_borderWidth.x);
+    vec2 contentL = boxL + vec2(v_borderWidth.w, v_borderWidth.z);
+    vec2 contentU = boxU - vec2(v_borderWidth.y, v_borderWidth.x);
 
-    float spread = u_shadow.w;
-    vec2 shadowL = boxL + u_shadow.xy - spread;
-    vec2 shadowU = boxU + u_shadow.xy + spread;
+    float spread = v_shadow.w;
+    vec2 shadowL = boxL + v_shadow.xy - spread;
+    vec2 shadowU = boxU + v_shadow.xy + spread;
 
-    float box = roundedBoxShadow(contentL, contentU, vertex, 0.25, u_borderRadius);
-    float border = roundedBoxShadow(boxL, boxU, vertex, 0.25, u_borderRadius);
+    float border_total = v_borderWidth.x + v_borderWidth.y + v_borderWidth.z + v_borderWidth.w;
+    bool has_border = border_total > 0.5;
+    bool has_shadow = v_shadow.z > 0.0;
+
+    float box = boxAlpha(contentL, contentU, vertex, v_borderRadius);
+
+    float border = 0.0;
+    if (has_border) {
+        border = boxAlpha(boxL, boxU, vertex, v_borderRadius)
+            - boxAlpha(contentL, contentU, vertex, v_borderRadius);
+    }
+
     float shadow = 0.0;
-    if (shadowBlur > 0.0) {
-        shadow = roundedBoxShadow(shadowL, shadowU, vertex, shadowBlur + 0.25, u_borderRadius);
+    if (has_shadow) {
+        vec2 shadow_center = (shadowL + shadowU) * 0.5;
+        vec2 shadow_half = (shadowU - shadowL) * 0.5;
+        float d = sdRoundBox(vertex - shadow_center, shadow_half, v_borderRadius);
+        float sigma = v_shadow.z + 0.25;
+        // Box-blur edge profile (erf of the distance), evaluated once.
+        shadow = 0.5 - 0.5 * erf(d / (sigma * 1.41421356237));
     }
 
-    vec4 fillColor = u_color;
-    if (u_gradientAngle >= 0.0) {
-        vec2 dir = vec2(cos(u_gradientAngle), sin(u_gradientAngle));
-        vec2 boxSize = u_box.zw;
-        vec2 relPos = vertex - u_box.xy;
-        float projBL = dot(vec2(0.0, 0.0), dir);
-        float projBR = dot(vec2(boxSize.x, 0.0), dir);
-        float projTL = dot(vec2(0.0, boxSize.y), dir);
-        float projTR = dot(boxSize, dir);
-        float minT = min(min(projBL, projBR), min(projTL, projTR));
-        float maxT = max(max(projBL, projBR), max(projTL, projTR));
-        float t = (dot(relPos, dir) - minT) / (maxT - minT);
-        fillColor = mix(u_gradientStart, u_gradientEnd, clamp(t, 0.0, 1.0));
+    vec4 fill_color = v_color;
+    if (v_gradientAngle >= 0.0) {
+        vec2 dir = vec2(cos(v_gradientAngle), sin(v_gradientAngle));
+        vec2 rel_pos = vertex - v_box.xy;
+        float proj_bl = dot(vec2(0.0, 0.0), dir);
+        float proj_br = dot(vec2(size.x, 0.0), dir);
+        float proj_tl = dot(vec2(0.0, size.y), dir);
+        float proj_tr = dot(size, dir);
+        float min_t = min(min(proj_bl, proj_br), min(proj_tl, proj_tr));
+        float max_t = max(max(proj_bl, proj_br), max(proj_tl, proj_tr));
+        float t = (dot(rel_pos, dir) - min_t) / (max_t - min_t);
+        fill_color = mix(v_gradientStart, v_gradientEnd, clamp(t, 0.0, 1.0));
     }
 
-    vec4 contentColor = mix(fillColor, texColor, u_colorAlpha * texColor.a);
-    vec4 color = mix(vec4(0.0), u_shadowColor, shadow);
-    color = mix(color, u_borderColor, border);
-    color = mix(color, contentColor, box);
+    vec4 content_color = mix(fill_color, texColor, v_colorAlpha * texColor.a);
+    vec4 color = mix(vec4(0.0), v_shadowColor, shadow);
+    color = mix(color, v_borderColor, border);
+    color = mix(color, content_color, box);
 
-    vec2 clipL = u_clip.xy;
-    vec2 clipU = u_clip.xy + u_clip.zw;
+    vec2 clipL = v_clip.xy;
+    vec2 clipU = v_clip.xy + v_clip.zw;
     if (v_pixelPos.x < clipL.x || v_pixelPos.x > clipU.x ||
             v_pixelPos.y < clipL.y || v_pixelPos.y > clipU.y) {
         discard;

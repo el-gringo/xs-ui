@@ -29,7 +29,7 @@ impl Default for QuadProps {
 #[derive(Clone, PartialEq, Debug)]
 pub enum Material {
     Quad(Rc<QuadProps>),
-    Text(Color, TextProperties, TextVertices),
+    Text(Color, TextProperties, Rc<TextVertices>),
 }
 
 impl Material {

@@ -86,10 +86,9 @@ pub trait Renderer {
 
             element.inner.post_render(&mut ctx);
 
-            let children: Vec<AnyElement> = element.inner.children().iter().cloned().collect();
-            for (child_index, child) in children.into_iter().enumerate() {
+            for (child_index, child) in element.inner.children().iter().enumerate() {
                 let new_item = StackItem {
-                    element: child,
+                    element: child.clone(),
                     parent_index: Some(rendered_elements.len()),
                     child_index,
                     nav_id: ctx.nav_id,

@@ -5,6 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+talc = "5.0.4"
 xs-animation.workspace = true
 xs-core.workspace = true
 xs-backend.workspace = true
@@ -13,3 +14,5 @@ xs-layout.workspace = true
 xs-primitive.workspace = true
 xs-renderer.workspace = true
 xs-text-system.workspace = true
+xs-log.workspace = true
+xs-js-sys.workspace = true

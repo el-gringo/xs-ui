@@ -2,21 +2,52 @@ precision mediump float;
 
 attribute vec2 a_position;
 attribute vec2 a_textureCoords;
+attribute vec4 a_box;
+attribute vec4 a_color;
+attribute vec4 a_gradientStart;
+attribute vec4 a_gradientEnd;
+attribute float a_gradientAngle;
+attribute float a_colorAlpha;
+attribute vec4 a_shadow;
+attribute vec4 a_shadowColor;
+attribute vec4 a_borderColor;
+attribute vec4 a_borderWidth;
+attribute vec4 a_borderRadius;
+attribute vec4 a_clip;
+
+uniform vec2 u_resolution;
 
 varying vec2 v_pixelPos;
 varying vec2 v_textureCoords;
-
-uniform vec2 u_resolution;
-uniform vec4 u_box;
-uniform vec4 u_shadow;
+varying vec4 v_box;
+varying vec4 v_color;
+varying vec4 v_gradientStart;
+varying vec4 v_gradientEnd;
+varying float v_gradientAngle;
+varying float v_colorAlpha;
+varying vec4 v_shadow;
+varying vec4 v_shadowColor;
+varying vec4 v_borderColor;
+varying vec4 v_borderWidth;
+varying vec4 v_borderRadius;
+varying vec4 v_clip;
 
 void main() {
-    float sigma = u_shadow.z + 0.25;
-    float padding = 12.0 * sigma + max(abs(u_shadow.x), abs(u_shadow.y)) + max(0.0, u_shadow.w);
-    vec2 vertex = mix(u_box.xy - padding, u_box.xy + u_box.zw + padding, a_position);
-    float ndc_x = vertex.x / u_resolution.x * 2.0 - 1.0;
-    float ndc_y = 1.0 - vertex.y / u_resolution.y * 2.0;
+    float ndc_x = a_position.x / u_resolution.x * 2.0 - 1.0;
+    float ndc_y = 1.0 - a_position.y / u_resolution.y * 2.0;
     gl_Position = vec4(ndc_x, ndc_y, 0.0, 1.0);
-    v_pixelPos = vertex;
+    v_pixelPos = a_position;
     v_textureCoords = a_textureCoords;
+    v_box = a_box;
+    v_color = a_color;
+    v_gradientStart = a_gradientStart;
+    v_gradientEnd = a_gradientEnd;
+    v_gradientAngle = a_gradientAngle;
+    v_colorAlpha = a_colorAlpha;
+    v_shadow = a_shadow;
+    v_shadowColor = a_shadowColor;
+    v_borderColor = a_borderColor;
+    v_borderWidth = a_borderWidth;
+    v_borderRadius = a_borderRadius;
+    v_clip = a_clip;
 }

@@ -1,3 +1,5 @@
+#![cfg(target_arch = "wasm32")]
+
 mod canvas;
 mod closure;
 mod core;

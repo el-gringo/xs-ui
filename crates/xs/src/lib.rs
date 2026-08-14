@@ -1,5 +1,9 @@
 mod application;
 
+#[cfg(target_arch = "wasm32")]
+#[global_allocator]
+static ALLOC: talc::wasm::WasmDynamicTalc = talc::wasm::new_wasm_dynamic_allocator();
+
 pub use application::Application;
 pub use xs_animation::{Animate, AnimationDirection, Easing, Spring};
 pub use xs_core::{

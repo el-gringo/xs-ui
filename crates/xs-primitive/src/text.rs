@@ -19,7 +19,7 @@ impl Render for Text {
             material: Some(Material::Text(
                 ctx.color,
                 ctx.text_properties.clone(),
-                text_vertices.clone(),
+                Rc::new(text_vertices),
             )),
         }
     }

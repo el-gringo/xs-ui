@@ -1,11 +1,11 @@
-use xs_core::{AppContext, Color, TextVertices};
-use xs_gl::{
-    Buffer, GL_FLOAT, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, Shader, glActiveTexture,
-    glBindTexture, glDrawArrays,
-};
+use xs_core::{Color, TextVertices};
+use xs_gl::{Buffer, GL_FLOAT, Shader};
 use xs_math::Rectangle;
 
 use crate::RendererOpenGl;
+
+/// Number of f32 components in one interleaved text vertex.
+pub(crate) const TEXT_VERTEX_FLOATS: usize = 12;
 
 impl RendererOpenGl {
     pub fn initialize_text_shader(&mut self) {
@@ -15,17 +15,20 @@ impl RendererOpenGl {
         ) {
             Ok(mut shader) => {
                 let size_of_float = std::mem::size_of::<f32>();
-                let stride = 4 * size_of_float as i32;
+                let stride = (TEXT_VERTEX_FLOATS * size_of_float) as i32;
+                let offset = |component: usize| (component * size_of_float) as i64;
                 let buffer = Buffer::new()
-                    .add_attribute("a_position", 2, GL_FLOAT, false, stride, 0)
+                    .add_attribute("a_position", 2, GL_FLOAT, false, stride, offset(0))
                     .add_attribute(
                         "a_textureCoords",
                         2,
                         GL_FLOAT,
                         false,
                         stride,
-                        (2 * size_of_float) as _,
-                    );
+                        offset(2),
+                    )
+                    .add_attribute("a_color", 4, GL_FLOAT, false, stride, offset(4))
+                    .add_attribute("a_clip", 4, GL_FLOAT, false, stride, offset(8));
                 shader.add_buffer(buffer);
                 shader.use_program();
                 self.add_shader("text_alpha", shader);
@@ -34,40 +37,41 @@ impl RendererOpenGl {
         };
     }
 
-    pub fn render_text(
-        &mut self,
-        ctx: &AppContext,
+    /// Appends the glyph vertices of one text node to the batch. Positions are
+    /// translated into screen space on the CPU and the color is baked per
+    /// vertex so all text nodes can be drawn with a single draw call.
+    pub fn push_text(
+        &self,
         quad: &Rectangle,
         color: &Color,
         text_vertices: &TextVertices,
-        atlas_texture: u32,
         clip: Option<Rectangle>,
+        out: &mut Vec<f32>,
     ) {
-        let shader = self.get_shader("text_alpha");
-        shader.use_program();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, atlas_texture);
-        shader.uniform_2f(
-            "u_resolution",
-            ctx.screen.width as _,
-            ctx.screen.height as _,
-        );
-        shader.uniform_1f("u_pixelRatio", 1.0);
-        shader.uniform_matrix_3fv(
-            "u_transform",
-            false,
-            &[1., 0., 0., 0., 1., 0., quad.x, quad.y, 1.],
-        );
-        shader.uniform_1i("u_texture", 0);
-        shader.uniform_4fv("u_color", *color);
+        let num_vertices = text_vertices.vertices.len() / 4;
+        if num_vertices == 0 {
+            return;
+        }
 
         let default_no_clip = Rectangle::new(0.0, 0.0, f32::INFINITY, f32::INFINITY);
-        let clip_rect = clip.as_ref().unwrap_or(&default_no_clip);
-        shader.uniform_4fv("u_clip", *clip_rect);
+        let clip = clip.as_ref().unwrap_or(&default_no_clip);
 
-        let num_vertices = text_vertices.vertices.len() / 4;
-        let buffer = shader.get_buffer(0);
-        buffer.push_data(&text_vertices.vertices);
-        glDrawArrays(GL_TRIANGLES, 0, num_vertices as _);
+        let base = out.len();
+        out.resize(base + num_vertices * TEXT_VERTEX_FLOATS, 0.0);
+
+        let color4: [f32; 4] = (*color).into();
+        for i in 0..num_vertices {
+            let src = i * 4;
+            let dst = base + i * TEXT_VERTEX_FLOATS;
+            out[dst] = text_vertices.vertices[src] + quad.x;
+            out[dst + 1] = text_vertices.vertices[src + 1] + quad.y;
+            out[dst + 2] = text_vertices.vertices[src + 2];
+            out[dst + 3] = text_vertices.vertices[src + 3];
+            out[dst + 4..dst + 8].copy_from_slice(&color4);
+            out[dst + 8] = clip.x;
+            out[dst + 9] = clip.y;
+            out[dst + 10] = clip.width;
+            out[dst + 11] = clip.height;
+        }
     }
 }
