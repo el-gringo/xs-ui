@@ -13,6 +13,7 @@ enum EasingTiming {
 
 #[derive(Clone, PartialEq)]
 pub struct Easing {
+    value: f32,
     duration: Duration,
     elapsed: Duration,
     timing: EasingTiming,
@@ -21,16 +22,23 @@ pub struct Easing {
     forward: bool,
 }
 
-impl Easing {
-    pub fn new(duration: Duration) -> Self {
+impl Default for Easing {
+    fn default() -> Self {
         Self {
-            duration,
+            value: 0.0,
+            duration: Duration::from_millis(150),
             elapsed: Duration::ZERO,
             timing: EasingTiming::Linear,
             repeat: 0,
             direction: AnimationDirection::Normal,
             forward: true,
         }
+    }
+}
+
+impl Easing {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn repeat(mut self, times: u32) -> Self {
@@ -69,13 +77,14 @@ impl Easing {
         self
     }
 
+    pub fn duration(mut self, duration: Duration) -> Self {
+        self.duration = duration;
+        self
+    }
+
     fn progress(&self) -> f32 {
         let t = (self.elapsed.as_secs_f32() / self.duration.as_secs_f32()).clamp(0.0, 1.0);
-        if self.forward {
-            t
-        } else {
-            1.0 - t
-        }
+        if self.forward { t } else { 1.0 - t }
     }
 
     fn eased(&self) -> f32 {
@@ -96,7 +105,8 @@ impl Easing {
             self.repeat -= 1;
             self.advance_direction();
         }
-        self.eased()
+        self.value = self.eased();
+        self.value
     }
 
     fn advance_direction(&mut self) {
@@ -114,7 +124,7 @@ impl Easing {
     }
 
     pub fn value(&self) -> f32 {
-        self.eased()
+        self.value
     }
 
     pub fn is_finished(&self) -> bool {
@@ -171,7 +181,10 @@ mod tests {
             let v = easing.tick(1.0 / 60.0);
             max = max.max(v);
         }
-        assert!((max - 1.0).abs() < 0.001, "peak should reach 1.0, got {max}");
+        assert!(
+            (max - 1.0).abs() < 0.001,
+            "peak should reach 1.0, got {max}"
+        );
         assert!(easing.is_finished());
         assert_eq!(easing.value(), 1.0);
     }
