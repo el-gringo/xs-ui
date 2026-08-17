@@ -369,12 +369,15 @@ impl ElementObject for Div {
                 AnimationState::new_boxed(initial, now)
             });
             state.update(|s| s.retrigger_if_changed(incoming, now));
-            let value = {
+            let finished = state.read().is_finished();
+            let value = if finished {
+                state.read().value()
+            } else {
                 let mut value = 0.0;
                 state.update(|s| value = s.tick(now));
                 value
             };
-            if !state.read().is_finished() {
+            if !finished {
                 ctx.app_context.dirty = true;
             }
             let this = (callback)(self.clone(), value);

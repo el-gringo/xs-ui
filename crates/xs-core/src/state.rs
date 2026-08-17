@@ -62,7 +62,6 @@ impl<S: 'static> State<S> {
 
     pub fn update(&self, f: impl FnOnce(&mut S)) {
         f(&mut self.inner.borrow_mut());
-        PENDING_UPDATE.store(true, Ordering::Relaxed);
     }
 }
 

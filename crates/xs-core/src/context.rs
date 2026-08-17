@@ -130,9 +130,14 @@ impl<'a> Context<'a> {
             anim.update(|s| s.restart(now));
         }
 
-            let from_value = from.get();
-            let target_value = committed.get();
+        let from_value = from.get();
+        let target_value = committed.get();
         if from_value == target_value {
+            return target_value;
+        }
+
+        if anim.read().is_finished() {
+            from.set(target_value);
             return target_value;
         }
 
@@ -141,16 +146,8 @@ impl<'a> Context<'a> {
             anim.update(|s| progress = s.tick(now));
             progress
         };
-        let finished = anim.read().is_finished();
-        let result = if finished {
-            target_value
-        } else {
-            from_value + progress * (target_value - from_value)
-        };
-        if !finished {
-            self.app_context.dirty = true;
-        }
-        result
+        self.app_context.dirty = true;
+        from_value + progress * (target_value - from_value)
     }
 }
 
