@@ -81,70 +81,55 @@ impl Easing {
         self.duration = duration;
         self
     }
+}
 
-    fn progress(&self) -> f32 {
-        let t = (self.elapsed.as_secs_f32() / self.duration.as_secs_f32()).clamp(0.0, 1.0);
-        if self.forward { t } else { 1.0 - t }
-    }
-
-    fn eased(&self) -> f32 {
-        let t = self.progress();
-        match self.timing {
-            EasingTiming::Linear => t,
-            EasingTiming::EaseIn => ease_in(t),
-            EasingTiming::EaseOut => ease_out(t),
-            EasingTiming::EaseInOut => ease_in_out(t),
-            EasingTiming::Ease => ease_in_out(t),
-        }
-    }
-
-    pub fn tick(&mut self, dt: f32) -> f32 {
+impl crate::Animate for Easing {
+    fn tick(&mut self, dt: f32) -> f32 {
         self.elapsed += Duration::from_secs_f32(dt);
         while self.repeat > 0 && self.elapsed >= self.duration {
             self.elapsed = self.elapsed.saturating_sub(self.duration);
             self.repeat -= 1;
-            self.advance_direction();
+            match self.direction {
+                AnimationDirection::Normal => {
+                    self.forward = true;
+                }
+                AnimationDirection::Reverse => {
+                    self.forward = false;
+                }
+                AnimationDirection::Alternate | AnimationDirection::AlternateReverse => {
+                    self.forward = !self.forward;
+                }
+            }
         }
-        self.value = self.eased();
+
+        let progress = (self.elapsed.as_secs_f32() / self.duration.as_secs_f32()).clamp(0.0, 1.0);
+        let t = if self.forward { progress } else { 1.0 - progress };
+        self.value = match self.timing {
+            EasingTiming::Linear => t,
+            EasingTiming::EaseIn => t * t,
+            EasingTiming::EaseOut => t * (2.0 - t),
+            EasingTiming::EaseInOut | EasingTiming::Ease => {
+                if t < 0.5 {
+                    2.0 * t * t
+                } else {
+                    -1.0 + (4.0 - 2.0 * t) * t
+                }
+            }
+        };
         self.value
     }
 
-    fn advance_direction(&mut self) {
-        match self.direction {
-            AnimationDirection::Normal => {
-                self.forward = true;
-            }
-            AnimationDirection::Reverse => {
-                self.forward = false;
-            }
-            AnimationDirection::Alternate | AnimationDirection::AlternateReverse => {
-                self.forward = !self.forward;
-            }
-        }
-    }
-
-    pub fn value(&self) -> f32 {
-        self.value
-    }
-
-    pub fn is_finished(&self) -> bool {
-        self.repeat == 0 && self.elapsed >= self.duration
-    }
-}
-
-impl crate::Animate for Easing {
     fn reset(&mut self) {
         self.elapsed = Duration::ZERO;
         self.value = 0.;
-        self.forward = !matches!(self.direction, AnimationDirection::Reverse | AnimationDirection::AlternateReverse);
-    }
-
-    fn tick(&mut self, dt: f32) -> f32 {
-        self.tick(dt)
+        self.forward = !matches!(
+            self.direction,
+            AnimationDirection::Reverse | AnimationDirection::AlternateReverse
+        );
     }
 
     fn value(&self) -> f32 {
-        self.value()
+        self.value
     }
 
     fn is_finished(&self) -> bool {
@@ -171,6 +156,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+    use crate::Animate;
     use crate::AnimationDirection::Alternate;
 
     #[test]
@@ -207,21 +193,5 @@ mod tests {
         }
         assert!((max - 1.0).abs() < 0.01, "peak should reach 1.0, got {max}");
         assert!(min < 0.01, "should bounce back to zero, got {min}");
-    }
-}
-
-fn ease_in(t: f32) -> f32 {
-    t * t
-}
-
-fn ease_out(t: f32) -> f32 {
-    t * (2.0 - t)
-}
-
-fn ease_in_out(t: f32) -> f32 {
-    if t < 0.5 {
-        2.0 * t * t
-    } else {
-        -1.0 + (4.0 - 2.0 * t) * t
     }
 }

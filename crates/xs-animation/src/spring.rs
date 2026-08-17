@@ -59,7 +59,15 @@ impl Spring {
         self
     }
 
-    pub fn tick(&mut self, dt: f32) -> f32 {
+    fn is_at_rest(&self) -> bool {
+        let goal = if self.forward { 1.0 } else { 0.0 };
+        (goal - self.value).abs() < self.threshold
+            && self.velocity.abs() < self.threshold
+    }
+}
+
+impl crate::Animate for Spring {
+    fn tick(&mut self, dt: f32) -> f32 {
         let dt = dt.min(0.05);
         let goal = if self.forward { 1.0 } else { 0.0 };
         let diff = goal - self.value;
@@ -72,48 +80,29 @@ impl Spring {
             self.velocity = 0.0;
             if self.repeat > 0 {
                 self.repeat -= 1;
-                self.advance_direction();
+                match self.direction {
+                    AnimationDirection::Normal | AnimationDirection::Reverse => {
+                        self.value = 0.0;
+                        self.forward = true;
+                    }
+                    AnimationDirection::Alternate | AnimationDirection::AlternateReverse => {
+                        self.forward = !self.forward;
+                    }
+                }
+                self.velocity = 0.0;
             }
         }
         self.value
     }
 
-    fn advance_direction(&mut self) {
-        match self.direction {
-            AnimationDirection::Normal | AnimationDirection::Reverse => {
-                self.value = 0.0;
-                self.forward = true;
-            }
-            AnimationDirection::Alternate | AnimationDirection::AlternateReverse => {
-                self.forward = !self.forward;
-            }
-        }
-        self.velocity = 0.0;
-    }
-
-    pub fn value(&self) -> f32 {
-        self.value
-    }
-
-    pub fn is_at_rest(&self) -> bool {
-        let goal = if self.forward { 1.0 } else { 0.0 };
-        let threshold = self.threshold;
-        (goal - self.value).abs() < threshold && self.velocity.abs() < threshold
-    }
-}
-
-impl crate::Animate for Spring {
     fn reset(&mut self) {
         self.value = 0.;
         self.velocity = 0.;
         self.forward = true;
     }
-    fn tick(&mut self, dt: f32) -> f32 {
-        self.tick(dt)
-    }
 
     fn value(&self) -> f32 {
-        self.value()
+        self.value
     }
 
     fn is_finished(&self) -> bool {
