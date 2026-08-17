@@ -48,6 +48,13 @@ impl<S: 'static> State<S> {
         self.inner.borrow()
     }
 
+    pub fn get(&self) -> S
+    where
+        S: Copy,
+    {
+        *self.inner.borrow()
+    }
+
     pub fn set(&self, value: S) {
         *self.inner.borrow_mut() = value;
         PENDING_UPDATE.store(true, Ordering::Relaxed);

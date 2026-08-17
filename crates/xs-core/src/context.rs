@@ -120,9 +120,9 @@ impl<'a> Context<'a> {
         let from = self.use_keyed_state::<f32>(&format!("{key}-from"), |_| target);
         let committed = self.use_keyed_state::<f32>(&format!("{key}-target"), |_| target);
 
-        let committed_target = *committed.read();
-        if committed_target != target {
-            let prev_from = *from.read();
+            let committed_target = committed.get();
+            if committed_target != target {
+                let prev_from = from.get();
             let prev_progress = anim.read().value();
             let prev_result = prev_from + prev_progress * (committed_target - prev_from);
             committed.set(target);
@@ -130,8 +130,8 @@ impl<'a> Context<'a> {
             anim.update(|s| s.restart(now));
         }
 
-        let from_value = *from.read();
-        let target_value = *committed.read();
+            let from_value = from.get();
+            let target_value = committed.get();
         if from_value == target_value {
             return target_value;
         }

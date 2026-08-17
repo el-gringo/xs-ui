@@ -94,7 +94,7 @@ impl<T: Default + 'static> Render for Grid<T> {
         let render_cells = render_rows * columns;
 
         let offset = ctx.use_state::<usize>(|_| 0);
-        let old_offset = *offset.read();
+        let old_offset = offset.get();
 
         let total_items = self.items.len();
         let total_rows = total_items.div_ceil(columns);

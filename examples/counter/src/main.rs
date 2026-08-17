@@ -23,7 +23,7 @@ impl Render for Counter {
         handle.on_key_down(move |key_code| {
             let v = v.clone();
             let s = s.clone();
-            let mut value = *v.read();
+            let mut value = v.get();
             match key_code {
                 KeyCode::Up => {
                     value += 1;
@@ -42,8 +42,8 @@ impl Render for Counter {
             v.set(value);
             false
         });
-        let value = *state_value.read();
-        let state = *state.read();
+        let value = state_value.get();
+        let state = state.get();
         div()
             .testid("root")
             .width(ctx.app_context.screen.width as _)

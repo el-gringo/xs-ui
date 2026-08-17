@@ -11,7 +11,7 @@ pub fn animate<T: Animate + 'static>(ctx: &mut Context, template: T, target: f32
     }
 
     let now = ctx.app_context.now;
-    let dt = now - *prev_time.read();
+    let dt = now - prev_time.get();
     if dt > 0 && dt < 1000 {
         anim.update(|s| {
             s.tick(dt as f32 / 1000.0);
