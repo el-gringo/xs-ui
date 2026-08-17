@@ -16,12 +16,13 @@ struct Peertube;
 impl Render for Peertube {
     fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
         ctx.focus_handle(NavigationNode::new().horizontal().id("root"));
-        let videos = ctx.use_state(|_, set_videos| {
+        let videos = ctx.use_state(|_| std::rc::Rc::new(Vec::new()));
+        let _fetch = ctx.use_state(|_| {
             let client = PeerTubeClient::new();
+            let handle = videos.clone();
             client.get_videos(0, 100, move |new_videos| {
-                set_videos.update(|| std::rc::Rc::new(new_videos));
+                handle.set(std::rc::Rc::new(new_videos));
             });
-            std::rc::Rc::new(Vec::new())
         });
 
         let count = videos.read().len();

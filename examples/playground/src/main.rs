@@ -20,8 +20,12 @@ impl Render for App {
                     .background(Color::rgba(0.1, 0.1, 0.1, 1.))
                     .with_animation(
                         "spring-forward",
-                        Spring::new(1500.).repeat(u32::MAX).direction(Alternate),
-                        |this, delta| this.top(-1500. + delta),
+                        //Spring::new(1500.).repeat(u32::MAX).direction(Alternate),
+                        Easing::new()
+                            .repeat(u32::MAX)
+                            .direction(Alternate)
+                            .duration(Duration::from_millis(1000)),
+                        |this, delta| this.top(100. + delta * 500.),
                     )
                     .wrap()
                     //.gap(5.)

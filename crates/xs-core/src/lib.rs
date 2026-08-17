@@ -21,7 +21,7 @@ pub use element::{AnyElement, DeferredRender, ElementObject, IntoElement, Parent
 pub use navigation::{FocusHandle, FocusManager, NavigationNode};
 pub use render::Render;
 pub use renderer::{Renderer, RendererDummy};
-pub use state::{PENDING_UPDATE, Setter, State};
+pub use state::{PENDING_UPDATE, State};
 pub use text_system::{AtlasInfo, AtlasOptions, GlyphInfo, TextSystem, TextSystemDummy};
 pub use xs_layout::{
     BoxConstraints, Color, FontStyle, Image, ImageFormat, Rectangle, TextProperties, TextVertices,

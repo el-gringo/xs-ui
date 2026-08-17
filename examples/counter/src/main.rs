@@ -14,8 +14,8 @@ enum CounterState {
 struct Counter;
 impl Render for Counter {
     fn render(&self, ctx: &mut Context) -> impl IntoElement {
-        let state = ctx.use_state(|_, _| CounterState::None);
-        let state_value = ctx.use_state(|_, _| 0);
+        let state = ctx.use_state(|_| CounterState::None);
+        let state_value = ctx.use_state(|_| 0);
         let mut handle = ctx.focus_handle(NavigationNode::new().vertical().id("counter"));
 
         let s = state.clone();
@@ -27,15 +27,19 @@ impl Render for Counter {
             match key_code {
                 KeyCode::Up => {
                     value += 1;
-                    s.update(|| Increment);
+                    s.set(Increment);
+
+
                 }
                 KeyCode::Down => {
                     value -= 1;
-                    s.update(|| Decrement);
+                    s.set(Decrement);
+
+
                 }
                 _ => {}
             };
-            v.update(|| value);
+            v.set(value);
             false
         });
         let value = *state_value.read();
@@ -66,7 +70,7 @@ impl Render for Counter {
                             .font_size(36)
                             .with_animation(
                                 "increment",
-                                Easing::new(Duration::from_millis(if Increment == state {
+                                Easing::new().duration(Duration::from_millis(if Increment == state {
                                     100
                                 } else {
                                     0
@@ -103,7 +107,7 @@ impl Render for Counter {
                             .child(text("Dec"))
                             .with_animation(
                                 "increment",
-                                Easing::new(Duration::from_millis(if Decrement == state {
+                                Easing::new().duration(Duration::from_millis(if Decrement == state {
                                     100
                                 } else {
                                     0

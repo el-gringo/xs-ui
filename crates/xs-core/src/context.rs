@@ -1,5 +1,3 @@
-use std::{any::Any, cell::RefCell, rc::Rc};
-
 use xs_animation::Animate;
 use xs_layout::{BoxConstraints, Color, TextProperties, TextVertices};
 
@@ -38,9 +36,9 @@ impl<'a> Context<'a> {
     }
 
     #[track_caller]
-    pub fn use_state<S>(&mut self, init: impl FnOnce(&mut Self, State<S>) -> S) -> State<S>
+    pub fn use_state<S>(&mut self, init: impl FnOnce(&mut Self) -> S) -> State<S>
     where
-        S: Any + 'static,
+        S: 'static,
     {
         let caller = core::panic::Location::caller();
         let key = &format!("{}:{}:{}", caller.file(), caller.line(), caller.column());
@@ -50,10 +48,10 @@ impl<'a> Context<'a> {
     pub fn use_keyed_state<S>(
         &mut self,
         key: &str,
-        init: impl FnOnce(&mut Self, State<S>) -> S,
+        init: impl FnOnce(&mut Self) -> S,
     ) -> State<S>
     where
-        S: Any + 'static,
+        S: 'static,
     {
         let node_id = self.node_id;
         let needs_init = {
@@ -61,16 +59,12 @@ impl<'a> Context<'a> {
             !entry.contains_key(key)
         };
         if needs_init {
-            let state = State {
-                inner: Rc::new(RefCell::new(None)),
-            };
-            let value = init(self, state.clone());
-            *state.inner.borrow_mut() = Some(value);
+            let value = init(self);
             self.app_context
                 .states
                 .entry(node_id)
                 .or_default()
-                .insert(key.into(), AnyState::new(state));
+                .insert(key.into(), AnyState::new(State::new(value)));
         }
         self.app_context
             .states
@@ -78,7 +72,7 @@ impl<'a> Context<'a> {
             .expect("use_state: no state map for node_id")
             .get_mut(key)
             .unwrap_or_else(|| panic!("use_state: no state for state_id={key}"))
-            .downcast::<S>()
+            .downcast::<State<S>>()
             .unwrap_or_else(|| panic!("use_state: downcast failed for state_id={key}"))
             .clone()
     }
@@ -90,14 +84,14 @@ impl<'a> Context<'a> {
     }
 
     pub fn focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
-        let handle_state = self.use_state::<FocusHandle>(|ctx, _| ctx.new_focus_handle(node));
+        let handle_state = self.use_state::<FocusHandle>(|ctx| ctx.new_focus_handle(node));
         let result = handle_state.read().clone();
         self.nav_id = result.id;
         result
     }
 
     pub fn focus_handle_with_key(&mut self, key: &str, node: NavigationNode) -> FocusHandle {
-        let state = self.use_keyed_state::<FocusHandle>(key, |ctx, _| ctx.new_focus_handle(node));
+        let state = self.use_keyed_state::<FocusHandle>(key, |ctx| ctx.new_focus_handle(node));
         let result = state.read().clone();
         self.nav_id = result.id;
         result
@@ -120,20 +114,20 @@ impl<'a> Context<'a> {
         let key = &format!("{}:{}:{}", caller.file(), caller.line(), caller.column());
 
         let now = self.app_context.now;
-        let anim = self.use_keyed_state::<AnimationState>(&format!("{key}-anim"), |_, _| {
+        let anim = self.use_keyed_state::<AnimationState>(&format!("{key}-anim"), |_| {
             AnimationState::new(template, now)
         });
-        let from = self.use_keyed_state::<f32>(&format!("{key}-from"), |_, _| target);
-        let committed = self.use_keyed_state::<f32>(&format!("{key}-target"), |_, _| target);
+        let from = self.use_keyed_state::<f32>(&format!("{key}-from"), |_| target);
+        let committed = self.use_keyed_state::<f32>(&format!("{key}-target"), |_| target);
 
         let committed_target = *committed.read();
         if committed_target != target {
             let prev_from = *from.read();
             let prev_progress = anim.read().value();
             let prev_result = prev_from + prev_progress * (committed_target - prev_from);
-            committed.update(|| target);
-            from.update(|| prev_result);
-            anim.mutate(|s| s.restart(now));
+            committed.set(target);
+            from.set(prev_result);
+            anim.update(|s| s.restart(now));
         }
 
         let from_value = *from.read();
@@ -144,7 +138,7 @@ impl<'a> Context<'a> {
 
         let progress = {
             let mut progress = 0.0;
-            anim.mutate(|s| progress = s.tick(now));
+            anim.update(|s| progress = s.tick(now));
             progress
         };
         let finished = anim.read().is_finished();

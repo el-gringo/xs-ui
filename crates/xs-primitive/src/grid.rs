@@ -93,7 +93,7 @@ impl<T: Default + 'static> Render for Grid<T> {
         let render_rows = window_rows + buffer;
         let render_cells = render_rows * columns;
 
-        let offset = ctx.use_state::<usize>(|_, _| 0);
+        let offset = ctx.use_state::<usize>(|_| 0);
         let old_offset = *offset.read();
 
         let total_items = self.items.len();
@@ -113,7 +113,7 @@ impl<T: Default + 'static> Render for Grid<T> {
         new_offset = new_offset.min(total_rows.saturating_sub(render_rows));
 
         if new_offset != old_offset {
-            offset.mutate(|v| *v = new_offset);
+            offset.set(new_offset);
 
             let data_index = old_offset * columns + selected_index;
             let new_selected = data_index.saturating_sub(new_offset * columns);

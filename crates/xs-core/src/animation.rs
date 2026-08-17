@@ -1,7 +1,5 @@
 use xs_animation::Animate;
 
-use crate::state::StateElement;
-
 /// Persistent animation state shared by `Context::animate` (scalar
 /// interpolation) and element-level animations (`with_animation`).
 pub struct AnimationState {
@@ -62,15 +60,5 @@ impl AnimationState {
 
     pub fn is_finished(&self) -> bool {
         self.animate.is_finished()
-    }
-}
-
-impl StateElement for AnimationState {
-    fn inner_element(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-
-    fn as_any(&mut self) -> &mut dyn std::any::Any {
-        self
     }
 }

@@ -365,13 +365,13 @@ impl ElementObject for Div {
             let incoming = anim.animate.clone_box();
             let callback = anim.callback.clone();
 
-            let state = ctx.use_keyed_state::<AnimationState>(anim.id, move |_, _| {
+            let state = ctx.use_keyed_state::<AnimationState>(anim.id, move |_| {
                 AnimationState::new_boxed(initial, now)
             });
-            state.mutate(|s| s.retrigger_if_changed(incoming, now));
+            state.update(|s| s.retrigger_if_changed(incoming, now));
             let value = {
                 let mut value = 0.0;
-                state.mutate(|s| value = s.tick(now));
+                state.update(|s| value = s.tick(now));
                 value
             };
             if !state.read().is_finished() {
