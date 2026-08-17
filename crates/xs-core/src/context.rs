@@ -4,7 +4,7 @@ use xs_animation::Animate;
 use xs_layout::{BoxConstraints, Color, TextProperties, TextVertices};
 
 use crate::{
-    AppContext, FocusHandle, NavigationNode,
+    AnimationState, AppContext, FocusHandle, NavigationNode,
     navigation::NavigationNodeId,
     state::{AnyState, State},
 };
@@ -119,24 +119,117 @@ impl<'a> Context<'a> {
         let caller = core::panic::Location::caller();
         let key = &format!("{}:{}:{}", caller.file(), caller.line(), caller.column());
 
-        let anim = self.use_keyed_state::<T>(&format!("{}-value", key), move |_, _| template);
-        let prev_time = self.use_keyed_state::<u128>(&format!("{}-prev-time", key), |_, _| 0);
-
-        let current = anim.read().value();
-        if current == target {
-            return current;
-        }
-        anim.mutate(|s| s.snap_to(target));
-
         let now = self.app_context.now;
-        let dt = now - *prev_time.read();
-        if dt > 0 && dt < 1000 {
-            anim.mutate(|s| {
-                s.tick(dt as f32 / 1000.0);
-            });
-        }
-        prev_time.update(|| now);
+        let anim = self.use_keyed_state::<AnimationState>(&format!("{key}-anim"), |_, _| {
+            AnimationState::new(template, now)
+        });
+        let from = self.use_keyed_state::<f32>(&format!("{key}-from"), |_, _| target);
+        let committed = self.use_keyed_state::<f32>(&format!("{key}-target"), |_, _| target);
 
-        anim.read().value()
+        let committed_target = *committed.read();
+        if committed_target != target {
+            let prev_from = *from.read();
+            let prev_progress = anim.read().value();
+            let prev_result = prev_from + prev_progress * (committed_target - prev_from);
+            committed.update(|| target);
+            from.update(|| prev_result);
+            anim.mutate(|s| s.restart(now));
+        }
+
+        let from_value = *from.read();
+        let target_value = *committed.read();
+        if from_value == target_value {
+            return target_value;
+        }
+
+        let progress = {
+            let mut progress = 0.0;
+            anim.mutate(|s| progress = s.tick(now));
+            progress
+        };
+        let finished = anim.read().is_finished();
+        let result = if finished {
+            target_value
+        } else {
+            from_value + progress * (target_value - from_value)
+        };
+        if !finished {
+            self.app_context.dirty = true;
+        }
+        result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use xs_animation::Spring;
+
+    use crate::{
+        AppContext, BoxConstraints, Color, Context, TextProperties, TextSystemDummy,
+    };
+
+    fn ctx() -> Context<'static> {
+        let app_context = Box::leak(Box::new(AppContext::new(Box::new(
+            TextSystemDummy::default(),
+        ))));
+        Context::new(
+            app_context,
+            (std::any::TypeId::of::<u8>(), 0, 0),
+            0,
+            TextProperties::default(),
+            Color::rgba(0., 0., 0., 1.),
+            BoxConstraints::from_max((1000., 1000.)),
+        )
+    }
+
+    #[test]
+    fn animate_starts_at_from_and_springs_to_target() {
+        let mut ctx = ctx();
+        for frame in 0..300 {
+            ctx.app_context.now = (frame + 1) * 16;
+            let target = if frame < 2 { 0.0 } else { 320.0 };
+            let value = ctx.animate(Spring::new(), target);
+            if frame < 2 {
+                assert_eq!(value, 0.0, "must hold still before target change");
+                continue;
+            }
+            if frame == 2 {
+                assert_eq!(value, 0.0, "must start from previous value");
+            }
+            assert!(
+                value >= -1.0 && value <= 380.0,
+                "value out of plausible range, got {value} at frame {frame}"
+            );
+        }
+        ctx.app_context.now = 301 * 16;
+        let final_value = ctx.animate(Spring::new(), 320.0);
+        assert!(
+            (final_value - 320.0).abs() < 1.0,
+            "must reach target, got {final_value}"
+        );
+    }
+
+    #[test]
+    fn animate_marks_dirty_while_animating_and_idles_after() {
+        let mut ctx = ctx();
+        let mut dirty_frames = 0;
+        for frame in 0..300 {
+            ctx.app_context.now = (frame + 1) * 16;
+            let target = if frame < 2 { 0.0 } else { 320.0 };
+            ctx.animate(Spring::new(), target);
+            if ctx.app_context.dirty {
+                dirty_frames += 1;
+                ctx.app_context.dirty = false;
+            }
+        }
+        assert!(
+            dirty_frames > 5,
+            "should animate over several frames"
+        );
+        assert!(
+            dirty_frames < 120,
+            "should settle, got {dirty_frames} dirty frames"
+        );
+        assert!(!ctx.app_context.dirty, "must be idle once settled");
     }
 }

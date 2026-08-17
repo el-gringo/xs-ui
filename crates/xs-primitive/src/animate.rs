@@ -6,10 +6,9 @@ pub fn animate<T: Animate + 'static>(ctx: &mut Context, template: T, target: f32
     let prev_time = ctx.use_state::<u128>(|_, _| 0);
 
     let current = anim.read().value();
-    if current == target {
-        return current;
+    if current == 1.0 {
+        return target;
     }
-    anim.mutate(|s| s.snap_to(target));
 
     let now = ctx.app_context.now;
     let dt = now - *prev_time.read();

@@ -1,31 +1,14 @@
 use std::{any::TypeId, rc::Rc};
 
 use xs_core::{
-    AnyElement, AppContext, Context, ElementObject, IntoElement, ParentElement, State,
-    TextProperties, state::AnyState,
+    AnimationState, AnyElement, AppContext, Context, ElementObject, IntoElement, ParentElement,
+    TextProperties,
 };
 use xs_layout::{
     AlignItems, BorderRadius, BorderSide, Borders, BoxShadow, Color, EdgeInsets, Flex,
     FlexDirection, FlexWrap, JustifyContent, Material, Overflow, Positioned, QuadProps, Style,
     StyleDisplay, StylePosition, View,
 };
-
-#[derive(Clone)]
-pub struct AnimationState {
-    pub last_tick: u128,
-    pub animate: Box<dyn xs_animation::Animate>,
-    pub template: Box<dyn xs_animation::Animate>,
-}
-
-impl xs_core::state::StateElement for AnimationState {
-    fn inner_element(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-
-    fn as_any(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
 
 pub struct DivAnimation {
     pub id: &'static str,
@@ -377,49 +360,24 @@ impl ElementObject for Div {
             ctx.constraints.max.y = h;
         };
         if let Some(ref anim) = self.animation {
-            let state_id = String::from(anim.id);
-            let anystate = ctx
-                .app_context
-                .states
-                .entry(ctx.node_id)
-                .or_default()
-                .entry(state_id)
-                .or_insert(AnyState::new(State::new(AnimationState {
-                    last_tick: ctx.app_context.now,
-                    animate: anim.animate.clone_box(),
-                    template: anim.animate.clone_box(),
-                })));
-            let state = anystate.downcast::<AnimationState>().unwrap();
-
+            let now = ctx.app_context.now;
+            let initial = anim.animate.clone_box();
             let incoming = anim.animate.clone_box();
-            let retrigger = !state.read().template.same_config(&*incoming);
-            if retrigger {
-                state.mutate(|s| {
-                    s.animate = incoming.clone_box();
-                    s.template = incoming;
-                    s.last_tick = ctx.app_context.now;
-                });
-            }
-
-            let dt = {
-                let last_tick = state.read().last_tick;
-                let dt = ctx.app_context.now.saturating_sub(last_tick) as f32 / 1000.0;
-                dt.min(1.0)
-            };
-            if dt > 0.0 {
-                state.mutate(|s| {
-                    s.animate.tick(dt);
-                    s.last_tick = ctx.app_context.now;
-                });
-            }
-            let value = state.read().animate.value();
-
             let callback = anim.callback.clone();
-            let this = (callback)(self.clone(), value);
-            let animating = !state.read().animate.is_finished();
-            if animating {
+
+            let state = ctx.use_keyed_state::<AnimationState>(anim.id, move |_, _| {
+                AnimationState::new_boxed(initial, now)
+            });
+            state.mutate(|s| s.retrigger_if_changed(incoming, now));
+            let value = {
+                let mut value = 0.0;
+                state.mutate(|s| value = s.tick(now));
+                value
+            };
+            if !state.read().is_finished() {
                 ctx.app_context.dirty = true;
             }
+            let this = (callback)(self.clone(), value);
             self.style = this.style;
         }
     }

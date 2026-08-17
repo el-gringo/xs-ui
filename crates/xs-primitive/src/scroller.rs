@@ -24,7 +24,7 @@ impl Scroller {
 
 impl Render for Scroller {
     fn render(&self, ctx: &mut Context) -> impl IntoElement {
-        let animated_offset = ctx.animate(Spring::new(0.0), self.offset_top);
+        let animated_offset = ctx.animate(Spring::new(), self.offset_top);
 
         div()
             .absolute()

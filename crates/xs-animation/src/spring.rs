@@ -4,7 +4,6 @@ use crate::AnimationDirection;
 pub struct Spring {
     value: f32,
     velocity: f32,
-    target: f32,
     forward: bool,
     mass: f32,
     stiffness: f32,
@@ -14,20 +13,25 @@ pub struct Spring {
     direction: AnimationDirection,
 }
 
-impl Spring {
-    pub fn new(target: f32) -> Self {
+impl Default for Spring {
+    fn default() -> Self {
         Self {
             value: 0.0,
             velocity: 0.0,
-            target,
             forward: true,
             mass: 1.,
             stiffness: 80.,
             damping: 10.,
-            threshold: 1.,
+            threshold: 0.001,
             repeat: 0,
             direction: AnimationDirection::Normal,
         }
+    }
+}
+
+impl Spring {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn mass(mut self, mass: f32) -> Self {
@@ -55,13 +59,9 @@ impl Spring {
         self
     }
 
-    pub fn snap_to(&mut self, target: f32) {
-        self.target = target;
-    }
-
     pub fn tick(&mut self, dt: f32) -> f32 {
         let dt = dt.min(0.05);
-        let goal = if self.forward { self.target } else { 0.0 };
+        let goal = if self.forward { 1.0 } else { 0.0 };
         let diff = goal - self.value;
         let acceleration = (self.stiffness * diff - self.damping * self.velocity) / self.mass;
         self.velocity += acceleration * dt;
@@ -96,17 +96,18 @@ impl Spring {
     }
 
     pub fn is_at_rest(&self) -> bool {
-        let goal = if self.forward { self.target } else { 0.0 };
+        let goal = if self.forward { 1.0 } else { 0.0 };
         let threshold = self.threshold;
         (goal - self.value).abs() < threshold && self.velocity.abs() < threshold
     }
 }
 
 impl crate::Animate for Spring {
-    fn snap_to(&mut self, target: f32) {
-        self.snap_to(target.round().max(0.0));
+    fn reset(&mut self) {
+        self.value = 0.;
+        self.velocity = 0.;
+        self.forward = true;
     }
-
     fn tick(&mut self, dt: f32) -> f32 {
         self.tick(dt)
     }
@@ -142,7 +143,7 @@ mod tests {
 
     #[test]
     fn starts_from_zero_and_animates_toward_target() {
-        let mut spring = Spring::new(100.);
+        let mut spring = Spring::new();
         assert_eq!(spring.value(), 0.0);
         assert!(!spring.is_finished());
 
@@ -152,7 +153,7 @@ mod tests {
             max = max.max(v);
         }
         assert!(
-            (max - 100.0).abs() < 15.0,
+            (max - 1.0).abs() < 0.15,
             "peak should approach target, got {max}"
         );
         assert!(spring.is_finished());
@@ -160,7 +161,7 @@ mod tests {
 
     #[test]
     fn alternate_oscillates_back_and_forth() {
-        let mut spring = Spring::new(100.).repeat(u32::MAX).direction(Alternate);
+        let mut spring = Spring::new().repeat(u32::MAX).direction(Alternate);
         let mut min = f32::MAX;
         let mut max = f32::MIN;
         for _ in 0..2000 {
@@ -169,9 +170,9 @@ mod tests {
             max = max.max(v);
         }
         assert!(
-            (max - 100.0).abs() < 15.0,
+            (max - 1.0).abs() < 0.15,
             "peak should reach target, got {max}"
         );
-        assert!(min < 5.0, "should swing back to zero, got {min}");
+        assert!(min < 0.05, "should swing back to zero, got {min}");
     }
 }

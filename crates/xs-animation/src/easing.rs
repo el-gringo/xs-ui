@@ -133,7 +133,11 @@ impl Easing {
 }
 
 impl crate::Animate for Easing {
-    fn snap_to(&mut self, _target: f32) {}
+    fn reset(&mut self) {
+        self.elapsed = Duration::ZERO;
+        self.value = 0.;
+        self.forward = !matches!(self.direction, AnimationDirection::Reverse | AnimationDirection::AlternateReverse);
+    }
 
     fn tick(&mut self, dt: f32) -> f32 {
         self.tick(dt)
@@ -167,12 +171,11 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
-    use crate::Animate;
     use crate::AnimationDirection::Alternate;
 
     #[test]
     fn animates_from_zero_to_one_over_duration() {
-        let mut easing = Easing::new(Duration::from_millis(1000));
+        let mut easing = Easing::new().duration(Duration::from_millis(1000));
         assert_eq!(easing.value(), 0.0);
         assert!(!easing.is_finished());
 
@@ -191,7 +194,8 @@ mod tests {
 
     #[test]
     fn alternate_bounces_between_zero_and_one() {
-        let mut easing = Easing::new(Duration::from_millis(1000))
+        let mut easing = Easing::new()
+            .duration(Duration::from_millis(1000))
             .repeat(u32::MAX)
             .direction(Alternate);
         let mut min = f32::MAX;

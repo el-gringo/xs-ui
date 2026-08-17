@@ -1,3 +1,4 @@
+mod animation;
 mod app_config;
 mod app_context;
 mod backend;
@@ -12,6 +13,7 @@ mod text_system;
 
 pub use app_config::AppConfig;
 pub use app_context::AppContext;
+pub use animation::AnimationState;
 pub use backend::{Backend, BackendDummy, BackendRequest, BackendResponse, EventLoop};
 pub use context::Context;
 pub use core::{NodeId, Undefined};
