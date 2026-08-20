@@ -4,16 +4,16 @@ use xs_core::{AppContext, AtlasInfo, ImageFormat, Renderer};
 use xs_gl::{
     GL_BLEND, GL_DEPTH_TEST, GL_ELEMENT_ARRAY_BUFFER, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
     GL_STATIC_DRAW, GL_TEXTURE_2D, GL_TEXTURE0, GL_TRIANGLES, Shader, glActiveTexture,
-    glBindBuffer, glBindTexture, glBlendFunc, glBufferData, glClearColor, glDisable,
-    glDrawArrays, glEnable, glFlush, glGenBuffers, glViewport, load_texture,
+    glBindBuffer, glBindTexture, glBlendFunc, glBufferData, glClearColor, glDisable, glDrawArrays,
+    glEnable, glFlush, glGenBuffers, glViewport, load_texture,
 };
 use xs_layout::{
     LayoutTree,
-    Material::{Quad, Text},
+    Material::{Quad, SimpleQuad, Text},
 };
 use xs_math::{Rectangle, Vector2};
 
-use crate::render_quad::QUAD_VERTEX_FLOATS;
+use crate::render_quad::{QUAD_VERTEX_FLOATS, SIMPLE_QUAD_VERTEX_FLOATS};
 use crate::render_text::TEXT_VERTEX_FLOATS;
 
 #[derive(Default)]
@@ -46,6 +46,97 @@ impl RendererOpenGl {
         let bottom = (a.y + a.height).min(b.y + b.height);
         Rectangle::new(x, y, (right - x).max(0.0), (bottom - y).max(0.0))
     }
+
+    fn flush_quads(
+        &mut self,
+        batches: &mut Vec<(u32, Vec<f32>)>,
+        indices: &mut HashMap<u32, usize>,
+        ctx: &AppContext,
+    ) {
+        if batches.iter().all(|(_, v)| v.is_empty()) {
+            return;
+        }
+        let shader = self.get_shader("quad");
+        shader.use_program();
+        shader.uniform_2f(
+            "u_resolution",
+            ctx.screen.width as _,
+            ctx.screen.height as _,
+        );
+        for (texture, vertices) in batches.iter() {
+            if vertices.is_empty() {
+                continue;
+            }
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, *texture);
+            shader.get_buffer(0).push_data(vertices);
+            glDrawArrays(GL_TRIANGLES, 0, (vertices.len() / QUAD_VERTEX_FLOATS) as _);
+        }
+        batches.clear();
+        indices.clear();
+    }
+
+    fn flush_texts(
+        &mut self,
+        batches: &mut Vec<(u32, Vec<f32>)>,
+        indices: &mut HashMap<u32, usize>,
+        ctx: &AppContext,
+    ) {
+        if batches.iter().all(|(_, v)| v.is_empty()) {
+            return;
+        }
+        let shader = self.get_shader("text_alpha");
+        shader.use_program();
+        shader.uniform_2f(
+            "u_resolution",
+            ctx.screen.width as _,
+            ctx.screen.height as _,
+        );
+        for (texture, vertices) in batches.iter() {
+            if vertices.is_empty() {
+                continue;
+            }
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, *texture);
+            shader.get_buffer(0).push_data(vertices);
+            glDrawArrays(GL_TRIANGLES, 0, (vertices.len() / TEXT_VERTEX_FLOATS) as _);
+        }
+        batches.clear();
+        indices.clear();
+    }
+
+    fn flush_simple(
+        &mut self,
+        batches: &mut Vec<(u32, Vec<f32>)>,
+        indices: &mut HashMap<u32, usize>,
+        ctx: &AppContext,
+    ) {
+        if batches.iter().all(|(_, v)| v.is_empty()) {
+            return;
+        }
+        let shader = self.get_shader("simple_quad");
+        shader.use_program();
+        shader.uniform_2f(
+            "u_resolution",
+            ctx.screen.width as _,
+            ctx.screen.height as _,
+        );
+        for (texture, vertices) in batches.iter() {
+            if vertices.is_empty() {
+                continue;
+            }
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, *texture);
+            shader.get_buffer(0).push_data(vertices);
+            glDrawArrays(
+                GL_TRIANGLES,
+                0,
+                (vertices.len() / SIMPLE_QUAD_VERTEX_FLOATS) as _,
+            );
+        }
+        batches.clear();
+        indices.clear();
+    }
 }
 
 impl Renderer for RendererOpenGl {
@@ -64,6 +155,7 @@ impl Renderer for RendererOpenGl {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         self.initialize_quad_shader();
+        self.initialize_simple_quad_shader();
         self.initialize_text_shader();
     }
 
@@ -77,10 +169,14 @@ impl Renderer for RendererOpenGl {
         let node_count = layout_tree.boxes.len();
         let mut clip_rects: Vec<Option<Rectangle>> = vec![None; node_count];
 
-        // Batch geometry per texture so all quads/text nodes sharing a
-        // texture are drawn in a single draw call.
+        // All three material types are batched independently and drawn
+        // in tree order. A batch is flushed whenever the material type
+        // changes so that SimpleQuads, Quads, and Texts interleave
+        // correctly.
         let mut quad_batches: Vec<(u32, Vec<f32>)> = Vec::new();
         let mut quad_indices: HashMap<u32, usize> = HashMap::new();
+        let mut simple_batches: Vec<(u32, Vec<f32>)> = Vec::new();
+        let mut simple_indices: HashMap<u32, usize> = HashMap::new();
         let mut text_batches: Vec<(u32, Vec<f32>)> = Vec::new();
         let mut text_indices: HashMap<u32, usize> = HashMap::new();
 
@@ -108,6 +204,8 @@ impl Renderer for RendererOpenGl {
             {
                 match material {
                     Quad(props) => {
+                        self.flush_simple(&mut simple_batches, &mut simple_indices, ctx);
+
                         let texture = props
                             .background_image
                             .as_ref()
@@ -123,7 +221,29 @@ impl Renderer for RendererOpenGl {
                         };
                         self.push_quad(&quad, props, clip, &mut quad_batches[batch].1);
                     }
+                    SimpleQuad(color, texture) => {
+                        self.flush_quads(&mut quad_batches, &mut quad_indices, ctx);
+                        self.flush_texts(&mut text_batches, &mut text_indices, ctx);
+
+                        let tex = if *texture == 0 {
+                            self.texture_place_holder
+                        } else {
+                            *texture
+                        };
+                        let batch = match simple_indices.get(&tex) {
+                            Some(&index) => index,
+                            None => {
+                                simple_batches.push((tex, Vec::new()));
+                                let index = simple_batches.len() - 1;
+                                simple_indices.insert(tex, index);
+                                index
+                            }
+                        };
+                        self.push_simple_quad(&quad, *color, clip, &mut simple_batches[batch].1);
+                    }
                     Text(color, text_properties, text_vertices) => {
+                        self.flush_simple(&mut simple_batches, &mut simple_indices, ctx);
+
                         let (atlas_texture, _atlas_font_size) = self
                             .fonts
                             .get(&(&text_properties.font_family, text_properties.font_weight))
@@ -149,39 +269,9 @@ impl Renderer for RendererOpenGl {
             }
         }
 
-        let quad_shader = self.get_shader("quad");
-        quad_shader.use_program();
-        quad_shader.uniform_2f(
-            "u_resolution",
-            ctx.screen.width as _,
-            ctx.screen.height as _,
-        );
-        for (texture, vertices) in &quad_batches {
-            if vertices.is_empty() {
-                continue;
-            }
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, *texture);
-            quad_shader.get_buffer(0).push_data(vertices);
-            glDrawArrays(GL_TRIANGLES, 0, (vertices.len() / QUAD_VERTEX_FLOATS) as _);
-        }
-
-        let text_shader = self.get_shader("text_alpha");
-        text_shader.use_program();
-        text_shader.uniform_2f(
-            "u_resolution",
-            ctx.screen.width as _,
-            ctx.screen.height as _,
-        );
-        for (texture, vertices) in &text_batches {
-            if vertices.is_empty() {
-                continue;
-            }
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, *texture);
-            text_shader.get_buffer(0).push_data(vertices);
-            glDrawArrays(GL_TRIANGLES, 0, (vertices.len() / TEXT_VERTEX_FLOATS) as _);
-        }
+        self.flush_simple(&mut simple_batches, &mut simple_indices, ctx);
+        self.flush_quads(&mut quad_batches, &mut quad_indices, ctx);
+        self.flush_texts(&mut text_batches, &mut text_indices, ctx);
     }
 
     fn load_font_atlas(

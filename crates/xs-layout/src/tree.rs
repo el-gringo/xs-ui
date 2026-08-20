@@ -232,6 +232,7 @@ impl LayoutTree {
                             Background::Color(c) => c,
                             Background::Gradient(g) => g.start,
                         },
+                        Material::SimpleQuad(color, _) => color,
                         Material::Text(color, _, _) => color,
                     };
                     format!("{color:?}")

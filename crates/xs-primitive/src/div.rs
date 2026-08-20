@@ -387,14 +387,19 @@ impl ElementObject for Div {
 
     fn paint(&self, app_context: &mut AppContext, children: &[View]) -> View {
         let mut style = self.style.clone();
-        let material = Material::Quad(Rc::new(QuadProps {
+        let quad_props = QuadProps {
             background: style.background,
             border: style.border,
             border_radius: style.border_radius,
             box_shadow: style.box_shadow,
             overflow: style.overflow,
             background_image: app_context.load_image(style.background_image.clone()),
-        }));
+        };
+        let material = if let Some((color, texture)) = quad_props.simple_material() {
+            Material::SimpleQuad(color, texture)
+        } else {
+            Material::Quad(Rc::new(quad_props))
+        };
         match style.position {
             StylePosition::Absolute => {
                 style.position = StylePosition::Static;

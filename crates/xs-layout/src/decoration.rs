@@ -13,6 +13,39 @@ pub struct QuadProps {
     pub background_image: Option<Image>,
 }
 
+impl QuadProps {
+    /// Returns true if this quad is a plain solid-color rectangle with no
+    /// border, shadow, gradient, or border-radius. These can be rendered
+    /// with a much simpler/faster shader path. Background images are
+    /// allowed — the simple shader samples the texture and blends it
+    /// with the background color.
+    pub fn is_simple(&self) -> bool {
+        matches!(self.background, Background::Color(_))
+            && self.border == Borders::none()
+            && self.border_radius == BorderRadius::default()
+            && self.box_shadow == BoxShadow::default()
+            && self.overflow == crate::Overflow::default()
+    }
+
+    /// If this is a simple quad, return the background color and optional
+    /// texture ID (0 when there is no background image).
+    pub fn simple_material(&self) -> Option<(Color, u32)> {
+        if self.is_simple() {
+            if let Background::Color(c) = self.background {
+                let tex = self
+                    .background_image
+                    .as_ref()
+                    .map_or(0, |img| img.texture);
+                Some((c, tex))
+            } else {
+                unreachable!()
+            }
+        } else {
+            None
+        }
+    }
+}
+
 impl Default for QuadProps {
     fn default() -> Self {
         Self {
@@ -29,6 +62,11 @@ impl Default for QuadProps {
 #[derive(Clone, PartialEq, Debug)]
 pub enum Material {
     Quad(Rc<QuadProps>),
+    /// Fast-path for plain rectangles: no border, no shadow, no gradient,
+    /// no border-radius. Rendered with a dedicated lightweight shader.
+    /// The u32 is the GL texture ID (0 = use the placeholder solid-color
+    /// texture).
+    SimpleQuad(Color, u32),
     Text(Color, TextProperties, Rc<TextVertices>),
 }
 

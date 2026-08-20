@@ -10,6 +10,9 @@ pub(crate) const QUAD_VERTEX_FLOATS: usize = 46;
 const CORNER_FLOATS: usize = 4;
 const VERTICES_PER_QUAD: usize = 6;
 
+/// Simple quad: position(2) + texcoord(2) + color(4) + clip(4) = 14 floats per vertex.
+pub(crate) const SIMPLE_QUAD_VERTEX_FLOATS: usize = 14;
+
 impl RendererOpenGl {
     pub fn initialize_quad_shader(&mut self) {
         match Shader::try_new(
@@ -139,6 +142,65 @@ impl RendererOpenGl {
             dst[2] = cu;
             dst[3] = cv;
             head.copy_from_slice(&vertex[CORNER_FLOATS..]);
+        }
+    }
+
+    pub fn initialize_simple_quad_shader(&mut self) {
+        match Shader::try_new(
+            include_str!("glsl/simple_quad.glsl.vert"),
+            include_str!("glsl/simple_quad.glsl.frag"),
+        ) {
+            Ok(mut shader) => {
+                let size_of_float = std::mem::size_of::<f32>();
+                let stride = (SIMPLE_QUAD_VERTEX_FLOATS * size_of_float) as i32;
+                let offset = |component: usize| (component * size_of_float) as i64;
+                let buffer = Buffer::new()
+                    .add_attribute("a_position", 2, GL_FLOAT, false, stride, offset(0))
+                    .add_attribute("a_texcoord", 2, GL_FLOAT, false, stride, offset(2))
+                    .add_attribute("a_color", 4, GL_FLOAT, false, stride, offset(4))
+                    .add_attribute("a_clip", 4, GL_FLOAT, false, stride, offset(8));
+                shader.add_buffer(buffer);
+                shader.use_program();
+                self.add_shader("simple_quad", shader);
+            }
+            Err(error) => panic!("Error in simple_quad shader: {}", error),
+        }
+    }
+
+    /// Appends the six triangles of a solid-color quad to the batch. This is
+    /// the fast path for quads that have no border, shadow, gradient, or
+    /// border-radius. Background images are supported via texture sampling.
+    pub fn push_simple_quad(
+        &self,
+        quad: &Rectangle,
+        color: Color,
+        clip: Option<Rectangle>,
+        out: &mut Vec<f32>,
+    ) {
+        let default_no_clip = Rectangle::new(0.0, 0.0, f32::INFINITY, f32::INFINITY);
+        let clip = clip.as_ref().unwrap_or(&default_no_clip);
+        let clip: [f32; 4] = [clip.x, clip.y, clip.width, clip.height];
+        let color: [f32; 4] = color.into();
+
+        let corners = [
+            (quad.x, quad.y, 0.0, 0.0),
+            (quad.x + quad.width, quad.y, 1.0, 0.0),
+            (quad.x + quad.width, quad.y + quad.height, 1.0, 1.0),
+            (quad.x, quad.y + quad.height, 0.0, 1.0),
+        ];
+        let triangle_order = [0usize, 1, 3, 1, 2, 3];
+
+        let base = out.len();
+        out.resize(base + VERTICES_PER_QUAD * SIMPLE_QUAD_VERTEX_FLOATS, 0.0);
+        for (slot, &corner) in triangle_order.iter().enumerate() {
+            let (cx, cy, u, v) = corners[corner];
+            let start = base + slot * SIMPLE_QUAD_VERTEX_FLOATS;
+            out[start] = cx;
+            out[start + 1] = cy;
+            out[start + 2] = u;
+            out[start + 3] = v;
+            out[start + 4..start + 8].copy_from_slice(&color);
+            out[start + 8..start + 12].copy_from_slice(&clip);
         }
     }
 }
