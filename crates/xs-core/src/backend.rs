@@ -14,6 +14,7 @@ pub enum BackendResponse {
 pub enum BackendRequest {
     /// src url
     LoadImage(String),
+    Reload,
 }
 
 pub trait EventLoop {

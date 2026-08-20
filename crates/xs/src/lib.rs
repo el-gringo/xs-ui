@@ -8,7 +8,7 @@ pub use application::Application;
 pub use xs_animation::{Animate, AnimationDirection, Easing, Spring};
 pub use xs_core::{
     AnyElement, AppConfig, AppContext, Context, ElementObject, FocusHandle, IntoElement, KeyCode,
-    NavigationNode, ParentElement, Render, Setter, State,
+    NavigationNode, ParentElement, Render, State,
 };
 pub use xs_layout::*;
 pub use xs_primitive::*;

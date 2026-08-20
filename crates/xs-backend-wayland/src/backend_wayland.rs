@@ -125,3 +125,7 @@ pub fn load_image(src: String, tx: Sender<BackendResponse>) {
         },
     );
 }
+
+pub fn reload() {
+    eprintln!("backend_wayland::reload() not implemented");
+}

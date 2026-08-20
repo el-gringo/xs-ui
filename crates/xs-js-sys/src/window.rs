@@ -14,11 +14,13 @@ mod js {
         pub fn performance_now() -> u32;
         pub fn time(ptr: u32, len: u32);
         pub fn time_end(ptr: u32, len: u32);
+        pub fn reload();
     }
 }
 
 pub trait Window: Sized + EventEmitter {
     fn request_animation_frame(&self, closure: &mut Closure<u32>);
+    fn reload(&self);
 }
 
 impl Window for JsValue {
@@ -26,6 +28,12 @@ impl Window for JsValue {
         unsafe {
             let (ptr, len) = closure.to_js();
             js::request_animation_frame(ptr as _, len)
+        }
+    }
+
+    fn reload(&self) {
+        unsafe {
+            js::reload();
         }
     }
 }

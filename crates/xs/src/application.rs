@@ -3,7 +3,7 @@ use std::sync::{
     mpsc::{Receiver, Sender, channel},
 };
 
-use xs_backend::load_image;
+use xs_backend::{load_image, reload};
 use xs_core::{
     AppConfig, AppContext, Backend, BackendRequest, BackendResponse, EventLoop, ImageFormat,
     IntoElement, PENDING_UPDATE, Render, Renderer,
@@ -60,9 +60,7 @@ mod frame_profile {
             if frames > 0 {
                 xs_js_sys::log(&format!(
                     "  flex items={}us place={}us frames={}",
-                    items,
-                    place,
-                    frames
+                    items, place, frames
                 ));
                 xs_layout::layout_prof::reset();
             }
@@ -103,6 +101,9 @@ impl<R: Render> AppEventLoop<R> {
             match message {
                 BackendRequest::LoadImage(src) => {
                     load_image(src, self.tx.clone());
+                }
+                BackendRequest::Reload => {
+                    reload();
                 }
             }
         }

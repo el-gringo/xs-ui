@@ -96,4 +96,8 @@ impl AppContext {
         self.textures.insert(src.clone(), Some(image));
         self.dirty = true;
     }
+
+    pub fn reload(&mut self) {
+        self.messages.push(BackendRequest::Reload);
+    }
 }

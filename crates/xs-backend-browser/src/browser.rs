@@ -3,7 +3,9 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc::Sender};
 use crate::{bindings, browser_event};
 
 use xs_core::{AppConfig, AppContext, Backend, BackendResponse, EventLoop};
-use xs_js_sys::{Closure, EventEmitter, EventKeyDown, Node, document, request_animation_frame};
+use xs_js_sys::{
+    Closure, EventEmitter, EventKeyDown, Node, Window, document, request_animation_frame, window,
+};
 use xs_platform_event::KeyEvent;
 
 #[derive(Default)]
@@ -67,4 +69,9 @@ pub fn load_image(src: String, tx: Sender<BackendResponse>) {
             height,
         ));
     });
+}
+
+pub fn reload() {
+    let win = window();
+    win.reload();
 }

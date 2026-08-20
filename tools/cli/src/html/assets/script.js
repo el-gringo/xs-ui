@@ -250,6 +250,12 @@ const env = {
   performance_now() {
     return performance.now() * 1000;
   },
+  window() {
+    return add_heap_object(window);
+  },
+  reload() {
+    window.location.reload();
+  },
   time: function (ptr, len) {
     const label = getStringFromWasm0(ptr, len);
     console.time(label);
