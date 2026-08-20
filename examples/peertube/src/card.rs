@@ -48,10 +48,10 @@ impl Render for Card {
             .column()
             .width(320.)
             .height(270.)
-            .background_color(Color::BLACK)
+            .background_color(Color::TRANSPARENT)
             .border_radius_all(8.)
-            .box_shadow(4., 4., 8., 0., Color::BLACK)
             .border(Color::TRANSPARENT, 2.)
+            .background(Color::BLACK)
             .when(focus_handle.has_focus(), |this| {
                 this.border(theme::ACCENT_400, 2.)
                     .box_shadow(0.0, 0.0, 4., 4., theme::ACCENT_400)
