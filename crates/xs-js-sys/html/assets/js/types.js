@@ -15,10 +15,12 @@
  *
  * @typedef {(ptr: number, len: number) => Uint8Array} bytesFromWasm
  * @typedef {(buffer: Array | Uint8Array | Uint8ClampedArray) => number} bytesToWasm
+ * @typedef {(value: string) => number} bytesToCString
  *
  * @typedef {Object} Bytes
  * @property {bytesFromWasm} fromWasm
  * @property {bytesToWasm} toWasm
+ * @property {bytesToCString} toCString
  *
  * @typedef {Object} WasmBridge
  * @property {Utf8} utf8

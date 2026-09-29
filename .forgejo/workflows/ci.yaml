@@ -23,7 +23,9 @@ jobs:
       - name: Package
         run: mkdir dist;
           cp -v target/wasm32-unknown-unknown/release/peertube.wasm dist/app.wasm;
-          cp -rv tools/cli/src/html/* dist/;
+          cp -rv crates/xs-js-sys/html/* dist/;
+          sed -i 's/{wasm-pathname}/app/' dist/index.html;
+          sed -i 's/MODE = "development"/MODE = "production"/' dist/index.html;
 
       - name: Publish
         if: github.ref != 'refs/heads/main'

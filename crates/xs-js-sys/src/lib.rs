@@ -8,6 +8,7 @@ mod element;
 mod event;
 mod fetch;
 mod memory;
+mod node;
 mod window;
 
 pub use canvas::*;
@@ -16,4 +17,5 @@ pub use document::*;
 pub use element::*;
 pub use event::*;
 pub use fetch::fetch;
+pub use node::*;
 pub use window::*;

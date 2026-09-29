@@ -1,11 +1,24 @@
 use std::rc::Rc;
 
-use xs_js_sys::{Closure, EventEmitter, EventKeyDown, EventResize, Node, document, log, window};
+use xs_js_sys::{
+    Closure, Element, EventEmitter, EventKeyDown, EventResize, Node, document, log, window,
+};
 
 pub fn main() {
     let window = window();
     let doc = document();
-    let canvas = Rc::new(doc.query_selector("canvas"));
+
+    // The page has no canvas, the app creates the one it needs.
+    let canvas = doc.create_element("canvas");
+    canvas.set_attribute("tabindex", "1");
+    doc.query_selector("body").append_child(&canvas);
+    log(&format!(
+        "canvas is {}x{}",
+        canvas.offset_width(),
+        canvas.offset_height()
+    ));
+
+    let canvas = Rc::new(canvas);
     let canvas_clone = canvas.clone();
     window.add_event_listener(
         "resize",

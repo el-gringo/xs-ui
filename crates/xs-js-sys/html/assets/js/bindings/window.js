@@ -1,5 +1,5 @@
 /**
- * @import { App } from "./types.js";
+ * @import { App } from "../types.js";
  *
  *
  * @param {App} app
@@ -22,6 +22,27 @@ function initializeWindowBindings(app) {
           const { ptr, len } = bytes.toWasm(body);
           wasm.fetch_callback(handle, ptr, len);
         });
+    },
+
+    reload() {
+      window.location.reload();
+    },
+
+    // Microseconds, matching the `u32` the wasm side expects.
+    performance_now() {
+      return performance.now() * 1000;
+    },
+
+    time(ptr, len) {
+      const { utf8 } = app;
+      const label = utf8.fromWasm(ptr, len);
+      console.time(label);
+    },
+
+    time_end(ptr, len) {
+      const { utf8 } = app;
+      const label = utf8.fromWasm(ptr, len);
+      console.timeEnd(label);
     },
 
     request_animation_frame(closure, vcall) {

@@ -14,6 +14,19 @@ name = "request-animation-frame"
 path = "examples/request-animation-frame.rs"
 crate-type = [ "bin" ]
 
+[[example]]
+name = "webgl"
+path = "examples/webgl.rs"
+crate-type = [ "bin" ]
+
+[[example]]
+name = "dom"
+path = "examples/dom.rs"
+crate-type = [ "bin" ]
+
 
 
 [dependencies]
+
+[dev-dependencies]
+xs-gl-sys = { workspace = true }

@@ -4,7 +4,8 @@ use crate::{bindings, browser_event};
 
 use xs_core::{AppConfig, AppContext, Backend, BackendResponse, EventLoop};
 use xs_js_sys::{
-    Closure, EventEmitter, EventKeyDown, Node, Window, document, request_animation_frame, window,
+    Canvas, Closure, Element, Event, EventEmitter, EventKeyDown, Node, Window, document,
+    request_animation_frame, window,
 };
 use xs_platform_event::KeyEvent;
 
@@ -24,13 +25,35 @@ impl Backend for BackendBrowser {
         mut app_context: AppContext,
         mut event_loop: Box<dyn EventLoop>,
     ) {
+        // The page has no canvas: the backend owns it, the html only styles it.
+        // It has to be in the document before the event loop initializes, the
+        // renderer creates its gl resources there.
+        let doc = document();
+        let canvas = doc.create_element("canvas");
+        canvas.set_attribute("id", "glcanvas");
+        canvas.set_attribute("tabindex", "1");
+        doc.query_selector("body").append_child(&canvas);
+
+        let width = app.width as u32;
+        let height = app.height as u32;
+        canvas.set_width(width);
+        canvas.set_height(height);
+        canvas.set_style("width", &format!("{width}px"));
+        canvas.set_style("height", &format!("{height}px"));
+        // The canvas is what receives the key events, so keep the focus on it.
+        canvas.focus();
+        canvas.add_event_listener(
+            "blur",
+            Closure::new(|_event: Event| {
+                document().query_selector("canvas").focus();
+            }),
+        );
+
         app_context.screen.width = app.width as _;
         app_context.screen.height = app.height as _;
         event_loop.initialize(&mut app_context);
         let app_context = Rc::new(RefCell::new(app_context));
-        bindings::initialize(app.width, app.height);
 
-        let canvas = document().query_selector("canvas");
         let app_context_clone = app_context.clone();
         canvas.add_event_listener(
             "keydown",

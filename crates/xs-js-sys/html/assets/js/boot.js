@@ -35,42 +35,58 @@ function define(exports) {
 }
 window.define = define;
 
+// Script urls are resolved against the document, not against this file.
+const JS_DIR = "assets/js";
+
 function loadWasm(wasmUrl) {
-  return require(["js/heap.js", "js/bridge.js"]).then((exports) => {
-    /** @type {[Heap, WasmBridge]} */
-    const [Heap, WasmBridge] = exports;
+  return require([`${JS_DIR}/heap.js`, `${JS_DIR}/bridge.js`]).then(
+    (exports) => {
+      /** @type {[Heap, WasmBridge]} */
+      const [Heap, WasmBridge] = exports;
 
-    const wasmUtils = {};
-    const heap = Heap();
-    const { utf8, bytes } = WasmBridge(wasmUtils);
-    Object.assign(wasmUtils, { heap, utf8, bytes });
+      const wasmUtils = {};
+      const heap = Heap();
+      const { utf8, bytes } = WasmBridge(wasmUtils);
+      Object.assign(wasmUtils, { heap, utf8, bytes });
 
-    const env = {
-      heap_drop(idx) {
-        wasmUtils.heap.drop(idx);
-      },
-    };
-    require([
-      "js/bindings/canvas.js",
-      "js/bindings/console.js",
-      "js/bindings/document.js",
-      "js/bindings/element.js",
-      "js/bindings/event.js",
-      "js/bindings/webgl.js",
-      "js/bindings/window.js",
-    ]).then((wasmBindings) => {
-      for (let bindings of wasmBindings) {
-        Object.assign(env, bindings(wasmUtils));
-      }
-      fetch(wasmUrl)
-        .then((response) => response.arrayBuffer())
-        .then((bytes) => WebAssembly.instantiate(bytes, { env }))
-        .then((res) => {
-          const wasm = res.instance.exports;
-          wasmUtils.wasm = wasm;
-          wasm.main();
-        });
-    });
+      const env = {
+        heap_drop(idx) {
+          wasmUtils.heap.drop(idx);
+        },
+      };
+      return require([
+        `${JS_DIR}/bindings/canvas.js`,
+        `${JS_DIR}/bindings/console.js`,
+        `${JS_DIR}/bindings/document.js`,
+        `${JS_DIR}/bindings/element.js`,
+        `${JS_DIR}/bindings/event.js`,
+        `${JS_DIR}/bindings/node.js`,
+        `${JS_DIR}/bindings/webgl.js`,
+        `${JS_DIR}/bindings/window.js`,
+      ]).then((wasmBindings) => {
+        for (let bindings of wasmBindings) {
+          Object.assign(env, bindings(wasmUtils));
+        }
+        return fetch(wasmUrl)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`${response.status} fetching ${wasmUrl}`);
+            }
+            return response.arrayBuffer();
+          })
+          .then((bytes) => WebAssembly.instantiate(bytes, { env }))
+          .then((res) => {
+            const wasm = res.instance.exports;
+            wasmUtils.wasm = wasm;
+            wasm.main();
+          });
+      });
+    },
+  ).catch((error) => {
+    // A failure here used to be an unhandled rejection, which looks exactly
+    // like an app that renders nothing.
+    console.error(`xs-ui boot failed for ${wasmUrl}:`, error);
+    throw error;
   });
 }
 window.loadWasm = loadWasm;

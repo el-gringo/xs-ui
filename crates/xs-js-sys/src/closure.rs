@@ -3,12 +3,15 @@ use std::{any::Any, cell::RefCell, marker::PhantomData};
 // Wrapper with unsafe Sync (WASM is single-threaded)
 struct ClosureTable {
     table: RefCell<Vec<Option<AnyClosure>>>,
+    /// Handles whose slot is empty and can be handed out again.
+    free: RefCell<Vec<usize>>,
 }
 
 unsafe impl Sync for ClosureTable {}
 
 static CLOSURE_TABLE: ClosureTable = ClosureTable {
     table: RefCell::new(Vec::new()),
+    free: RefCell::new(Vec::new()),
 };
 
 pub trait ClosureElement {
@@ -71,16 +74,18 @@ impl AnyClosure {
 
 // Store AnyClosure in table, return handle
 pub fn store_closure(closure: AnyClosure) -> usize {
-    let mut table = CLOSURE_TABLE.table.borrow_mut();
-    let handle = table
-        .iter()
-        .position(|slot| slot.is_none())
-        .unwrap_or_else(|| {
-            let idx = table.len();
+    // The free list, not the slots themselves: a slot is only on it when it is
+    // really free, so a handler that runs right now keeps its handle.
+    let handle = match CLOSURE_TABLE.free.borrow_mut().pop() {
+        Some(handle) => handle,
+        None => {
+            let mut table = CLOSURE_TABLE.table.borrow_mut();
+            let handle = table.len();
             table.push(None);
-            idx
-        });
-    table[handle] = Some(closure);
+            handle
+        }
+    };
+    CLOSURE_TABLE.table.borrow_mut()[handle] = Some(closure);
     handle
 }
 
@@ -89,17 +94,23 @@ pub fn invoke_closure<Args>(handle: usize, args: Args)
 where
     Args: 'static,
 {
-    let mut table = CLOSURE_TABLE.table.borrow_mut();
-    if let Some(closure) = table[handle].as_mut() {
-        let inner = closure.downcast_mut::<Closure<Args>>().unwrap();
+    // Take the closure out of the table before calling it, and give it back
+    // after. A handler may well store or invoke another closure, which would
+    // borrow the table again.
+    let Some(mut closure) = CLOSURE_TABLE.table.borrow_mut()[handle].take() else {
+        return;
+    };
+    if let Some(inner) = closure.downcast_mut::<Closure<Args>>() {
         inner.call(args);
     }
+    CLOSURE_TABLE.table.borrow_mut()[handle] = Some(closure);
 }
 
 // Remove closure from table
 pub fn drop_closure(handle: usize) {
     let mut table = CLOSURE_TABLE.table.borrow_mut();
-    if handle < table.len() {
-        table[handle] = None;
+    if handle < table.len() && table[handle].take().is_some() {
+        drop(table);
+        CLOSURE_TABLE.free.borrow_mut().push(handle);
     }
 }

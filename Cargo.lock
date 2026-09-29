@@ -330,6 +330,9 @@ dependencies = [
 [[package]]
 name = "xs-js-sys"
 version = "0.1.0"
+dependencies = [
+ "xs-gl-sys",
+]
 
 [[package]]
 name = "xs-layout"

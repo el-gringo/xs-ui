@@ -90,7 +90,17 @@ function WasmBridge(app) {
       return { ptr, len };
     }
 
-    return { fromWasm, toWasm };
+    /**
+     * Writes a js string in wasm memory as a null terminated c string, for the
+     * bindings that hand a string back to be read as a `CStr`. The buffer comes
+     * from the heap allocator and is not freed.
+     * @type bytesToCString
+     */
+    function toCString(value) {
+      return toWasm(new TextEncoder().encode(`${value}\0`)).ptr;
+    }
+
+    return { fromWasm, toWasm, toCString };
   }
 
   function getUint8Memory() {
