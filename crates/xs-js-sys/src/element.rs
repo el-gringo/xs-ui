@@ -163,9 +163,11 @@ pub trait Element {
 /// Reads a string the bindings wrote in wasm memory as a null terminated c
 /// string. The buffer belongs to the heap allocator and is not freed.
 unsafe fn read_c_string(ptr: u32) -> String {
-    std::ffi::CStr::from_ptr(ptr as *const std::ffi::c_char)
-        .to_string_lossy()
-        .into_owned()
+    unsafe {
+        std::ffi::CStr::from_ptr(ptr as *const std::ffi::c_char)
+            .to_string_lossy()
+            .into_owned()
+    }
 }
 
 impl Element for JsValue {
