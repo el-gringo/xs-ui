@@ -33,16 +33,7 @@ impl Html {
     /// `wasm_url` is what the page fetches, `dev` adds the hot reload client.
     pub fn render(&self, wasm_url: &str, dev: bool) -> String {
         let script = loader(wasm_url, dev);
-        match find_rust_link(&self.source) {
-            Some((start, end)) => {
-                let mut out = String::with_capacity(self.source.len() + script.len());
-                out.push_str(&self.source[..start]);
-                out.push_str(&script);
-                out.push_str(&self.source[end..]);
-                out
-            }
-            None => inject(&self.source, &script),
-        }
+        inject_at(&self.source, &script).unwrap_or_else(|| inject(&self.source, &script))
     }
 }
 
@@ -123,6 +114,17 @@ fn has_rel_rust(attributes: &str) -> bool {
         from = at + 3;
     }
     false
+}
+
+/// Replaces the `<link rel="rust" />` marker with `markup`, `None` when the page
+/// has no marker.
+pub fn inject_at(html: &str, markup: &str) -> Option<String> {
+    let (start, end) = find_rust_link(html)?;
+    let mut out = String::with_capacity(html.len() + markup.len());
+    out.push_str(&html[..start]);
+    out.push_str(markup);
+    out.push_str(&html[end..]);
+    Some(out)
 }
 
 /// Inserts `markup` at the end of the body, falling back to the end of the

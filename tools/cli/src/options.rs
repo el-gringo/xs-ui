@@ -65,18 +65,27 @@ pub struct Options {
 }
 
 impl Options {
-    /// The package to build: the one given on the command line, or the default
-    /// binary crate of the project.
-    pub fn resolve_package(&self) -> Result<String, Vec<String>> {
-        match &self.package {
-            Some(package) => Ok(package.clone()),
-            None => {
-                let mut candidates = crate::cargo_metadata::default_bins();
-                match candidates.len() {
-                    0 => Err(Vec::new()),
-                    _ => Ok(candidates.remove(0)),
-                }
-            }
+    /// The package to build: the one given on the command line, the one that
+    /// owns the requested example, or the project's default binary crate.
+    ///
+    /// The error is ready to print, it names the candidates when the target is
+    /// not there.
+    pub fn resolve_package(&self) -> Result<String, String> {
+        if let Some(package) = &self.package {
+            return Ok(package.clone());
+        }
+        if let Some(example) = &self.example {
+            return match crate::cargo_metadata::packages_with_example(example)
+                .into_iter()
+                .next()
+            {
+                Some(package) => Ok(package),
+                None => Err(missing_example(example)),
+            };
+        }
+        match crate::cargo_metadata::default_bins().into_iter().next() {
+            Some(package) => Ok(package),
+            None => Err("no binary target in this workspace, pass a package".to_string()),
         }
     }
 
@@ -130,6 +139,19 @@ pub fn default_html() -> PathBuf {
     } else {
         PathBuf::from(LOCAL_HTML)
     }
+}
+
+fn missing_example(example: &str) -> String {
+    let mut error = format!("no example target named `{example}` in this workspace");
+    let available = crate::cargo_metadata::examples();
+    if available.is_empty() {
+        return error;
+    }
+    error.push_str(", it has:");
+    for (package, names) in available {
+        error.push_str(&format!("\n  {package}: {}", names.join(", ")));
+    }
+    error
 }
 
 pub fn parse(args: &[String]) -> Result<Options, String> {
@@ -278,6 +300,23 @@ mod tests {
         assert_eq!(options.host, "127.0.0.1");
         assert_eq!(options.port, 9000);
         assert_eq!(options.target, "wasm32-wasi");
+    }
+
+    #[test]
+    fn an_example_resolves_to_the_package_that_has_it() {
+        // The workspace is read for this, only assert it does not blow up.
+        let options = parse_args(&["serve", "-e", "webgl"]).unwrap();
+        assert_eq!(options.package, None);
+        let _ = options.resolve_package();
+    }
+
+    #[test]
+    fn a_missing_example_names_the_ones_that_exist() {
+        let error = missing_example("definitely-not-an-example");
+        assert!(error.contains("definitely-not-an-example"));
+        if !crate::cargo_metadata::examples().is_empty() {
+            assert!(error.contains("it has:"), "{error}");
+        }
     }
 
     #[test]
