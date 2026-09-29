@@ -11,21 +11,8 @@ jobs:
       - name: Check
         run: cargo check --target wasm32-unknown-unknown
 
-      - name: Build
-        run: >
-          RUSTFLAGS="-Ctarget-cpu=mvp"
-          cargo build
-          -Zbuild-std=panic_abort,std
-          --target wasm32-unknown-unknown
-          --release
-          --package peertube
-
-      - name: Package
-        run: mkdir dist;
-          cp -v target/wasm32-unknown-unknown/release/peertube.wasm dist/app.wasm;
-          cp -rv crates/xs-js-sys/html/* dist/;
-          sed -i 's/{wasm-pathname}/app/' dist/index.html;
-          sed -i 's/MODE = "development"/MODE = "production"/' dist/index.html;
+      - name: Build and package
+        run: cargo run -p xs-cli -- build peertube --release --dist dist
 
       - name: Publish
         if: github.ref != 'refs/heads/main'

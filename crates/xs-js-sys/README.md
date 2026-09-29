@@ -1,11 +1,30 @@
 # JS/WASM bindings
 
 ## Run example
-This will run a cargo watch and start a python server on port 8421
 
 ```shell
-./serve.sh <example>
+./serve.sh <example>   # a shortcut for: xs serve -p xs-js-sys -e <example> html/index.html
 ```
+
+`xs` builds the example with cargo watch, serves it on :8080 and injects the
+script that loads the wasm into `html/index.html`. In dev the injected script
+also connects to the dev server websocket and reloads the page on every rebuild.
+The wasm flags (`target-cpu=mvp`, the rebuilt std) come from the repository's
+`.cargo/config.toml`, not from the tool.
+
+## The html is plain, the tool injects
+
+`html/index.html` carries no xs-ui markup: no wasm url, no loader, no hot reload
+code. `xs` reads it on every request and replaces its
+
+```html
+<link rel="rust" />
+```
+
+with the script that boots the wasm, appending it at the end of the body when a
+page has no marker (`tools/cli/src/html.rs`). The file stays plain html and the
+tool owns everything that has to run in the page. `xs build` does the same,
+without the websocket part, which is what `dist/` ends up containing.
 
 | Example                    | What it covers                                              |
 | -------------------------- | ----------------------------------------------------------- |
@@ -51,17 +70,17 @@ app is about to create does not exist yet.
 `html/assets/js/bindings/webgl.js`: it creates a canvas, gets a `webgl2` context
 and clears it.
 
-`dom` is the reference for the two traits: `Element` in `src/element.rs` (attributes,
-classes, inline styles, inner html, dimensions, `remove`, `focus`) and `Node` in
-`src/node.rs` (`query_selector`, `append_child`, `insert_before`, `remove_child`,
-`replace_child`). It builds a list, reorders it with `insert_before`, swaps an item
-with `replace_child` and exercises `remove_child` on a throwaway child, so every
-demo node stays attached and can be targeted by pointer events later.
+`dom` is a small todo list and the reference for `Element` in `src/element.rs`
+(attributes, classes, inline styles, inner html, dimensions, `remove`, `focus`)
+and `Node` in `src/node.rs` (`query_selector`, `append_child`, `insert_before`,
+`remove_child`, `replace_child`). It adds a row with `insert_before` (newest
+first), toggles one done with `replace_child`, deletes one with `remove_child`,
+and reports `classList` and coordinates from an `EventMouse`.
 
 Strings coming back from the DOM are written in wasm memory as null terminated c
-strings, so reading one with `CStr::from_ptr` is what `get_attribute`,
-`get_inner_html` and `get_style` do. Those buffers come from the heap allocator
-and are not freed.
+strings, so reading one with `CStr::from_ptr` is what `attribute`,
+`inner_html` and `style` do. Those buffers come from the heap allocator and are
+not freed.
 
 The js side mirrors the rust side: `bindings/node.js` holds the tree operations
 and the query, `bindings/element.js` the element properties. `boot.js` requires

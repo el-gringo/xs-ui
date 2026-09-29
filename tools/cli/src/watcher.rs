@@ -1,5 +1,7 @@
+use std::io::BufRead;
+use std::sync::mpsc::Sender;
+
 use nanoserde::DeJson;
-use std::{io::BufRead, sync::mpsc::Sender};
 
 #[derive(Debug, DeJson)]
 struct CargoBuildMessageSpan {
@@ -14,20 +16,9 @@ impl Default for CargoBuildMessageSpan {
     }
 }
 
-// #[derive(Debug, DeJson)]
-// struct CargoBuildMessageChild {
-//     children: Vec<CargoBuildMessageChild>,
-//     code: None,
-//     level: String,
-//     message: String,
-//     rendered: Option<String>,
-//     spans: Vec<CargoBuildMessageSpan>
-// }
-
 #[derive(Debug, DeJson)]
 struct CargoBuildMessage {
     rendered: String,
-    //children: Vec<CargoBuildMessageChild>,
     spans: Vec<CargoBuildMessageSpan>,
 }
 
@@ -35,7 +26,6 @@ impl Default for CargoBuildMessage {
     fn default() -> Self {
         Self {
             rendered: String::new(),
-            //children: Vec::new(),
             spans: Vec::new(),
         }
     }
@@ -58,28 +48,60 @@ impl Default for CargoBuildOutput {
     }
 }
 
-fn build(target_directory: String, args: Vec<String>, sender: Sender<String>) {
-    let start = target_directory.len();
-    let command = std::process::Command::new("cargo")
-        .env("RUSTFLAGS", "-Ctarget-cpu=mvp")
+/// What the browser is told when the app is rebuilt: the url to load, with a
+/// fresh query so the wasm is not served from the browser cache.
+#[allow(dead_code)]
+pub struct Rebuild {
+    pub url: String,
+    pub path: String,
+    pub duration_ms: u128,
+}
+
+/// Runs `cargo watch`, rebuilding the target and reporting every artifact.
+///
+/// The build is left exactly as the project configured it: no rustflags, no
+/// build-std, those come from its own cargo configuration.
+pub fn watch(cargo_args: &[String], wasm_name: &str) -> std::sync::mpsc::Receiver<Rebuild> {
+    let (sender, receiver) = std::sync::mpsc::channel();
+    let args: Vec<String> = vec![
+        "watch".to_string(),
+        "-d".to_string(),
+        "0.1".to_string(),
+        "-x".to_string(),
+        format!("{} --message-format=json", cargo_args.join(" ")),
+    ];
+    let wasm_name = wasm_name.to_string();
+    std::thread::spawn(move || build(args, wasm_name, sender));
+    receiver
+}
+
+fn build(args: Vec<String>, wasm_name: String, sender: Sender<Rebuild>) {
+    let mut started = std::time::Instant::now();
+    let mut version = 0;
+    let mut command = std::process::Command::new("cargo");
+    command
         .args(args.clone())
         .stdout(std::process::Stdio::piped())
-        //.stderr(std::process::Stdio::null())
-        .spawn()
-        .expect("failed to spawn cargo watch");
-
-    let stdout = command.stdout.unwrap();
+        .stderr(std::process::Stdio::inherit());
+    let mut child = match command.spawn() {
+        Ok(child) => child,
+        Err(error) => {
+            eprintln!("failed to run cargo: {error}");
+            return;
+        }
+    };
+    let stdout = child.stdout.take().expect("stdout was piped");
     let reader = std::io::BufReader::new(stdout);
-    let stdout_lines = reader.lines();
-    let mut before = std::time::Instant::now();
-    for line in stdout_lines {
-        let line = line.unwrap();
-        //  println!("line: {}", line);
+    for line in reader.lines() {
+        let line = match line {
+            Ok(line) => line,
+            Err(_) => continue,
+        };
         let output: CargoBuildOutput = match DeJson::deserialize_json(&line) {
             Ok(output) => output,
             Err(_) => {
                 if line.starts_with("[Running") {
-                    before = std::time::Instant::now();
+                    started = std::time::Instant::now();
                 }
                 CargoBuildOutput::default()
             }
@@ -87,96 +109,26 @@ fn build(target_directory: String, args: Vec<String>, sender: Sender<String>) {
         match output.reason.as_str() {
             "compiler-artifact" => {
                 if let Some(executable) = output.executable {
-                    let wasm_pathname: String = executable
-                        .chars()
-                        .skip(start)
-                        .take(executable.len() - start)
-                        .collect();
-                    println!(
-                        "Updated: {} in {}ms",
-                        wasm_pathname,
-                        before.elapsed().as_millis()
-                    );
-                    sender.send(wasm_pathname).unwrap();
+                    version += 1;
+                    let url = format!("{wasm_name}?v={version}");
+                    println!("Updated {url} in {}ms", started.elapsed().as_millis());
+                    // A dropped receiver only means nobody is watching.
+                    let _ = sender.send(Rebuild {
+                        url,
+                        path: executable,
+                        duration_ms: started.elapsed().as_millis(),
+                    });
                 }
             }
             "compiler-message" => {
                 if let Some(message) = output.message {
-                    let spans = message.spans;
-                    if let Some(span) = spans.first() {
-                        println!("file_name: {}", span.file_name);
+                    if let Some(span) = message.spans.first() {
+                        println!("{}: {}", span.file_name, message.rendered);
                     }
-                    println!("{}", message.rendered);
                 };
             }
-            "build-finished" => {}
             _ => {}
         }
     }
-}
-/*
-use notify::{Config, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-pub fn watch_notify(target_directory: String, additional_args: Vec<String>, sender: Sender<String>) {
-    let path = source_path.clone();
-    let watch_path = Path::new(path.as_str());
-    println!("source_path: {:?}", source_path);
-
-    let mut args: Vec<String> = vec![
-        "build",
-        "--target",
-        "wasm32-unknown-unknown",
-        "--message-format=json",
-    ]
-        .iter()
-        .map(|arg| arg.to_string())
-        .collect();
-    args.extend(additional_args);
-
-    build(
-        source_path.clone(),
-        args.clone(),
-        sender.clone()
-    );
-
-    let watcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
-        let target_directory = target_directory.clone();
-        let args = args.clone();
-        let sender = sender.clone();
-        match res {
-            Ok(event) => {
-                println!("event.kind: {:?}", event.kind);
-                let update = match event.kind {
-                    EventKind::Create(_) => true,
-                    EventKind::Modify(_) => true,
-                    _ => false
-                };
-                if update {
-                    //build(target_directory, args, sender);
-                }
-            }
-            Err(e) => println!("Error {:?}", e),
-        }
-    });
-    if let Ok(mut watcher) = watcher {
-        let _ = watcher.watch(watch_path, RecursiveMode::Recursive);
-    };
-}
-*/
-
-pub fn watch(target_directory: String, additional_args: Vec<String>, sender: Sender<String>) {
-    let mut args: Vec<String> = vec![
-        "-Zbuild-std=panic_abort,std",
-        "watch",
-        "-d",
-        "0.1",
-        "-x",
-        "build --target wasm32-unknown-unknown --message-format=json",
-    ]
-    .iter()
-    .map(|arg| arg.to_string())
-    .collect();
-    args.extend(additional_args);
-    std::thread::spawn(|| {
-        build(target_directory, args, sender);
-    });
+    let _ = child.wait();
 }

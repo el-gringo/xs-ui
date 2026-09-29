@@ -4,22 +4,25 @@
 
 let loaded = {};
 function addScript(scriptUrl) {
-  const loader = loaded[scriptUrl]
-    ? Promise.resolve()
-    : new Promise((resolve, reject) => {
-        function onLoad() {
-          resolve(window["__exports__"]);
-          window["__exports__"] = null;
-        }
-        const scriptNode = document.createElement("script");
-        scriptNode.type = "text/javascript";
-        scriptNode.src = scriptUrl;
-        scriptNode.addEventListener("load", onLoad);
-        scriptNode.addEventListener("error", reject);
-        document.head.appendChild(scriptNode);
-      });
-  loaded[scriptUrl] = true;
-  return loader;
+  // The exports are cached, not just a "done" flag: a second loadWasm, from
+  // the hot reload, has to get the factories again.
+  if (loaded[scriptUrl]) {
+    return Promise.resolve(loaded[scriptUrl]);
+  }
+  return new Promise((resolve, reject) => {
+    function onLoad() {
+      const exports = window["__exports__"];
+      window["__exports__"] = null;
+      loaded[scriptUrl] = exports;
+      resolve(exports);
+    }
+    const scriptNode = document.createElement("script");
+    scriptNode.type = "text/javascript";
+    scriptNode.src = scriptUrl;
+    scriptNode.addEventListener("load", onLoad);
+    scriptNode.addEventListener("error", reject);
+    document.head.appendChild(scriptNode);
+  });
 }
 
 function require(requirements) {

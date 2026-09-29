@@ -18,44 +18,46 @@ pub struct IncomingMessages<'a> {
 impl<'a> Iterator for IncomingMessages<'a> {
     type Item = WebSocketMessage;
 
+    /// A browser going away mid frame is normal, not an error: the read simply
+    /// ends the iteration instead of bringing the process down (a panic here is
+    /// fatal, `panic = "abort"`).
     fn next(&mut self) -> Option<WebSocketMessage> {
         let reader = self.reader.borrow_mut();
         let mut buffer: Vec<u8> = Vec::new();
-        let mut buf1 = vec![0; 2];
-        reader.read_exact(&mut buf1).expect("reading first 2 bytes");
+        let mut buf1 = [0u8; 2];
+        reader.read_exact(&mut buf1).ok()?;
         let len1 = buf1[1] & 0x7F;
         let masked = buf1[0] & 0x80 != 0;
-        buffer.append(&mut buf1);
+        buffer.extend_from_slice(&buf1);
         let payload_size = match len1 {
             126 => {
                 let mut buf2 = [0u8; 2];
-                reader.read_exact(&mut buf2).unwrap();
-                buffer.append(&mut buf2.to_vec());
-                let len2 = u16::from_be_bytes(buffer[2..2 + 2].try_into().unwrap());
-                (len1 as u16 + len2) as usize
+                reader.read_exact(&mut buf2).ok()?;
+                buffer.extend_from_slice(&buf2);
+                let len2 = u16::from_be_bytes([buf2[0], buf2[1]]);
+                len2 as usize
             }
             127 => {
                 let mut buf8 = [0u8; 8];
-                reader.read_exact(&mut buf8).unwrap();
-                buffer.append(&mut buf8.to_vec());
-                let len8 = u64::from_be_bytes(buffer[2..2 + 8].try_into().unwrap());
-                (len1 as u64 + len8) as usize
+                reader.read_exact(&mut buf8).ok()?;
+                buffer.extend_from_slice(&buf8);
+                u64::from_be_bytes(buf8) as usize
             }
             _ => len1 as usize,
         };
         if masked {
-            let mut masking_key_buf = vec![0; 4];
-            reader.read_exact(&mut masking_key_buf).unwrap();
-            buffer.append(&mut masking_key_buf);
+            let mut masking_key_buf = [0u8; 4];
+            reader.read_exact(&mut masking_key_buf).ok()?;
+            buffer.extend_from_slice(&masking_key_buf);
         }
         let mut buffer_payload = vec![0; payload_size];
-        reader.read_exact(&mut buffer_payload).unwrap();
-        buffer.append(&mut buffer_payload);
+        reader.read_exact(&mut buffer_payload).ok()?;
+        buffer.extend_from_slice(&buffer_payload);
         let message: WebSocketMessage = buffer.into();
         if let OpCode::Ping = message.op_code {
             let pong = WebSocketMessage::new(OpCode::Pong, None, buffer_payload);
             let buf: Vec<u8> = pong.into();
-            self.writer.write(&buf).unwrap();
+            let _ = self.writer.write(&buf);
         }
         Some(message)
     }

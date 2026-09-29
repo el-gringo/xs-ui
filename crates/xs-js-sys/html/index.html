@@ -1,4 +1,4 @@
-<html>
+<html lang="en">
     <head>
         <meta charset="utf-8" />
         <title>XS-UI</title>
@@ -41,24 +41,12 @@
         </style>
     </head>
     <body>
-        <script src="assets/js/boot.js"></script>
-        <script>
-            loadWasm(`{wasm-pathname}.wasm?${Date.now()}`);
-        </script>
-        <script>
-            const MODE = "development";
-            if (MODE === "development") {
-                const secure = location.protocol === "https:";
-                const host = location.origin.replace(/^http/, "ws");
-                const ws = new WebSocket(`${host}/ws`);
-                ws.onmessage = function (event) {
-                    const { data } = event;
-                    if (data.endsWith(".wasm")) {
-                        load(data);
-                    }
-                };
-                window.ws = ws;
-            }
-        </script>
+        <!--
+            The loader goes here: `xs serve` and `xs build` replace this link
+            with the script that boots the wasm (plus, in dev, the hot reload
+            client), so this file stays plain html. Without a link the script is
+            appended at the end of the body.
+        -->
+        <link rel="rust" />
     </body>
 </html>

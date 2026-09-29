@@ -8,7 +8,11 @@ edition.workspace = true
 name = "xs"
 path = "src/main.rs"
 
-[dependencies]
+# xs is a native dev tool: it binds sockets and runs cargo, so it has no wasm
+# build. Gating the dependencies keeps `cargo build --workspace --target
+# wasm32-unknown-unknown` failing on this one crate, with the message in
+# main.rs, instead of on every host only import of it.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 xs-http = { workspace = true }
 xs-websocket = { workspace = true }
 nanoserde = "*"
