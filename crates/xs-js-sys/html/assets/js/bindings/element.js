@@ -74,7 +74,9 @@ function initializeElementBindings(app) {
 
     element_value(elementPtr) {
       const { heap, bytes } = app;
-      return bytes.toCString(heap.get(elementPtr).value ?? "");
+      // `??` is Chrome 80, the old webviews have to keep working.
+      const value = heap.get(elementPtr).value;
+      return bytes.toCString(value == null ? "" : value);
     },
     element_set_value(elementPtr, valuePtr, valueLen) {
       const { heap, utf8 } = app;

@@ -2,12 +2,13 @@ use crate::{
     AnyClosure, Closure, core::JsValue, element::HTMLElement, invoke_closure, store_closure,
 };
 
+/// The layout has to match `event_key_down` in `bindings/event.js`.
 #[repr(C)]
 struct EventKeyDownRaw {
-    key_code: u32,
     modifiers: u32,
-    key_ptr: u32,
-    key_len: u32,
+    code_ptr: u32,
+    code_len: u32,
+    key_code: u32,
 }
 
 /// Mirrors `MouseEvent`. The layout has to match `event_mouse` in
@@ -61,18 +62,25 @@ impl EventElement for EventResize {
 }
 
 pub struct EventKeyDown {
-    key_code: u32,
     modifiers: u8,
-    key: String,
+    /// The physical key, layout agnostic.
+    code: String,
+    /// The deprecated `KeyboardEvent.keyCode`.
+    key_code: u32,
 }
 
 impl EventKeyDown {
-    pub fn key_code(&self) -> u32 {
-        self.key_code
+    /// `KeyboardEvent.code`, what the key *is* rather than the character it
+    /// produces, so it does not change with the keyboard layout: `ArrowUp`,
+    /// `KeyA`, `Enter`, `Digit1`, `NumpadEnter`...
+    pub fn code(&self) -> &str {
+        &self.code
     }
 
-    pub fn key(&self) -> &str {
-        &self.key
+    /// The deprecated `KeyboardEvent.keyCode`, a layout dependent legacy number.
+    /// Prefer [`Self::code`].
+    pub fn key_code(&self) -> u32 {
+        self.key_code
     }
 
     pub fn modifiers(&self) -> u8 {
@@ -99,22 +107,22 @@ impl EventKeyDown {
 impl EventElement for EventKeyDown {
     fn from_js(js: JsValue) -> Self {
         let mut raw = EventKeyDownRaw {
-            key_code: 0,
             modifiers: 0,
-            key_ptr: 0,
-            key_len: 0,
+            code_ptr: 0,
+            code_len: 0,
+            key_code: 0,
         };
         unsafe {
             js::event_key_down(js.idx, &mut raw as *mut EventKeyDownRaw as *mut u8);
-            let key = {
+            let code = {
                 let slice =
-                    std::slice::from_raw_parts(raw.key_ptr as *const u8, raw.key_len as usize);
+                    std::slice::from_raw_parts(raw.code_ptr as *const u8, raw.code_len as usize);
                 String::from_utf8_unchecked(slice.to_vec())
             };
             EventKeyDown {
-                key_code: raw.key_code,
                 modifiers: raw.modifiers as u8,
-                key,
+                code,
+                key_code: raw.key_code,
             }
         }
     }

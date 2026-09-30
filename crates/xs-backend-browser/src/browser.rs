@@ -58,7 +58,7 @@ impl Backend for BackendBrowser {
         canvas.add_event_listener(
             "keydown",
             Closure::new(move |event: EventKeyDown| {
-                let code = browser_event::_translate_keycode(event.key_code());
+                let code = browser_event::_translate_code(event.code());
                 let mods = browser_event::_translate_mod(event.modifiers());
                 app_context_clone.borrow_mut().key_down = Some(KeyEvent::new(code, mods))
             }),

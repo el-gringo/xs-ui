@@ -32,14 +32,20 @@ pub fn _translate_mod(wasm_mods: u8) -> KeyMods {
     mods
 }
 
-pub fn _translate_keycode(keycode: u32) -> KeyCode {
-    match keycode {
-        8 => KeyCode::Backspace,
-        13 => KeyCode::Enter,
-        39 => KeyCode::Right,
-        37 => KeyCode::Left,
-        40 => KeyCode::Down,
-        38 => KeyCode::Up,
+/// `KeyboardEvent.code` to [`KeyCode`]. Keyed on the physical key, so it does
+/// not depend on the layout: `ArrowUp` is the same key everywhere.
+pub fn _translate_code(code: &str) -> KeyCode {
+    match code {
+        "Enter" | "NumpadEnter" => KeyCode::Enter,
+        "Backspace" => KeyCode::Backspace,
+        "ArrowRight" => KeyCode::Right,
+        "ArrowLeft" => KeyCode::Left,
+        "ArrowDown" => KeyCode::Down,
+        "ArrowUp" => KeyCode::Up,
+        "Space" => KeyCode::Space,
+        "Escape" => KeyCode::Escape,
+        "PageUp" => KeyCode::PageUp,
+        "PageDown" => KeyCode::PageDown,
         _ => KeyCode::Unknown,
     }
 }

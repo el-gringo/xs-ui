@@ -25,18 +25,19 @@ function initializeEventBindings(app) {
     event_key_down(eventPtr, bufPtr) {
       const { wasm, heap, utf8 } = app;
       const e = heap.get(eventPtr);
-      const key = e.key;
-      const keyResult = utf8.toWasm(key);
+      // `code` is the physical key, `key` would be the character it produces
+      // and would follow the keyboard layout.
+      const code = utf8.toWasm(e.code);
       const view = new DataView(wasm.memory.buffer);
-      view.setUint32(bufPtr, e.keyCode, true);
       let mods = 0;
       if (e.shiftKey) mods |= 1;
       if (e.ctrlKey) mods |= 2;
       if (e.altKey) mods |= 4;
       if (e.metaKey) mods |= 8;
-      view.setUint32(bufPtr + 4, mods, true);
-      view.setUint32(bufPtr + 8, keyResult.ptr, true);
-      view.setUint32(bufPtr + 12, keyResult.len, true);
+      view.setUint32(bufPtr, mods, true);
+      view.setUint32(bufPtr + 4, code.ptr, true);
+      view.setUint32(bufPtr + 8, code.len, true);
+      view.setUint32(bufPtr + 12, e.keyCode, true);
     },
     event_mouse(eventPtr, bufPtr) {
       const { wasm, heap } = app;

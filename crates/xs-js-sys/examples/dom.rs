@@ -187,7 +187,7 @@ pub fn main() {
     input.add_event_listener(
         "keydown",
         Closure::new(move |event: EventKeyDown| {
-            if event.key() != "Enter" {
+            if event.code() != "Enter" {
                 return;
             }
             let input = by_id("new-todo");

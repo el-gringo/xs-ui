@@ -35,9 +35,9 @@ pub fn main() {
         "keydown",
         Closure::new(|event: EventKeyDown| {
             log(&format!(
-                "canvas keydown: key_code={}, key={}, shift={}, ctrl={}, alt={}, meta={}",
+                "canvas keydown: code={}, key_code={}, shift={}, ctrl={}, alt={}, meta={}",
+                event.code(),
                 event.key_code(),
-                event.key(),
                 event.shift(),
                 event.ctrl(),
                 event.alt(),
