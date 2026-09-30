@@ -141,6 +141,13 @@ pub fn default_html() -> PathBuf {
     }
 }
 
+/// The html is the only argument that is a path, so its extension is enough to
+/// tell the two positionals apart.
+fn is_html(arg: &str) -> bool {
+    let arg = arg.to_ascii_lowercase();
+    arg.ends_with(".html") || arg.ends_with(".htm")
+}
+
 fn missing_example(example: &str) -> String {
     let mut error = format!("no example target named `{example}` in this workspace");
     let available = crate::cargo_metadata::examples();
@@ -196,10 +203,13 @@ pub fn parse(args: &[String]) -> Result<Options, String> {
             "--no-watch" => watch = false,
             // Free standing arguments are the package then the html, so both
             // `xs serve counter` and `xs counter` work. Anything starting with
-            // a dash is a mistyped option, not a positional.
+            // a dash is a mistyped option, not a positional, and an html file
+            // is always the html even when it comes first: `xs serve -e webgl
+            // app/index.html` should not read the path as the package.
             other if other.starts_with('-') => {
                 return Err(format!("unknown option: {other}"));
             }
+            other if is_html(other) && html.is_none() => html = Some(PathBuf::from(other)),
             other if package.is_none() => package = Some(other.to_string()),
             other if html.is_none() => html = Some(PathBuf::from(other)),
             other => return Err(format!("unexpected argument: {other}")),
@@ -278,6 +288,14 @@ mod tests {
     fn the_package_flag_also_sets_the_package() {
         let options = parse_args(&["serve", "-p", "playground"]).unwrap();
         assert_eq!(options.package.as_deref(), Some("playground"));
+    }
+
+    #[test]
+    fn an_html_path_is_never_taken_for_the_package() {
+        let options = parse_args(&["serve", "-e", "webgl", "app/index.html"]).unwrap();
+        assert_eq!(options.example.as_deref(), Some("webgl"));
+        assert_eq!(options.package, None);
+        assert_eq!(options.html, PathBuf::from("app/index.html"));
     }
 
     #[test]
