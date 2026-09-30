@@ -1,4 +1,7 @@
-use crate::{helpers::mask, opcode::OpCode::{self, *}};
+use crate::{
+    helpers::mask,
+    opcode::OpCode::{self, *},
+};
 
 /*
 #[derive(Debug)]
@@ -13,12 +16,15 @@ pub enum WebSocketMessage {
 */
 
 fn to_hex(bytes: &Vec<u8>) -> Vec<String> {
-    bytes.iter().map(|b| format!("{:#02x}", b).to_string()).collect()
+    bytes
+        .iter()
+        .map(|b| format!("{:#02x}", b).to_string())
+        .collect()
 }
 
 pub struct WebSocketMessage {
     pub op_code: OpCode,
-    pub masking_key: Option<[u8;4]>,
+    pub masking_key: Option<[u8; 4]>,
     pub payload: Vec<u8>,
 }
 
@@ -28,18 +34,21 @@ impl std::fmt::Debug for WebSocketMessage {
             Text => {
                 let text = std::str::from_utf8(&self.payload).unwrap();
                 write!(f, "[WebSocketMessage {:?} {:?}]", self.op_code, text)
-            },
+            }
             _ => {
                 write!(f, "{:?} {:?}", self.op_code, to_hex(&self.payload))
             }
         }
-
     }
 }
 
 impl WebSocketMessage {
-    pub fn new(op_code: OpCode, masking_key: Option<[u8;4]>, payload: Vec<u8>) -> Self {
-        Self { op_code, masking_key, payload }
+    pub fn new(op_code: OpCode, masking_key: Option<[u8; 4]>, payload: Vec<u8>) -> Self {
+        Self {
+            op_code,
+            masking_key,
+            payload,
+        }
     }
 }
 
@@ -66,10 +75,10 @@ impl From<Vec<u8>> for WebSocketMessage {
                 let header_size = payload_offset;
                 payload_offset += 4;
                 Some(bytes[header_size..payload_offset].try_into().unwrap())
-            },
-            false => None
+            }
+            false => None,
         };
-        let payload = &bytes[payload_offset..payload_offset+payload_size];
+        let payload = &bytes[payload_offset..payload_offset + payload_size];
         let payload = if let Some(masking_key) = masking_key {
             mask(&masking_key, payload)
         } else {
@@ -93,7 +102,7 @@ impl Into<Vec<u8>> for WebSocketMessage {
             usize::MIN..126 => {
                 header[1] |= len as u8;
                 2
-            },
+            }
             usize::MIN..65536 => {
                 header[1] |= 126;
                 let bytes = &(len as u16).to_be_bytes();
@@ -101,7 +110,7 @@ impl Into<Vec<u8>> for WebSocketMessage {
                     header[i + 2] = byte;
                 }
                 4
-            },
+            }
             _ => {
                 header[1] |= 127;
                 let bytes = &(len as u64).to_be_bytes();
@@ -120,7 +129,7 @@ impl Into<Vec<u8>> for WebSocketMessage {
         }
         let mut payload = match self.masking_key {
             Some(masking_key) => mask(&masking_key, &self.payload).into(),
-            None => self.payload
+            None => self.payload,
         };
         let mut frame = header[0..header_size].to_vec();
         frame.append(&mut payload);

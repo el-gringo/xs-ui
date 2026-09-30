@@ -22,7 +22,10 @@ fn create_handshake_response(key: &str) -> HttpResponse {
     headers.insert("Upgrade".to_string(), "websocket".to_string());
     headers.insert("Connection".to_string(), "Upgrade".to_string());
     headers.insert("Sec-WebSocket-Accept".to_string(), convert_key(key));
-    headers.insert("Sec-WebSocket-Protocol".to_string(), "ping".to_string());
+    // No `Sec-WebSocket-Protocol`: the client did not ask for a subprotocol, and
+    // sending one anyway is a protocol violation Chrome 63 refuses ("Response
+    // must not include 'Sec-WebSocket-Protocol' header if not present in
+    // request"), which kills the dev server hot reload on those webviews.
     HttpResponse::new(101, headers, Vec::new())
 }
 
