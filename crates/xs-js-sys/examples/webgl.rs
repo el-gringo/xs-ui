@@ -9,6 +9,10 @@ pub fn main() {
     // The page has no canvas, the app creates the one it needs.
     let doc = document();
     let canvas = doc.create_element("canvas");
+    // Getting the context also attaches it to the app, the gl bindings read
+    // `app.gl` from then on.
+    let context = canvas.get_context("webgl2");
+    canvas.set_attribute("id", "glcanvas");
     canvas.set_attribute("tabindex", "1");
     doc.query_selector("body").append_child(&canvas);
 
@@ -20,7 +24,6 @@ pub fn main() {
     canvas.focus();
     log(&format!("canvas {width}x{height}"));
 
-    let context = canvas.get_context("webgl2");
     log(&format!("webgl2 context: {}", context.idx));
 
     // The drawing buffer is dropped after every compositing pass, so the clear

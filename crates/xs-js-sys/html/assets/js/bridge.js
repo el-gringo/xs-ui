@@ -1,5 +1,5 @@
 /**
- * @import { App, Utf8, Bytes, WasmBridge } from "./types.js";
+ * @import { App, Utf8, Bytes, Memory, WasmBridge } from "./types.js";
  *
  * @param {App} app;
  * @returns {WasmBridge}
@@ -11,17 +11,65 @@ function WasmBridge(app) {
   });
   const cachedTextEncoder = new TextEncoder("utf-8");
 
-  let cachedMemoryBuffer = null;
-  let cachedUint8Memory = null;
-  let cachedMemoryBuffer2 = null;
-  let cachedUint8ArrayMemory = null;
   let WASM_VECTOR_LEN = 0;
+
+  /**
+   * The only place that reads and writes the wasm memory. The bindings must go
+   * through it: a view is only valid until the memory grows, and Chrome 63 (the
+   * webview the older TVs ship) grows it *in place* - `memory.buffer` keeps the
+   * same object while the old views are detached and turn into empty ones. A
+   * view cached by buffer identity therefore hands gl a short array, so views
+   * are built on every call over the live memory, which costs the same as the
+   * subarray it replaces.
+   *
+   * The range is checked first as well. A null pointer or an out of bounds one
+   * is a RangeError on a current V8, but Chrome 63 hits a DCHECK and takes the
+   * whole renderer down with it, so it is reported and skipped here.
+   * @type Memory
+   */
+  function Memory() {
+    function inRange(tag, ptr, len) {
+      const wasm = app.wasm;
+      if (wasm === undefined) {
+        console.error(`${tag}: the wasm module is not instantiated yet`);
+        return false;
+      }
+      if (ptr === 0) {
+        console.error(`${tag}: null pointer into the wasm memory, skipped`);
+        return false;
+      }
+      const size = wasm.memory.buffer.byteLength;
+      if (ptr < 0 || len < 0 || ptr + len > size) {
+        console.error(
+          `${tag}: [${ptr}, ${ptr + len}) is outside the ${size} bytes of the ` +
+            `wasm memory, skipped`,
+        );
+        return false;
+      }
+      return true;
+    }
+
+    /**
+     * A view of `len` elements of `Type` at `ptr`. Empty when the range is not
+     * usable, after reporting why.
+     */
+    function view(Type, ptr, len, tag = "view") {
+      if (!inRange(tag, ptr, len)) {
+        return new Type(0);
+      }
+      return new Type(app.wasm.memory.buffer, ptr, len);
+    }
+
+    return { inRange, view };
+  }
+
+  const memory = Memory();
 
   function Utf8() {
     /** @type stringFromWasm */
     function fromWasm(ptr, len) {
       return cachedTextDecoder.decode(
-        getUint8Memory().subarray(ptr, ptr + len),
+        memory.view(Uint8Array, ptr, len, "utf8.fromWasm"),
       );
     }
 
@@ -31,8 +79,8 @@ function WasmBridge(app) {
       if (realloc === undefined) {
         const buf = cachedTextEncoder.encode(str);
         const ptr = malloc(buf.length, 1) >>> 0;
-        getUint8ArrayMemory()
-          .subarray(ptr, ptr + buf.length)
+        memory
+          .view(Uint8Array, ptr, buf.length, "utf8.toWasm")
           .set(buf);
         WASM_VECTOR_LEN = buf.length;
         const len = WASM_VECTOR_LEN;
@@ -41,25 +89,27 @@ function WasmBridge(app) {
 
       let len = str.length;
       let ptr = malloc(len, 1) >>> 0;
+      const mem = memory.view(Uint8Array, ptr, len, "utf8.toWasm");
 
-      const mem = getUint8ArrayMemory();
-
+      // The ascii part is written by hand, only the tail needs the encoder.
       let offset = 0;
-
       for (; offset < len; offset++) {
         const code = str.charCodeAt(offset);
         if (code > 0x7f) break;
-        mem[ptr + offset] = code;
+        mem[offset] = code;
       }
       if (offset !== len) {
         if (offset !== 0) {
           str = str.slice(offset);
         }
         ptr = realloc(ptr, len, (len = offset + str.length * 3), 1) >>> 0;
-        const view = getUint8ArrayMemory().subarray(ptr + offset, ptr + len);
-        const ret = cachedTextEncoder.encodeInto(str, view);
-
-        offset += ret.written;
+        // `TextEncoder.encodeInto` is Chrome 73, the encoding is done by hand so
+        // the same code runs on the old webviews.
+        const encoded = cachedTextEncoder.encode(str);
+        memory
+          .view(Uint8Array, ptr, encoded.length, "utf8.toWasm")
+          .set(encoded);
+        offset += encoded.length;
         ptr = realloc(ptr, len, offset, 1) >>> 0;
       }
       WASM_VECTOR_LEN = offset;
@@ -75,7 +125,7 @@ function WasmBridge(app) {
   function Bytes() {
     /** @type bytesFromWasm */
     function fromWasm(ptr, len) {
-      return getUint8ArrayMemory().subarray(ptr, ptr + len);
+      return memory.view(Uint8Array, ptr, len, "bytes.fromWasm");
     }
 
     /** @type bytesToWasm */
@@ -83,8 +133,11 @@ function WasmBridge(app) {
       const { __xs_malloc: malloc } = app.wasm;
       let bytes = new Uint8Array(buffer);
       const ptr = malloc(bytes.byteLength, 1) >>> 0;
-      getUint8ArrayMemory()
-        .subarray(ptr, ptr + bytes.byteLength)
+      if (!memory.inRange("bytes.toWasm", ptr, bytes.byteLength)) {
+        return { ptr: 0, len: 0 };
+      }
+      memory
+        .view(Uint8Array, ptr, bytes.byteLength, "bytes.toWasm")
         .set(bytes);
       const len = (WASM_VECTOR_LEN = bytes.byteLength);
       return { ptr, len };
@@ -97,34 +150,14 @@ function WasmBridge(app) {
      * @type bytesToCString
      */
     function toCString(value) {
-      return toWasm(new TextEncoder().encode(`${value}\0`)).ptr;
+      return toWasm(cachedTextEncoder.encode(`${value}\0`)).ptr;
     }
 
     return { fromWasm, toWasm, toCString };
   }
 
-  function getUint8Memory() {
-    const buf = app.wasm.memory.buffer;
-    if (cachedUint8Memory === null || cachedMemoryBuffer !== buf) {
-      cachedMemoryBuffer = buf;
-      cachedUint8Memory = new Uint8Array(buf);
-    }
-    return cachedUint8Memory;
-  }
-
-  function getUint8ArrayMemory() {
-    const buf = app.wasm.memory.buffer;
-    if (
-      cachedUint8ArrayMemory === null ||
-      cachedMemoryBuffer2 !== buf
-    ) {
-      cachedMemoryBuffer2 = buf;
-      cachedUint8ArrayMemory = new Uint8Array(buf);
-    }
-    return cachedUint8ArrayMemory;
-  }
-
   return {
+    memory,
     utf8: Utf8(),
     bytes: Bytes(),
   };

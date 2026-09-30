@@ -30,6 +30,11 @@ impl Backend for BackendBrowser {
         // renderer creates its gl resources there.
         let doc = document();
         let canvas = doc.create_element("canvas");
+        // Asking for the context is also how the app says which canvas it
+        // renders into: the gl bindings read `app.gl` from then on. It has to
+        // happen before the event loop initializes, the renderer creates its
+        // gl resources there.
+        let _ = canvas.get_context("webgl2");
         canvas.set_attribute("id", "glcanvas");
         canvas.set_attribute("tabindex", "1");
         doc.query_selector("body").append_child(&canvas);

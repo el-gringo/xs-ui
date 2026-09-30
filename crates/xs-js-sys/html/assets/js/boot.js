@@ -49,8 +49,8 @@ function loadWasm(wasmUrl) {
 
       const wasmUtils = {};
       const heap = Heap();
-      const { utf8, bytes } = WasmBridge(wasmUtils);
-      Object.assign(wasmUtils, { heap, utf8, bytes });
+      const { memory, utf8, bytes } = WasmBridge(wasmUtils);
+      Object.assign(wasmUtils, { heap, memory, utf8, bytes });
 
       const env = {
         heap_drop(idx) {

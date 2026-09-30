@@ -22,13 +22,22 @@
  * @property {bytesToWasm} toWasm
  * @property {bytesToCString} toCString
  *
+ * @typedef {(tag: string, ptr: number, len: number) => boolean} memoryInRange
+ *
+ * @typedef {Object} Memory
+ * @property {memoryInRange} inRange
+ * @property {(type: Function, ptr: number, len: number, tag?: string) => any} view
+ *
  * @typedef {Object} WasmBridge
+ * @property {Memory} memory
  * @property {Utf8} utf8
  * @property {Bytes} bytes
  *
  * @typedef {Object} App
  * @property {Heap} heap
+ * @property {Memory} memory
  * @property {Utf8} utf8
  * @property {Bytes} bytes
+ * @property {any} gl the WebGL2 context, resolved on first read
  * @property {{ __xs_malloc: (count: number, align: number ) => number, main: () => void }} wasm
  */
