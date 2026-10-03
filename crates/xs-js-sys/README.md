@@ -9,8 +9,9 @@
 `xs` builds the example with cargo watch, serves it on :8080 and injects the
 script that loads the wasm into `html/index.html`. In dev the injected script
 also connects to the dev server websocket and reloads the page on every rebuild.
-The wasm flags (`target-cpu=mvp`, the rebuilt std) come from the repository's
-`.cargo/config.toml`, not from the tool.
+By default that is a baseline wasm build. Pass `--legacy` to `xs serve` when the target
+is an old Smart TV webview: that adds `target-cpu=mvp` and rebuilds `std`, which is what
+keeps sign-extension and bulk-memory instructions out of the module.
 
 ## The html is plain, the tool injects
 

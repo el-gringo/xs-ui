@@ -48,7 +48,7 @@ pub fn run(options: &Options) {
 
     let rebuilds = options
         .watch
-        .then(|| crate::watcher::watch(&options.cargo_args(), WASM_NAME));
+        .then(|| crate::watcher::watch(options, WASM_NAME));
     let version = Arc::new(AtomicU32::new(0));
     let clients: Clients = Arc::new(Mutex::new(Vec::new()));
 

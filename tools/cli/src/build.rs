@@ -6,27 +6,50 @@ use crate::{html::Html, options::Options};
 /// this.
 pub const WASM_NAME: &str = "app.wasm";
 
-/// Builds the project and everything the page needs into `--dist`, ready to be
-/// served as static files.
+/// Runs the project's binary, or builds it into `--dist`, ready to be served as
+/// static files when it is the web build.
 ///
-/// The page is copied next to it with the wasm loader injected and without the
-/// dev server client: there is no websocket to talk to once it is deployed.
+/// The web build also gets the page copied next to the wasm with the loader
+/// injected and without the dev server client: there is no websocket to talk to
+/// once it is deployed. A native build has no wasm and no page, so it stops at
+/// the binary cargo produced.
 pub fn run(options: &Options) {
     let package = crate::resolve_package(options);
-    let metadata = crate::cargo_metadata::get_config();
 
-    let status = std::process::Command::new("cargo")
-        .args(options.cargo_args())
-        .status()
-        .unwrap_or_else(|error| {
-            eprintln!("error: failed to run cargo: {error}");
-            std::process::exit(1);
-        });
+    let mut command = std::process::Command::new("cargo");
+    command.args(options.cargo_args()).envs(options.cargo_env());
+    if options.command == crate::options::Command::Run {
+        // The binary owns the terminal: its stdout has to reach the user.
+        command
+            .status()
+            .unwrap_or_else(|error| fail(format!("failed to run cargo: {error}")));
+        return;
+    }
+    let status = command.status().unwrap_or_else(|error| {
+        eprintln!("error: failed to run cargo: {error}");
+        std::process::exit(1);
+    });
     if !status.success() {
         eprintln!("error: cargo build failed");
         std::process::exit(1);
     }
 
+    if !options.is_web() {
+        let metadata = crate::cargo_metadata::get_config();
+        println!(
+            "built {package} for the host ({}) in {}",
+            options.profile(),
+            metadata.target_directory
+        );
+        return;
+    }
+
+    package_dist(options, &package);
+}
+
+/// The page, the wasm and the assets the page refers to, into `--dist`.
+fn package_dist(options: &Options, package: &str) {
+    let metadata = crate::cargo_metadata::get_config();
     let html = match Html::read(&options.html) {
         Ok(html) => html,
         Err(error) => fail(error),

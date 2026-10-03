@@ -1,6 +1,8 @@
 use std::io::BufRead;
 use std::sync::mpsc::Sender;
 
+use crate::options::Options;
+
 use nanoserde::DeJson;
 
 #[derive(Debug, DeJson)]
@@ -60,27 +62,35 @@ pub struct Rebuild {
 /// Runs `cargo watch`, rebuilding the target and reporting every artifact.
 ///
 /// The build is left exactly as the project configured it: no rustflags, no
-/// build-std, those come from its own cargo configuration.
-pub fn watch(cargo_args: &[String], wasm_name: &str) -> std::sync::mpsc::Receiver<Rebuild> {
+/// build-std, those come from its own cargo configuration, unless `--legacy`
+/// asks for the old-webview exception.
+pub fn watch(options: &Options, wasm_name: &str) -> std::sync::mpsc::Receiver<Rebuild> {
     let (sender, receiver) = std::sync::mpsc::channel();
     let args: Vec<String> = vec![
         "watch".to_string(),
         "-d".to_string(),
         "0.1".to_string(),
         "-x".to_string(),
-        format!("{} --message-format=json", cargo_args.join(" ")),
+        format!("{} --message-format=json", options.cargo_args().join(" ")),
     ];
+    let env = options.cargo_env();
     let wasm_name = wasm_name.to_string();
-    std::thread::spawn(move || build(args, wasm_name, sender));
+    std::thread::spawn(move || build(args, env, wasm_name, sender));
     receiver
 }
 
-fn build(args: Vec<String>, wasm_name: String, sender: Sender<Rebuild>) {
+fn build(
+    args: Vec<String>,
+    env: Vec<(&'static str, String)>,
+    wasm_name: String,
+    sender: Sender<Rebuild>,
+) {
     let mut started = std::time::Instant::now();
     let mut version = 0;
     let mut command = std::process::Command::new("cargo");
     command
         .args(args.clone())
+        .envs(env)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::inherit());
     let mut child = match command.spawn() {
