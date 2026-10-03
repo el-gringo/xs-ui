@@ -77,11 +77,8 @@ pub trait Renderer {
             );
 
             let mut element = item.element;
-            loop {
-                match element.inner.resolve(&mut ctx) {
-                    Some(resolved) => element = resolved,
-                    None => break,
-                }
+            while let Some(resolved) = element.inner.resolve(&mut ctx) {
+                element = resolved;
             }
 
             element.inner.post_render(&mut ctx);

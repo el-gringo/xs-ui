@@ -18,16 +18,16 @@ pub enum OpCode {
     Bad,
 }
 
-impl Into<u8> for OpCode {
-    fn into(self) -> u8 {
-        match self {
-            Continue => 0,
-            Text => 1,
-            Binary => 2,
-            Close => 8,
-            Ping => 9,
-            Pong => 10,
-            Bad => {
+impl From<OpCode> for u8 {
+    fn from(opcode: OpCode) -> u8 {
+        match opcode {
+            OpCode::Continue => 0,
+            OpCode::Text => 1,
+            OpCode::Binary => 2,
+            OpCode::Close => 8,
+            OpCode::Ping => 9,
+            OpCode::Pong => 10,
+            OpCode::Bad => {
                 debug_assert!(
                     false,
                     "Attempted to convert invalid opcode to u8. This is a bug."

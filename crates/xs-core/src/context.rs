@@ -45,11 +45,7 @@ impl<'a> Context<'a> {
         self.use_keyed_state(key, init)
     }
 
-    pub fn use_keyed_state<S>(
-        &mut self,
-        key: &str,
-        init: impl FnOnce(&mut Self) -> S,
-    ) -> State<S>
+    pub fn use_keyed_state<S>(&mut self, key: &str, init: impl FnOnce(&mut Self) -> S) -> State<S>
     where
         S: 'static,
     {
@@ -120,9 +116,9 @@ impl<'a> Context<'a> {
         let from = self.use_keyed_state::<f32>(&format!("{key}-from"), |_| target);
         let committed = self.use_keyed_state::<f32>(&format!("{key}-target"), |_| target);
 
-            let committed_target = committed.get();
-            if committed_target != target {
-                let prev_from = from.get();
+        let committed_target = committed.get();
+        if committed_target != target {
+            let prev_from = from.get();
             let prev_progress = anim.read().value();
             let prev_result = prev_from + prev_progress * (committed_target - prev_from);
             committed.set(target);
@@ -155,9 +151,7 @@ impl<'a> Context<'a> {
 mod tests {
     use xs_animation::Spring;
 
-    use crate::{
-        AppContext, BoxConstraints, Color, Context, TextProperties, TextSystemDummy,
-    };
+    use crate::{AppContext, BoxConstraints, Color, Context, TextProperties, TextSystemDummy};
 
     fn ctx() -> Context<'static> {
         let app_context = Box::leak(Box::new(AppContext::new(Box::new(
@@ -213,10 +207,7 @@ mod tests {
                 ctx.app_context.dirty = false;
             }
         }
-        assert!(
-            dirty_frames > 5,
-            "should animate over several frames"
-        );
+        assert!(dirty_frames > 5, "should animate over several frames");
         assert!(
             dirty_frames < 120,
             "should settle, got {dirty_frames} dirty frames"

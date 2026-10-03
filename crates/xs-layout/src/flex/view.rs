@@ -8,6 +8,7 @@ pub struct Flex {
 }
 
 impl Flex {
+    #[must_use]
     pub fn row() -> Flex {
         Flex {
             style: Style {
@@ -18,6 +19,7 @@ impl Flex {
         }
     }
 
+    #[must_use]
     pub fn column() -> Flex {
         Flex {
             style: Style {
@@ -28,6 +30,7 @@ impl Flex {
         }
     }
 
+    #[must_use]
     pub fn is_row(&self) -> bool {
         matches!(
             self.style.flex_direction,

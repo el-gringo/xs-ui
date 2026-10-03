@@ -78,6 +78,7 @@ impl Default for TextProperties {
 }
 
 impl TextProperties {
+    #[must_use]
     pub fn new(
         font_family: String,
         font_size: u16,

@@ -54,7 +54,7 @@ impl WebPDecoder {
     pub fn try_new() -> ImageResult<Self> {
         LibWebP::try_load()
             .map(|webp| Self { webp })
-            .map_err(|()| ImageError::DecoderUnavailable(ImageFormat::WebP))
+            .map_err(|_| ImageError::DecoderUnavailable(ImageFormat::WebP))
     }
 
     /// The linked libwebp version as `MAJOR * 10000 + MINOR * 100 + PATCH`.

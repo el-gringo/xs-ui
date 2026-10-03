@@ -15,11 +15,8 @@ pub enum WebSocketMessage {
 }
 */
 
-fn to_hex(bytes: &Vec<u8>) -> Vec<String> {
-    bytes
-        .iter()
-        .map(|b| format!("{:#02x}", b).to_string())
-        .collect()
+fn to_hex(bytes: &[u8]) -> Vec<String> {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 pub struct WebSocketMessage {
@@ -92,18 +89,22 @@ impl From<Vec<u8>> for WebSocketMessage {
     }
 }
 
-impl Into<Vec<u8>> for WebSocketMessage {
-    fn into(self) -> Vec<u8> {
+impl From<WebSocketMessage> for Vec<u8> {
+    fn from(message: WebSocketMessage) -> Vec<u8> {
         let mut header = [0u8; 14];
-        header[0] = 0x80 | self.op_code as u8;
-        header[1] = if self.masking_key.is_some() { 0x80 } else { 0 };
-        let len = self.payload.len();
-        let mut header_size = match self.payload.len() {
-            usize::MIN..126 => {
+        header[0] = 0x80 | message.op_code as u8;
+        header[1] = if message.masking_key.is_some() {
+            0x80
+        } else {
+            0
+        };
+        let len = message.payload.len();
+        let mut header_size = match message.payload.len() {
+            0..126 => {
                 header[1] |= len as u8;
                 2
             }
-            usize::MIN..65536 => {
+            126..65536 => {
                 header[1] |= 126;
                 let bytes = &(len as u16).to_be_bytes();
                 for (i, &byte) in bytes.iter().enumerate() {
@@ -120,16 +121,15 @@ impl Into<Vec<u8>> for WebSocketMessage {
                 10
             }
         };
-        if self.masking_key.is_some() {
-            let masking_key = self.masking_key.unwrap();
+        if let Some(masking_key) = message.masking_key {
             for (i, &byte) in masking_key.iter().enumerate() {
                 header[header_size + i] = byte;
             }
             header_size += 4;
         }
-        let mut payload = match self.masking_key {
-            Some(masking_key) => mask(&masking_key, &self.payload).into(),
-            None => self.payload,
+        let mut payload = match message.masking_key {
+            Some(masking_key) => mask(&masking_key, &message.payload),
+            None => message.payload,
         };
         let mut frame = header[0..header_size].to_vec();
         frame.append(&mut payload);

@@ -624,6 +624,12 @@ declare_module!(
 );
 
 impl LibWaylandClient {
+    /// Binds a registry global to a proxy of its interface.
+    ///
+    /// # Safety
+    ///
+    /// `wl_registry` must be a live registry proxy and `interface` must point at
+    /// a `wl_interface` that stays valid for as long as the connection does.
     pub unsafe fn wl_registry_bind(
         &mut self,
         wl_registry: *const wl_registry,
@@ -644,6 +650,13 @@ impl LibWaylandClient {
             id as *mut _
         }
     }
+    /// Reads a drag-and-drop payload in full.
+    ///
+    /// # Safety
+    ///
+    /// `display` and `data_offer` must be live proxies on the same connection,
+    /// and `mime_type` must be a NUL terminated string naming a type the offer
+    /// advertises.
     pub unsafe fn data_offer_receive(
         &mut self,
         display: *mut wl_display,

@@ -11,9 +11,9 @@ mod renderer;
 pub mod state;
 mod text_system;
 
+pub use animation::AnimationState;
 pub use app_config::AppConfig;
 pub use app_context::AppContext;
-pub use animation::AnimationState;
 pub use backend::{Backend, BackendDummy, BackendRequest, BackendResponse, EventLoop};
 pub use context::Context;
 pub use core::{NodeId, Undefined};

@@ -76,7 +76,7 @@ impl WebSocketServer {
         //let mut writer = BufWriter::new(&mut self.stream);
         let buffer: Vec<u8> = message.into();
         self.stream
-            .write(&mut buffer.as_slice())
+            .write_all(&buffer)
             .expect("unable to send message");
         self.stream.flush().unwrap();
     }

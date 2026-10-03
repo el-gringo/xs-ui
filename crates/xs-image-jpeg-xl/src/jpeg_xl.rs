@@ -84,7 +84,7 @@ impl JpegXlDecoder {
     /// or predates 0.11.
     pub fn try_new() -> ImageResult<Self> {
         let jxl =
-            LibJxl::try_load().map_err(|()| ImageError::DecoderUnavailable(ImageFormat::JpegXl))?;
+            LibJxl::try_load().map_err(|_| ImageError::DecoderUnavailable(ImageFormat::JpegXl))?;
         let version = unsafe { (jxl.JxlDecoderVersion)() };
         if version < MINIMUM_VERSION {
             return Err(ImageError::InvalidData(format!(

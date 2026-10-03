@@ -1,6 +1,6 @@
-use std::net::{TcpStream, Shutdown, SocketAddr};
 use std::io::BufReader;
 use std::io::prelude::*;
+use std::net::{Shutdown, SocketAddr, TcpStream};
 
 pub fn write_bytes_to_tcp_stream_no_error(tcp_stream: &mut TcpStream, bytes: &[u8]) -> bool {
     let bytes_total = bytes.len();
@@ -9,22 +9,23 @@ pub fn write_bytes_to_tcp_stream_no_error(tcp_stream: &mut TcpStream, bytes: &[u
         let buf = &bytes[(bytes_total - bytes_left)..bytes_total];
         if let Ok(bytes_written) = tcp_stream.write(buf) {
             if bytes_written == 0 {
-                return true
+                return true;
             }
             bytes_left -= bytes_written;
-        }
-        else {
-            return true
+        } else {
+            return true;
         }
     }
     false
 }
 
 pub fn http_error_out(mut tcp_stream: TcpStream, code: usize) {
-    write_bytes_to_tcp_stream_no_error(&mut tcp_stream, format!("HTTP/1.1 {}\r\n\r\n", code).as_bytes());
+    write_bytes_to_tcp_stream_no_error(
+        &mut tcp_stream,
+        format!("HTTP/1.1 {}\r\n\r\n", code).as_bytes(),
+    );
     let _ = tcp_stream.shutdown(Shutdown::Both);
 }
-
 
 pub fn split_header_line<'a>(inp: &'a str, what: &str) -> Option<&'a str> {
     let mut what_lc = what.to_string();
@@ -32,29 +33,30 @@ pub fn split_header_line<'a>(inp: &'a str, what: &str) -> Option<&'a str> {
     let mut inp_lc = inp.to_string();
     inp_lc.make_ascii_lowercase();
     if inp_lc.starts_with(&what_lc) {
-        return Some(&inp[what.len()..(inp.len() - 2)])
+        return Some(&inp[what.len()..(inp.len() - 2)]);
     }
     None
 }
 
 pub fn parse_url_path(url: &str) -> Option<(String, Option<String>)> {
-    
     // find the end_of_name skipping everything else
     let end_of_name = url.find(' ');
-    end_of_name ?;
+    end_of_name?;
     let end_of_name = end_of_name.unwrap();
     let mut search = None;
     let end_of_name = if let Some(q) = url.find('?') {
         search = Some(url[q..].to_string());
         end_of_name.min(q)
-    }else {end_of_name};
-    
+    } else {
+        end_of_name
+    };
+
     let mut url = url[0..end_of_name].to_string();
-    
+
     if url.ends_with('/') {
         url.push_str("index.html");
     }
-    
+
     Some((url, search))
 }
 
@@ -68,27 +70,31 @@ pub struct HttpServerHeaders {
     pub search: Option<String>,
     pub content_length: Option<u64>,
     pub accept_encoding: Option<String>,
-    pub sec_websocket_key: Option<String>
+    pub sec_websocket_key: Option<String>,
 }
 
 impl HttpServerHeaders {
     pub fn from_tcp_stream(tcp_stream: &mut TcpStream) -> Option<HttpServerHeaders> {
         let addr = tcp_stream.peer_addr().unwrap();
         let mut reader = BufReader::new(tcp_stream);
-        
+
         let mut lines = Vec::new();
         let mut content_length = None;
         let mut accept_encoding = None;
         let mut sec_websocket_key = None;
         let mut line = String::new();
-        
-        while reader.read_line(&mut line).is_ok() { // TODO replace this with a non-line read
-            if line == "\r\n" { // the newline
+
+        while reader.read_line(&mut line).is_ok() {
+            // TODO replace this with a non-line read
+            if line == "\r\n" {
+                // the newline
                 break;
             }
             if let Some(v) = split_header_line(&line, "Content-Length: ") {
-                content_length = Some(if let Ok(v) = v.parse() {v} else {
-                    return None
+                content_length = Some(if let Ok(v) = v.parse() {
+                    v
+                } else {
+                    return None;
                 });
             }
             if let Some(v) = split_header_line(&line, "Accept-Encoding: ") {
@@ -97,13 +103,14 @@ impl HttpServerHeaders {
             if let Some(v) = split_header_line(&line, "sec-websocket-key: ") {
                 sec_websocket_key = Some(v.to_string());
             }
-            if line.len() > 4096 || lines.len() > 4096 { // some overflow protection
-                return None
+            if line.len() > 4096 || lines.len() > 4096 {
+                // some overflow protection
+                return None;
             }
             lines.push(line.clone());
             line.clear();
         }
-        if lines.len() <2 {
+        if lines.len() < 2 {
             return None;
         }
         let verb;
@@ -111,25 +118,21 @@ impl HttpServerHeaders {
         if let Some(v) = split_header_line(&lines[0], "GET ") {
             verb = "GET";
             path = parse_url_path(v)
-        }
-        else if let Some(v) = split_header_line(&lines[0], "POST ") {
+        } else if let Some(v) = split_header_line(&lines[0], "POST ") {
             verb = "POST";
             path = parse_url_path(v)
-        }
-        else if let Some(v) = split_header_line(&lines[0], "PUT ") {
+        } else if let Some(v) = split_header_line(&lines[0], "PUT ") {
             verb = "PUT";
             path = parse_url_path(v)
-        }
-        else if let Some(v) = split_header_line(&lines[0], "DELETE ") {
+        } else {
+            // Last verb, so a request line matching none of them is not a
+            // request this server knows how to answer.
+            let v = split_header_line(&lines[0], "DELETE ")?;
             verb = "DELETE";
             path = parse_url_path(v)
         }
-        else {
-            return None
-        }
-        path.as_ref() ?;
-        let path = path.unwrap();
-        
+        let path = path?;
+
         Some(HttpServerHeaders {
             addr,
             verb: verb.to_string(),
@@ -139,7 +142,7 @@ impl HttpServerHeaders {
             lines,
             content_length,
             accept_encoding,
-            sec_websocket_key
+            sec_websocket_key,
         })
     }
 }

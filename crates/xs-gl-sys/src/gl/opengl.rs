@@ -9,7 +9,7 @@ pub fn glBufferData<T>(target: GLenum, data: &[T], usage: GLenum) {
     unsafe {
         bindings::glBufferData(
             target,
-            (std::mem::size_of::<T>() * data.len()) as _,
+            std::mem::size_of_val(data) as _,
             data.as_ptr() as *const _,
             usage,
         );

@@ -1,10 +1,104 @@
 use crate::{
     AlignItems, BoxConstraints, EdgeInsets, FlexWrap, JustifyContent, Layout, LayoutBoxId,
-    Material, SizedLayoutBox, StylePosition,
-    flex::flex::Flex,
+    Material, SizedLayoutBox, StylePosition, View,
+    flex::view::Flex,
     tree::{LayoutBox, LayoutTree},
 };
 use xs_math::{Rectangle, Vector2};
+
+/// Lays out every child once and reduces each to what the flex pass needs.
+///
+/// A child that grows along the main axis only has its cross size taken from its
+/// own layout here; the main size is left at zero for the pass to fill in from
+/// the space left over. Absolute children are skipped entirely, since they take
+/// no part in the flow.
+fn measure_items(
+    children: &[View],
+    tree: &mut LayoutTree,
+    constraints: &BoxConstraints,
+    main_is_x: bool,
+) -> Vec<FlexItem> {
+    children
+        .iter()
+        .map(|child| {
+            let is_absolute = child.position() == StylePosition::Absolute;
+            let growing = !is_absolute && child.flex_grow()[0] > 0.0;
+            let layout = child.layout(tree, constraints);
+            let size = if is_absolute {
+                Vector2::new(0.0, 0.0)
+            } else if growing {
+                if main_is_x {
+                    Vector2::new(0.0, layout.size.y)
+                } else {
+                    Vector2::new(layout.size.x, 0.0)
+                }
+            } else {
+                layout.size
+            };
+            FlexItem {
+                size,
+                flex_grow: if is_absolute {
+                    [0.0, 0.0]
+                } else {
+                    child.flex_grow()
+                },
+                min_main: if is_absolute { 0.0 } else { child.min_main() },
+                max_main: if is_absolute { 0.0 } else { child.max_main() },
+                children: layout.children,
+                material: layout.material,
+
+                margin: child.margin(),
+                padding: child.padding(),
+                is_absolute,
+            }
+        })
+        .collect()
+}
+
+/// Splits `items` into lines, breaking a run wherever the next child would not
+/// fit. Without wrapping there is only ever the one line.
+fn wrap_items(
+    items: Vec<FlexItem>,
+    is_wrap: bool,
+    main_is_x: bool,
+    container_main: f32,
+    gap: f32,
+) -> Vec<Vec<FlexItem>> {
+    if !is_wrap {
+        return vec![items];
+    }
+    let mut lines = Vec::new();
+    let mut current = Vec::new();
+    let mut current_main = 0.0f32;
+    for item in items {
+        let (mm_main_start, mm_main_end) = item.main_margin(main_is_x);
+        let item_main = item.main(main_is_x) + mm_main_start + mm_main_end;
+        if !current.is_empty() && current_main + gap + item_main > container_main {
+            lines.push(current);
+            current = Vec::new();
+            current_main = 0.0;
+        }
+        if !current.is_empty() {
+            current_main += gap;
+        }
+        current_main += item_main;
+        current.push(item);
+    }
+    if !current.is_empty() {
+        lines.push(current);
+    }
+    lines
+}
+
+/// The number of gaps between `count` children, which is one fewer than the
+/// count whenever there are any.
+///
+/// The count is a `usize` and the result an `f32`, so this is where that
+/// conversion is done rather than inline at each call.
+#[allow(clippy::cast_precision_loss)]
+fn child_gap_count(count: usize) -> f32 {
+    count.saturating_sub(1) as f32
+}
 
 #[cfg(target_arch = "wasm32")]
 pub mod layout_prof {
@@ -112,6 +206,11 @@ impl Layout for Flex {
         self.style.position
     }
 
+    // The whole flexbox pass is one function on purpose. Measuring the children,
+    // distributing the free space and placing them share about a dozen locals,
+    // and splitting them further would mean passing those between helpers to
+    // make the line count look better.
+    #[allow(clippy::too_many_lines)]
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
         let style = &self.style;
         let main_is_x = self.is_row();
@@ -133,42 +232,7 @@ impl Layout for Flex {
 
         #[cfg(target_arch = "wasm32")]
         let t_items = xs_js_sys::performance_now();
-        let mut items: Vec<FlexItem> = self
-            .children
-            .iter()
-            .map(|child| {
-                let is_absolute = child.position() == StylePosition::Absolute;
-                let growing = !is_absolute && child.flex_grow()[0] > 0.0;
-                let layout = child.layout(tree, &inner_constraints);
-                let size = if is_absolute {
-                    Vector2::new(0.0, 0.0)
-                } else if growing {
-                    if main_is_x {
-                        Vector2::new(0.0, layout.size.y)
-                    } else {
-                        Vector2::new(layout.size.x, 0.0)
-                    }
-                } else {
-                    layout.size
-                };
-                FlexItem {
-                    size,
-                    flex_grow: if is_absolute {
-                        [0.0, 0.0]
-                    } else {
-                        child.flex_grow()
-                    },
-                    min_main: if is_absolute { 0.0 } else { child.min_main() },
-                    max_main: if is_absolute { 0.0 } else { child.max_main() },
-                    children: layout.children,
-                    material: layout.material,
-
-                    margin: child.margin(),
-                    padding: child.padding(),
-                    is_absolute,
-                }
-            })
-            .collect();
+        let mut items = measure_items(&self.children, tree, &inner_constraints, main_is_x);
         #[cfg(target_arch = "wasm32")]
         {
             layout_prof::FRAMES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -179,31 +243,7 @@ impl Layout for Flex {
             items.reverse();
         }
 
-        let mut lines: Vec<Vec<FlexItem>> = if is_wrap {
-            let mut lines = Vec::new();
-            let mut current = Vec::new();
-            let mut current_main = 0.0f32;
-            for item in items.drain(..) {
-                let (mm_main_start, mm_main_end) = item.main_margin(main_is_x);
-                let item_main = item.main(main_is_x) + mm_main_start + mm_main_end;
-                if !current.is_empty() && current_main + gap + item_main > container_main {
-                    lines.push(current);
-                    current = Vec::new();
-                    current_main = 0.0;
-                }
-                if !current.is_empty() {
-                    current_main += gap;
-                }
-                current_main += item_main;
-                current.push(item);
-            }
-            if !current.is_empty() {
-                lines.push(current);
-            }
-            lines
-        } else {
-            vec![items]
-        };
+        let mut lines = wrap_items(items, is_wrap, main_is_x, container_main, gap);
 
         let total_main: f32 = lines
             .iter()
@@ -214,7 +254,7 @@ impl Layout for Flex {
                         i.main(main_is_x) + mm_start + mm_end
                     })
                     .sum::<f32>()
-                    + gap * (l.len().saturating_sub(1)) as f32
+                    + gap * child_gap_count(l.len())
             })
             .sum();
 
@@ -241,11 +281,7 @@ impl Layout for Flex {
         let container_cross = if main_is_x { inner.y } else { inner.x };
         let total_cross_before_grow: f32 = lines
             .iter()
-            .map(|l| {
-                l.iter()
-                    .map(|i| i.cross(main_is_x))
-                    .fold(0.0f32, |a, b| a.max(b))
-            })
+            .map(|l| l.iter().map(|i| i.cross(main_is_x)).fold(0.0f32, f32::max))
             .sum();
         let free_cross = (container_cross - total_cross_before_grow).max(0.0);
         let total_cross_grow: f32 = lines
@@ -285,10 +321,10 @@ impl Layout for Flex {
                         let (mc_start, mc_end) = i.cross_margin(main_is_x);
                         i.cross(main_is_x) + mc_start + mc_end
                     })
-                    .fold(0.0f32, |a, b| a.max(b))
+                    .fold(0.0f32, f32::max)
             })
             .sum::<f32>()
-            + gap * (lines.len().saturating_sub(1)) as f32;
+            + gap * child_gap_count(lines.len());
 
         let mut child_ids = Vec::new();
         let padding_min = style.padding.min();
@@ -301,7 +337,7 @@ impl Layout for Flex {
             padding_min.x + style.border.min().x
         };
 
-        for (_line_idx, line) in lines.iter().enumerate() {
+        for line in &lines {
             let line_cross: f32 = line
                 .iter()
                 .map(|i| {
@@ -314,7 +350,7 @@ impl Layout for Flex {
 
             // Per-line justify: each wrapped line is justified independently
             let line_content_main: f32 = line.iter().map(|i| i.main(main_is_x)).sum::<f32>()
-                + gap * (line.len().saturating_sub(1)) as f32;
+                + gap * child_gap_count(line.len());
             let line_main_start =
                 justify_offset(container_main, line_content_main, style.justify_content);
 
@@ -427,9 +463,9 @@ impl Layout for Flex {
 mod tests {
     use super::*;
     use crate::{
-        AlignItems, Background, BorderRadius, Borders, BoxShadow, Color, EdgeInsets,
-        FixedSize, FlexDirection, JustifyContent, QuadProps, Style, StylePosition,
-        TextProperties, TextVertices, View,
+        AlignItems, Background, BorderRadius, Borders, BoxShadow, Color, EdgeInsets, FixedSize,
+        FlexDirection, JustifyContent, QuadProps, Style, StylePosition, TextProperties,
+        TextVertices, View,
     };
     use std::rc::Rc;
 
@@ -1462,7 +1498,7 @@ mod tests {
                     gap: 48.0,
                     height: Some(320.0),
                     position: StylePosition::Absolute,
-                    top: Some(row_index as f32 * 320.0),
+                    top: Some(f32::from(row_index as u16) * 320.0),
                     ..Default::default()
                 },
                 children: cells,

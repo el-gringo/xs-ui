@@ -30,9 +30,9 @@ impl FocusHandle {
         let tree = self.tree.borrow();
         let mut node = tree.get(self.id).unwrap().borrow_mut();
         node.has_focus = has_focus;
-        node.focus_handler
-            .clone()
-            .map(|focus_handler| focus_handler());
+        if let Some(focus_handler) = node.focus_handler.clone() {
+            focus_handler();
+        }
     }
 
     pub fn selected_index(&self) -> usize {

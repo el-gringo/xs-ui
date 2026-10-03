@@ -19,6 +19,7 @@ impl QuadProps {
     /// with a much simpler/faster shader path. Background images are
     /// allowed — the simple shader samples the texture and blends it
     /// with the background color.
+    #[must_use]
     pub fn is_simple(&self) -> bool {
         matches!(self.background, Background::Color(_))
             && self.border == Borders::none()
@@ -29,13 +30,11 @@ impl QuadProps {
 
     /// If this is a simple quad, return the background color and optional
     /// texture ID (0 when there is no background image).
+    #[must_use]
     pub fn simple_material(&self) -> Option<(Color, u32)> {
         if self.is_simple() {
             if let Background::Color(c) = self.background {
-                let tex = self
-                    .background_image
-                    .as_ref()
-                    .map_or(0, |img| img.texture);
+                let tex = self.background_image.as_ref().map_or(0, |img| img.texture);
                 Some((c, tex))
             } else {
                 unreachable!()

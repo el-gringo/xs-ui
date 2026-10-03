@@ -1,49 +1,86 @@
 use crate::libc_sys::{RTLD_GLOBAL, RTLD_NOW, dlclose, dlopen, dlsym};
 use std::{ffi::CString, ptr::NonNull};
 
-#[derive(PartialEq, Eq, Clone)]
+/// Why a module or one of its symbols could not be resolved.
+///
+/// Carries the path or symbol name, which is what makes the "failed to load"
+/// lines in the logs worth reading.
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Error {
+    /// `dlopen` returned null for this path.
     DlOpenError(String),
+    /// `dlsym` returned null for this symbol.
     DlSymError(String),
 }
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::DlOpenError(path) => write!(f, "could not load {path}"),
+            Self::DlSymError(name) => write!(f, "could not find symbol {name}"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
 
 /// A module loader for loading shared libraries.
 pub struct Module(::std::ptr::NonNull<::std::os::raw::c_void>);
 
 impl Module {
     /// Load a shared library by its path.
-    pub fn load(path: &str) -> Result<Self, ()> {
+    ///
+    /// # Errors
+    ///
+    /// [`Error::DlOpenError`] when the library is not on this device.
+    pub fn load(path: &str) -> Result<Self, Error> {
         Self::load_with_flags(path, RTLD_NOW | RTLD_GLOBAL)
     }
 
     /// Load a shared library by its path with RTLD_GLOBAL to make symbols available
     /// to subsequently loaded libraries.
-    pub fn load_global(path: &str) -> Result<Self, ()> {
+    ///
+    /// # Errors
+    ///
+    /// [`Error::DlOpenError`] when the library is not on this device.
+    pub fn load_global(path: &str) -> Result<Self, Error> {
         Self::load_with_flags(path, RTLD_NOW | RTLD_GLOBAL)
     }
 
     /// Load a shared library with custom flags.
-    fn load_with_flags(path: &str, flags: ::std::os::raw::c_int) -> Result<Self, ()> {
+    ///
+    /// # Errors
+    ///
+    /// [`Error::DlOpenError`] when the library is not on this device.
+    fn load_with_flags(path: &str, flags: ::std::os::raw::c_int) -> Result<Self, Error> {
         let path = CString::new(path).unwrap();
 
         // Open the shared library with the specified flags
         let module = unsafe { dlopen(path.as_ptr(), flags) };
         if module.is_null() {
-            eprintln!("Failed to load module: {}", path.to_string_lossy());
-            Err(())
+            let path = path.to_string_lossy().into_owned();
+            eprintln!("Failed to load module: {path}");
+            Err(Error::DlOpenError(path))
         } else {
             Ok(Module(unsafe { NonNull::new_unchecked(module) }))
         }
     }
 
     /// Get a symbol from the loaded module.
-    pub fn get_symbol<F: Sized>(&self, name: &str) -> Result<F, ()> {
+    ///
+    /// # Errors
+    ///
+    /// [`Error::DlSymError`] when the module has no such symbol, which for a
+    /// well formed `declare_module!` means the library on this device is a
+    /// different version than the one the names came from.
+    pub fn get_symbol<F: Sized>(&self, name: &str) -> Result<F, Error> {
         let name = CString::new(name).unwrap();
         let symbol = unsafe { dlsym(self.0.as_ptr(), name.as_ptr()) };
 
         if symbol.is_null() {
-            eprintln!("Failed to find symbol: {}", name.to_string_lossy());
-            return Err(());
+            let name = name.to_string_lossy().into_owned();
+            eprintln!("Failed to find symbol: {name}");
+            return Err(Error::DlSymError(name));
         }
 
         // Transmute the symbol to the desired type.
@@ -83,7 +120,11 @@ macro_rules! declare_module {
             $($vis $field: $field_ty)*
         }
         impl $name {
-            pub fn try_load() -> Result<Self, ()> {
+            /// # Errors
+            ///
+            /// When the library cannot be loaded or is missing a symbol the
+            /// caller asked for.
+            pub fn try_load() -> Result<Self, $crate::module::Error> {
                 $crate::module::Module::load($path)$(.or_else(|_| $crate::module::Module::load($fallback)))*
                 .map(|module|
                     $name {

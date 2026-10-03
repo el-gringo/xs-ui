@@ -44,10 +44,7 @@ impl Url {
         let (hostname, rest) = Url::hostname(rest).unwrap();
         let (host, port) = Url::port(scheme, &hostname);
         let pathname = ("/".to_owned() + rest).to_string();
-        let secure = match scheme {
-            Some("https") | Some("wss") => true,
-            _ => false,
-        };
+        let secure = matches!(scheme, Some("https") | Some("wss"));
         Ok(Url {
             scheme: scheme.map(|s| s.to_string()),
             host,
@@ -91,6 +88,8 @@ impl Url {
         }
     }
 
+    /// The URL as text, filling in the parts that were implied.
+    #[allow(clippy::inherent_to_string)]
     pub fn to_string(&self) -> String {
         self.scheme
             .as_ref()

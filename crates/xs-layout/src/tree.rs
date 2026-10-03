@@ -217,7 +217,7 @@ impl LayoutTree {
 
     pub fn debug(&self) {
         println!("tree size: {}", self.boxes.len());
-        for (depth, parent_id, _, child_id, child, offset) in self.iter() {
+        for (depth, parent_id, _, child_id, child, offset) in self {
             let material = child.clone().material;
             println!(
                 "{} {} {} {:?} {:?} {}",
@@ -229,11 +229,10 @@ impl LayoutTree {
                 if let Some(m) = material {
                     let color = match m {
                         Material::Quad(props) => match props.background {
-                            Background::Color(c) => c,
                             Background::Gradient(g) => g.start,
+                            Background::Color(c) => c,
                         },
-                        Material::SimpleQuad(color, _) => color,
-                        Material::Text(color, _, _) => color,
+                        Material::SimpleQuad(color, _) | Material::Text(color, _, _) => color,
                     };
                     format!("{color:?}")
                 } else {
@@ -241,6 +240,22 @@ impl LayoutTree {
                 }
             );
         }
+    }
+}
+
+impl<'a> IntoIterator for &'a LayoutTree {
+    type Item = (
+        usize,
+        LayoutBoxId,
+        &'a LayoutBox,
+        LayoutBoxId,
+        &'a LayoutBox,
+        Vector2,
+    );
+    type IntoIter = LayoutTreeIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 

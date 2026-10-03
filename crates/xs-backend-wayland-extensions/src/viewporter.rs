@@ -20,7 +20,11 @@ wayland_interface!(
     3,
     [
         (destroy, "", ()),
-        (get_viewport, "no", (crate::viewporter::wp_viewport_interface))
+        (
+            get_viewport,
+            "no",
+            (crate::viewporter::wp_viewport_interface)
+        )
     ],
     []
 );

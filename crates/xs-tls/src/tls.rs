@@ -74,10 +74,7 @@ impl TlsConnector {
     pub fn read(&self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
         let ret = unsafe { (self.libssl.BIO_read)(self.bio, buf.as_mut_ptr(), buf.len() as i32) };
         if ret < 0 {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "BIO read error",
-            ));
+            return Err(std::io::Error::other("BIO read error"));
         }
         Ok(ret as usize)
     }
@@ -85,10 +82,7 @@ impl TlsConnector {
     pub fn write(&self, buf: &[u8]) -> Result<usize, std::io::Error> {
         let ret = unsafe { (self.libssl.BIO_write)(self.bio, buf.as_ptr(), buf.len() as i32) };
         if ret < 0 {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "BIO write error",
-            ));
+            return Err(std::io::Error::other("BIO write error"));
         }
         Ok(ret as usize)
     }

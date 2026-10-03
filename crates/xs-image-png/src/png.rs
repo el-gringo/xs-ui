@@ -312,7 +312,7 @@ impl PngDecoder {
     pub fn try_new() -> ImageResult<Self> {
         LibPng::try_load()
             .map(|png| Self { png })
-            .map_err(|()| ImageError::DecoderUnavailable(ImageFormat::Png))
+            .map_err(|_| ImageError::DecoderUnavailable(ImageFormat::Png))
     }
 
     /// Runs `body` against a fresh read context over `data`.

@@ -1,7 +1,5 @@
 #![allow(unused_variables, dead_code, non_upper_case_globals, static_mut_refs)]
 
-
-
 #[macro_export]
 macro_rules! count {
     () => (0usize);
@@ -31,6 +29,11 @@ macro_rules! wayland_interface {
              ($event_name:expr, $event_sign:expr)
          ),*
      ]) => {
+        // `$method_argument_name` is always an ident naming a `static` declared
+        // next to the interface, never an arbitrary expression, so a caller has
+        // no way to smuggle unsafe code into the block below - which is what
+        // `macro_metavars_in_unsafe` guards against.
+        #[allow(clippy::macro_metavars_in_unsafe)]
         mod $name {
             use xs_backend_wayland_client::{wl_interface, wl_message};
 
@@ -40,7 +43,7 @@ macro_rules! wayland_interface {
 
                     pub static mut METHOD_ARGUMENTS_TYPES:
                         [*const wl_interface; $crate::count!($($method_argument_name)*)] =
-                        [$(unsafe { &$method_argument_name as *const _},)*];
+                        [$(unsafe { &$method_argument_name as *const _ },)*];
                 }
             )*
 

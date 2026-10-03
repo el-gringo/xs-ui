@@ -1,4 +1,9 @@
-#![allow(non_snake_case, non_camel_case_types, non_upper_case_globals, dead_code)]
+#![allow(
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals,
+    dead_code
+)]
 
 pub type GLenum = ::core::ffi::c_uint;
 pub type GLboolean = ::core::ffi::c_uchar;

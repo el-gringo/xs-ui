@@ -85,9 +85,15 @@ impl HttpClient {
     }
 }
 
+/// Stands in for the thread handle the native client returns.
+///
+/// There is no thread to wait for here: the response arrives through the
+/// callback that `send` was given. The `Result` is kept so that call sites
+/// compile the same way on both platforms, but it cannot be an error.
 pub struct FakeJoinHandle;
+
 impl FakeJoinHandle {
-    pub fn join(&self) -> Result<(), ()> {
+    pub fn join(&self) -> Result<(), std::convert::Infallible> {
         Ok(())
     }
 }

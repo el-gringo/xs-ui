@@ -68,7 +68,7 @@ impl JpegDecoder {
     pub fn try_new() -> ImageResult<Self> {
         LibJpeg::try_load()
             .map(|jpeg| Self { jpeg })
-            .map_err(|()| ImageError::DecoderUnavailable(ImageFormat::Jpeg))
+            .map_err(|_| ImageError::DecoderUnavailable(ImageFormat::Jpeg))
     }
 
     /// Runs `body` against a fresh decompressor.

@@ -27,6 +27,9 @@ pub type socklen_t = u32;
 pub type c_ulong = std::os::raw::c_ulong;
 pub type c_void = std::os::raw::c_void;
 pub type c_char = std::os::raw::c_char;
+/// A count of bytes that can be -1 to report an error, which is what `read`
+/// and friends return.
+pub type ssize_t = isize;
 pub type off_t = i64;
 pub type size_t = usize;
 
@@ -71,7 +74,7 @@ unsafe extern "C" {
         errorfds: *mut fd_set,
         timeout: *mut timeval,
     ) -> c_int;
-    pub fn read(fd: c_int, buf: *mut c_void, count: size_t) -> c_int;
+    pub fn read(fd: c_int, buf: *mut c_void, count: size_t) -> ssize_t;
     pub fn unlink(c: *const c_char) -> c_int;
     pub fn mmap(
         addr: *mut c_void,
@@ -92,16 +95,26 @@ unsafe extern "C" {
     ) -> c_int;
 }
 
-pub unsafe fn FD_SET(fd: c_int, set: *mut fd_set) -> () {
+/// Adds `fd` to the set.
+///
+/// # Safety
+///
+/// `set` must point to a writable [`fd_set`], and `fd` must be below
+/// `FD_SETSIZE`.
+pub unsafe fn FD_SET(fd: c_int, set: *mut fd_set) {
     unsafe {
         let fd = fd as usize;
         let size = mem::size_of_val(&(*set).fds_bits[0]) * 8;
         (*set).fds_bits[fd / size] |= 1 << (fd % size);
-        return;
     }
 }
 
-pub unsafe fn FD_ZERO(set: *mut fd_set) -> () {
+/// Clears every descriptor out of the set.
+///
+/// # Safety
+///
+/// `set` must point to a writable [`fd_set`].
+pub unsafe fn FD_ZERO(set: *mut fd_set) {
     unsafe {
         for slot in (*set).fds_bits.iter_mut() {
             *slot = 0;

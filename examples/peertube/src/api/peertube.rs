@@ -46,11 +46,10 @@ impl PeerTubeClient {
             &format!("/videos?start={offset}&count={count}"),
             move |response| {
                 let json = response.body_lossy();
-                if let Ok(VideoListResponse { data }) = VideoListResponse::deserialize_json(&json) {
-                    if let Some(on_result) = on_result.take() {
+                if let Ok(VideoListResponse { data }) = VideoListResponse::deserialize_json(&json)
+                    && let Some(on_result) = on_result.take() {
                         on_result(data);
-                    }
-                };
+                    };
             },
         );
     }

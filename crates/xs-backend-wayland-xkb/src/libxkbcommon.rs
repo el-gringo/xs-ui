@@ -53,6 +53,12 @@ xs_platform_linux::declare_module!(
 );
 
 impl LibXkbCommon {
+    /// Looks up the keysym for a keycode, ignoring modifiers.
+    ///
+    /// # Safety
+    ///
+    /// `keymap` must be a live `xkb_keymap` created by this library, and
+    /// `keycode` must be one it knows about.
     // The keycodes in Miniquad are obtained without modifiers (for example, `Shift + Key1` is
     // translated to `Key1` and not `Exclam`)
     pub unsafe fn keymap_key_get_sym_without_mod(
@@ -96,6 +102,12 @@ pub mod libxkbcommon_ex {
     }
 
     impl XkbKeymap {
+        /// Looks up the table indices for the modifier names this crate asks for.
+        ///
+        /// # Safety
+        ///
+        /// `self.mapping` must be a live `xkb_keymap` and `libxkb` must have been
+        /// loaded successfully.
         pub unsafe fn cache_mod_indices(&mut self, libxkb: &mut LibXkbCommon) {
             unsafe {
                 let shift = std::ffi::CString::new(XKB_MOD_NAME_SHIFT).unwrap();
@@ -108,6 +120,12 @@ pub mod libxkbcommon_ex {
                 self.logo = (libxkb.xkb_keymap_mod_get_index)(self.mapping, logo.as_ptr());
             }
         }
+        /// Reads which modifiers are currently held.
+        ///
+        /// # Safety
+        ///
+        /// `xkb_state` must be a live keyboard state for a keymap this
+        /// library created.
         pub unsafe fn get_keymods(
             &self,
             libxkb: &mut LibXkbCommon,

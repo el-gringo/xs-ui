@@ -1,4 +1,10 @@
-#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case, static_mut_refs, dead_code)]
+#![allow(
+    non_camel_case_types,
+    non_upper_case_globals,
+    non_snake_case,
+    static_mut_refs,
+    dead_code
+)]
 
 use crate::wayland_interface;
 use xs_backend_wayland_client::{wl_array, wl_listener};
@@ -9,8 +15,16 @@ wayland_interface!(
     3,
     [
         (destroy, "", ()),
-        (create_positioner, "n", (crate::xdg_shell::xdg_positioner_interface)),
-        (get_xdg_surface, "no", (crate::xdg_shell::xdg_surface_interface)),
+        (
+            create_positioner,
+            "n",
+            (crate::xdg_shell::xdg_positioner_interface)
+        ),
+        (
+            get_xdg_surface,
+            "no",
+            (crate::xdg_shell::xdg_surface_interface)
+        ),
         (pong, "u", ())
     ],
     [("ping", "u")]
@@ -22,7 +36,11 @@ wayland_interface!(
     3,
     [
         (destroy, "", ()),
-        (get_toplevel, "n", (crate::xdg_shell::xdg_toplevel_interface)),
+        (
+            get_toplevel,
+            "n",
+            (crate::xdg_shell::xdg_toplevel_interface)
+        ),
         (get_popup, "n?oo", ()),
         (set_window_geometry, "iiii", ()),
         (ack_configure, "u", ())
@@ -39,14 +57,30 @@ wayland_interface!(
         (set_parent, "?o", (xdg_toplevel_interface)),
         (set_title, "s", ()),
         (set_app_id, "s", ()),
-        (show_window_menu, "ouii", (crate::xdg_shell::xdg_popup_interface)),
-        (r#move, "ou", (crate::extensions::wayland_protocol::wl_seat_interface)),
-        (resize, "ouu", (crate::extensions::wayland_protocol::wl_seat_interface)),
+        (
+            show_window_menu,
+            "ouii",
+            (crate::xdg_shell::xdg_popup_interface)
+        ),
+        (
+            r#move,
+            "ou",
+            (crate::extensions::wayland_protocol::wl_seat_interface)
+        ),
+        (
+            resize,
+            "ouu",
+            (crate::extensions::wayland_protocol::wl_seat_interface)
+        ),
         (set_max_size, "ii", ()),
         (set_min_size, "ii", ()),
         (set_maximized, "", ()),
         (unset_maximized, "", ()),
-        (set_fullscreen, "?o", (crate::extensions::wayland_protocol::wl_output_interface)),
+        (
+            set_fullscreen,
+            "?o",
+            (crate::extensions::wayland_protocol::wl_output_interface)
+        ),
         (unset_fullscreen, "", ()),
         (set_minimized, "", ())
     ],
@@ -78,8 +112,16 @@ wayland_interface!(
     3,
     [
         (destroy, "", ()),
-        (grab, "ou", (crate::extensions::wayland_protocol::wl_seat_interface)),
-        (reposition, "3ou", (crate::xdg_shell::xdg_positioner_interface))
+        (
+            grab,
+            "ou",
+            (crate::extensions::wayland_protocol::wl_seat_interface)
+        ),
+        (
+            reposition,
+            "3ou",
+            (crate::xdg_shell::xdg_positioner_interface)
+        )
     ],
     [("configure", "iiii"), ("popup_done", "")]
 );

@@ -12,7 +12,7 @@ pub fn glBufferData<T>(target: GLenum, data: &[T], usage: GLenum) {
     unsafe {
         bindings::glBufferData(
             target,
-            (std::mem::size_of::<T>() * data.len()) as _,
+            std::mem::size_of_val(data) as _,
             data.as_ptr() as *const GLvoid,
             usage,
         );
@@ -132,11 +132,10 @@ pub fn glGetShaderParameter(shader: GLuint, pname: GLenum) -> GLint {
 pub fn glGetShaderInfoLog(shader: GLuint) -> String {
     unsafe {
         let info_log = bindings::glGetShaderInfoLog(shader);
-        let ret = std::ffi::CStr::from_ptr(info_log as _)
+        std::ffi::CStr::from_ptr(info_log as _)
             .to_str()
             .unwrap()
-            .to_string();
-        ret
+            .to_string()
     }
 }
 
@@ -147,10 +146,9 @@ pub fn glGetProgramParameter(program: GLuint, pname: GLenum) -> GLint {
 pub fn glGetProgramInfoLog(program: GLuint) -> String {
     unsafe {
         let info_log = bindings::glGetProgramInfoLog(program);
-        let ret = std::ffi::CStr::from_ptr(info_log as _)
+        std::ffi::CStr::from_ptr(info_log as _)
             .to_str()
             .unwrap()
-            .to_string();
-        ret
+            .to_string()
     }
 }
