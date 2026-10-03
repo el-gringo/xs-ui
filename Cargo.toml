@@ -29,6 +29,7 @@ xs-backend-wayland-client = { path = "crates/xs-backend-wayland-client" }
 xs-backend-wayland-xkb = { path = "crates/xs-backend-wayland-xkb" }
 xs-core = { path = "crates/xs-core" }
 xs-egl-sys = { path = "crates/xs-egl-sys" }
+xs-font = { path = "crates/xs-font" }
 xs-log = { path = "crates/xs-log" }
 xs-gl = { path = "crates/xs-gl" }
 xs-gl-sys = { path = "crates/xs-gl-sys" }
@@ -54,10 +55,6 @@ xs-url = { path = "crates/xs-url" }
 xs-websocket = { path = "crates/xs-websocket" }
 
 # External dependencies
-ab_glyph.path = "vendors/ab-glyph/glyph"
-ab_glyph.default-features = false
-ab_glyph.features = [ "small" ]
-
 log.version = "0.4"
 
 nanoserde.path = "vendors/nanoserde"

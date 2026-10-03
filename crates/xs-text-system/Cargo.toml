@@ -7,4 +7,4 @@ edition.workspace = true
 [dependencies]
 xs-core.workspace = true
 
-ab_glyph.workspace = true
+xs-font.workspace = true

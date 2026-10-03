@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use ab_glyph::{Font, FontRef, PxScale, ScaleFont};
 use xs_core::{AtlasInfo, AtlasOptions, GlyphInfo, Image, ImageFormat, Rectangle};
+use xs_font::Font;
 
-use super::font_atlas::{Atlas, gather_glyphs};
+use super::font_atlas::{Atlas, gather_glyphs, scaled, space_width};
 
 pub struct AtlasSdf {
     pub atlas: AtlasInfo,
@@ -15,20 +15,14 @@ impl Atlas for AtlasSdf {
     }
 
     fn generate_with_options(font_data: &[u8], atlas_options: Option<AtlasOptions>) -> Self {
-        let font = &FontRef::try_from_slice(font_data).unwrap();
+        let font = &Font::from_slice(font_data).expect("could not read the font");
         let (font_size, padding) =
             atlas_options.map_or((42., 4.0), |options| (options.font_size, options.padding));
-        let scale = PxScale::from(font_size);
-        let font = font.into_scaled(scale);
-        let space_width = if let Some(space_glyph) = font.outline_glyph(font.scaled_glyph(' ')) {
-            let bounds = space_glyph.px_bounds();
-            bounds.max.x - bounds.min.x
-        } else {
-            font_size
-        };
-        let ascent = font.ascent();
+        let scaled_font = scaled(font, font_size);
+        let space = space_width(&scaled_font, font_size);
+        let ascent = scaled_font.ascent();
 
-        let glyphs = gather_glyphs(&font);
+        let glyphs = gather_glyphs(&scaled_font);
         let glyph_count = glyphs.len();
         let atlas_size = (glyph_count as f32).sqrt().ceil();
         let atlas_width = (atlas_size + padding) * font_size;
@@ -37,8 +31,8 @@ impl Atlas for AtlasSdf {
         let mut glyph_map = HashMap::new();
         for row in 0..atlas_size as _ {
             for col in 0..atlas_size as _ {
-                if let Some((_, glyph)) = glyphs.get(col + row * atlas_size as usize) {
-                    let bounds = glyph.px_bounds();
+                if let Some((id, glyph)) = glyphs.get(col + row * atlas_size as usize) {
+                    let bounds = glyph.pixel_bounds();
                     let atlas_x = col as f32 * font_size;
                     let atlas_y = row as f32 * font_size;
                     let width = bounds.width() + padding * 2.0;
@@ -82,7 +76,7 @@ impl Atlas for AtlasSdf {
                         }
                     }
                     glyph_map.insert(
-                        glyph.glyph().id.0,
+                        *id,
                         GlyphInfo {
                             atlas_x: atlas_x + padding,
                             atlas_y: atlas_y + padding,
@@ -111,9 +105,9 @@ impl Atlas for AtlasSdf {
                 image,
                 size: atlas_size as _,
                 scale: font_size,
-                spacing: space_width,
+                spacing: space,
                 ascent,
-                v_advance: font.height() + font.line_gap(),
+                v_advance: scaled_font.height() + scaled_font.line_gap(),
                 padding,
                 glyphs: glyph_map,
             },
@@ -124,30 +118,24 @@ impl Atlas for AtlasSdf {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use xs_text_system_glyph::FontRef;
+    use xs_core::AtlasOptions;
 
-    fn get_test_font() -> FontRef<'static> {
-        let font_data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
-        FontRef::try_from_slice(Box::leak(font_data.to_vec().into_boxed_slice())).unwrap()
+    static FONT_DATA: &[u8] = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
+
+    fn generate(font_size: f32, padding: f32) -> AtlasSdf {
+        AtlasSdf::generate_with_options(FONT_DATA, Some(AtlasOptions { font_size, padding }))
     }
 
     #[test]
     fn test_sdf_atlas_has_content() {
-        let font = get_test_font();
-        let (atlas, bitmap) = AtlasSdf::generate(&font, 32.0, 4.0);
+        let atlas = generate(32.0, 4.0);
+        let bitmap = &atlas.atlas.image.bytes;
 
-        let mut non_zero = 0;
-        for &byte in &bitmap {
-            if byte > 0 {
-                non_zero += 1;
-            }
-        }
-
+        let non_zero = bitmap.iter().filter(|b| **b > 0).count();
         println!(
-            "Atlas {}x{}, non-zero bytes: {}/{}",
-            atlas.atlas.width,
-            atlas.atlas.height,
-            non_zero,
+            "Atlas {}x{}, non-zero bytes: {non_zero}/{}",
+            atlas.atlas.image.width,
+            atlas.atlas.image.height,
             bitmap.len()
         );
 
@@ -158,61 +146,76 @@ mod tests {
     fn test_sdf_rendering_glyph() {
         let padding = 4.0;
         let font_size = 32.0;
-        let font = get_test_font();
-        let (atlas, bitmap) = AtlasSdf::generate(&font, font_size, padding);
+        let atlas = generate(font_size, padding);
+        let bitmap = &atlas.atlas.image.bytes;
+        let atlas_width = atlas.atlas.image.width as usize;
 
-        let mut actual = String::from("");
         let char_to_render = 'G';
-        let glyph_id = font.glyph_id(char_to_render);
-        if let Some(info) = atlas.atlas.glyphs.get(&glyph_id) {
-            let x = info.atlas_x as usize;
-            let y = info.atlas_y as usize;
-            let w = info.bounds.width as usize;
-            let h = info.bounds.height as usize;
-            let mapping = b"@#x+=:-. "; // The approximation of greyscale
-            let mapping_scale = (mapping.len() - 1) as f32;
+        let glyph_id = Font::from_slice(FONT_DATA)
+            .unwrap()
+            .glyph_index(char_to_render)
+            .unwrap();
+        let info = atlas
+            .atlas
+            .glyphs
+            .get(&glyph_id)
+            .expect("'G' should be in atlas");
 
-            for py in y..y + h {
-                let mut row = String::new();
-                for px in x..x + w {
-                    let idx = (py * atlas.atlas.width as usize + px) * 3;
-                    let v = bitmap[idx];
-                    let alpha = v as f32 / 255.;
-                    let index = ((1.0 - alpha) * mapping_scale + 0.5) as usize;
-                    let c = mapping[index.clamp(0, mapping.len() - 1)];
-                    row.push(c as char);
-                }
-                if !row.is_empty() {
-                    actual = actual + row.trim_end() + "\n";
-                }
+        // The padding ring is part of the distance field, and it is what the
+        // shader samples, so read the whole padded block rather than starting at
+        // the glyph origin.
+        let x = (info.atlas_x - padding) as usize;
+        let y = (info.atlas_y - padding) as usize;
+        let w = info.bounds.width as usize + padding as usize * 2;
+        let h = info.bounds.height as usize + padding as usize * 2;
+        let mapping = b"@#x+=:-. "; // The approximation of greyscale
+        let mapping_scale = (mapping.len() - 1) as f32;
+
+        let mut actual = String::new();
+        for py in y..y + h {
+            let mut row = String::new();
+            for px in x..x + w {
+                let idx = (py * atlas_width + px) * 3;
+                let alpha = bitmap[idx] as f32 / 255.;
+                let index = ((1.0 - alpha) * mapping_scale + 0.5) as usize;
+                let c = mapping[index.clamp(0, mapping.len() - 1)];
+                row.push(c as char);
+            }
+            if !row.trim_end().is_empty() {
+                actual = actual + row.trim_end() + "\n";
             }
         }
+        // A regression guard on the distance field rather than a picture of the
+        // letter. Every row of it was checked against what this crate produced
+        // before `ab_glyph` was replaced, and matched. The art is flush left on
+        // purpose: it is compared with `trim`, so the indentation of this
+        // literal does not become part of the comparison.
         let expected = "
 
-        .........
-       .---------..
-      .-:::::::::--.
-     .-::+++++++:::-.
-    .-::++++::++++:-.
-   .-::+++::::::++::-.
-   .-:+++::----::++:-.
-   .-:++::-....-::::-.
-   .-:++:-.  ...----.
-   .-:++:-. .-------.
-  .-::++:-..-:::::::-.
-  .-:+++:-..-:+++++:-.
-  .-::++:-..-:+++++:-.
-   .-:++:-..-::::++:-.
-   .-:++:-. .---:++:-.
-   .-:++::-....-:++:-.
-   .-:+++::----::++:-.
-   .-::+++::::::+++:-.
-    .-::+++++++++++:-.
-     .-::+++++++:++:-.
-      .-::::::::::::-.
-       .------------.
-        ............
-          ";
-        assert_eq!(actual.trim_end(), expected.trim_end())
+       .........
+      .---------..
+     .-:::::::::--.
+    .-::+++++++:::-.
+   .-::++++::++++:-.
+  .-::+++::::::++::-.
+  .-:+++::----::++:-.
+  .-:++::-....-::::-.
+  .-:++:-.  ...----.
+  .-:++:-. .-------.
+ .-::++:-..-:::::::-.
+ .-:+++:-..-:+++++:-.
+ .-::++:-..-:+++++:-.
+  .-:++:-..-::::++:-.
+  .-:++:-. .---:++:-.
+  .-:++::-....-:++:-.
+  .-:+++::----::++:-.
+  .-::+++::::::+++:-.
+   .-::+++++++++++:-.
+    .-::+++++++:++:-.
+     .-::::::::::::-.
+      .------------.
+       ............
+";
+        assert_eq!(actual.trim(), expected.trim())
     }
 }

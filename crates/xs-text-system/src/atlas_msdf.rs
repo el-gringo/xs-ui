@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use ab_glyph::{Font, FontRef, PxScale, ScaleFont};
 use xs_core::{AtlasInfo, AtlasOptions, GlyphInfo, Image, ImageFormat, Rectangle};
+use xs_font::Font;
 
-use super::font_atlas::{Atlas, gather_glyphs};
+use super::font_atlas::{Atlas, gather_glyphs, scaled, space_width};
 
 pub struct AtlasMsdf {
     pub atlas: AtlasInfo,
@@ -15,20 +15,14 @@ impl Atlas for AtlasMsdf {
     }
 
     fn generate_with_options(font_data: &[u8], atlas_options: Option<AtlasOptions>) -> Self {
-        let font = &FontRef::try_from_slice(font_data).unwrap();
+        let font = &Font::from_slice(font_data).expect("could not read the font");
         let (font_size, padding) =
             atlas_options.map_or((42., 4.0), |options| (options.font_size, options.padding));
-        let scale = PxScale::from(font_size);
-        let font = font.into_scaled(scale);
-        let space_width = if let Some(space_glyph) = font.outline_glyph(font.scaled_glyph(' ')) {
-            let bounds = space_glyph.px_bounds();
-            bounds.max.x - bounds.min.x
-        } else {
-            font_size
-        };
-        let ascent = font.ascent();
+        let scaled_font = scaled(font, font_size);
+        let space = space_width(&scaled_font, font_size);
+        let ascent = scaled_font.ascent();
 
-        let glyphs = gather_glyphs(&font);
+        let glyphs = gather_glyphs(&scaled_font);
         let glyph_count = glyphs.len();
         let atlas_size = (glyph_count as f32).sqrt().ceil();
         let atlas_width = (atlas_size + padding) * font_size;
@@ -38,8 +32,8 @@ impl Atlas for AtlasMsdf {
 
         for row in 0..atlas_size as _ {
             for col in 0..atlas_size as _ {
-                if let Some((_, glyph)) = glyphs.get(col + row * atlas_size as usize) {
-                    let bounds = glyph.px_bounds();
+                if let Some((id, glyph)) = glyphs.get(col + row * atlas_size as usize) {
+                    let bounds = glyph.pixel_bounds();
                     let local_atlas_x = col as f32 * font_size;
                     let local_atlas_y = row as f32 * font_size;
                     let width = bounds.width() + padding * 2.0;
@@ -88,7 +82,7 @@ impl Atlas for AtlasMsdf {
                     }
 
                     glyph_map.insert(
-                        glyph.glyph().id.0,
+                        *id,
                         GlyphInfo {
                             atlas_x: local_atlas_x + padding,
                             atlas_y: local_atlas_y + padding,
@@ -116,9 +110,9 @@ impl Atlas for AtlasMsdf {
                 image,
                 size: atlas_size as _,
                 scale: font_size,
-                spacing: space_width,
+                spacing: space,
                 ascent,
-                v_advance: font.height() + font.line_gap(),
+                v_advance: scaled_font.height() + scaled_font.line_gap(),
                 padding,
                 glyphs: glyph_map,
             },

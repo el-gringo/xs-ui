@@ -1,22 +1,25 @@
-use ab_glyph::{FontRef, Glyph, PxScale, PxScaleFont, ScaleFont, point};
 use xs_core::{AtlasInfo, GlyphInfo, TextProperties, TextVertices};
+use xs_font::{Font, Glyph, Point};
 
-use crate::{Atlas, layout_paragraph::layout_paragraph};
+use crate::{Atlas, font_atlas::scaled, layout_paragraph::layout_paragraph};
+
+/// Floats per vertex: x, y, u, v.
+const VERTEX_STRIDE: usize = 4;
 
 fn draw_glyph(
-    glyph: &Glyph,
+    glyph: &Glyph<'_>,
     glyph_info: &GlyphInfo,
     font_scale: f32,
     atlas_info: &AtlasInfo,
     descent: f32,
-) -> ([f32; 24], f32, f32, f32, f32) {
+) -> ([f32; VERTEX_STRIDE * 6], f32, f32, f32, f32) {
     let padding = atlas_info.padding;
     let atlas_width = atlas_info.image.width as f32;
     let atlas_height = atlas_info.image.height as f32;
     let glyph_width = glyph_info.bounds.width * font_scale;
     let glyph_height = glyph_info.bounds.height * font_scale;
-    let x = glyph.position.x + glyph_info.bounds.x * font_scale;
-    let y = glyph.position.y + (glyph_info.bounds.y + descent) * font_scale;
+    let x = glyph.position().x + glyph_info.bounds.x * font_scale;
+    let y = glyph.position().y + (glyph_info.bounds.y + descent) * font_scale;
 
     let x2 = x + glyph_width;
     let y2 = y + glyph_height;
@@ -27,7 +30,7 @@ fn draw_glyph(
     let v2 =
         (glyph_info.atlas_y - padding + glyph_info.bounds.height + padding * 2.0) / atlas_height;
 
-    let mut glyph_vertices = [0.; 24];
+    let mut glyph_vertices = [0.; VERTEX_STRIDE * 6];
     glyph_vertices[0] = x;
     glyph_vertices[1] = y;
     glyph_vertices[2] = u1;
@@ -61,21 +64,17 @@ fn draw_glyph(
 }
 
 pub fn make_vertices_for_string<A: Atlas>(
-    font: &FontRef<'static>,
+    font: &Font,
     font_atlas: &A,
     text_properties: &TextProperties,
     text: &str,
     max_width: f32,
     _max_height: f32,
 ) -> TextVertices {
-    let scale = PxScale::from(text_properties.font_size as f32);
-    let scaled_font = PxScaleFont {
-        font: font.clone(),
-        scale,
-    };
+    let scaled_font = scaled(font, text_properties.font_size as f32);
 
     let mut glyphs = Vec::new();
-    layout_paragraph(&scaled_font, point(0.0, 0.0), max_width, text, &mut glyphs);
+    layout_paragraph(&scaled_font, Point::ORIGIN, max_width, text, &mut glyphs);
 
     let font_scale = text_properties.font_size as f32 / font_atlas.scale();
     let distance_range = font_scale * font_atlas.padding();
@@ -91,7 +90,7 @@ pub fn make_vertices_for_string<A: Atlas>(
 
     let mut vertices = Vec::new();
     for glyph in &glyphs {
-        if let Some(glyph_info) = font_atlas.glyph_info(&glyph.id.0) {
+        if let Some(glyph_info) = font_atlas.glyph_info(&glyph.id()) {
             let (glyph_vertices, x, x2, y, y2) =
                 draw_glyph(glyph, glyph_info, font_scale, atlas_info, descent);
             vertices.extend(glyph_vertices);
@@ -113,9 +112,10 @@ pub fn make_vertices_for_string<A: Atlas>(
         0.0
     };
 
-    for v in vertices.chunks_exact_mut(4) {
-        v[0] -= min_x;
-        v[1] -= min_y;
+    // Every vertex is (x, y, u, v); move the whole run back to the origin.
+    for vertex in vertices.as_chunks_mut::<VERTEX_STRIDE>().0 {
+        vertex[0] -= min_x;
+        vertex[1] -= min_y;
     }
 
     TextVertices {

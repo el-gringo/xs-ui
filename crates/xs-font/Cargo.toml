@@ -1,0 +1,10 @@
+[package]
+name = "xs-font"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+test_utils.workspace = true

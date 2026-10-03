@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-pub use ab_glyph::FontRef;
+pub use xs_font::Font;
+
 use xs_core::{AtlasInfo, AtlasOptions, TextProperties, TextVertices};
 
 use crate::{Atlas, glyph::make_vertices_for_string};
 
 pub struct TextSystem<A: Atlas> {
-    fonts: HashMap<(String, u16), (FontRef<'static>, A)>,
+    fonts: HashMap<(String, u16), (Font, A)>,
 }
 
 impl<A: Atlas> Default for TextSystem<A> {
@@ -31,8 +32,9 @@ impl<A: Atlas> xs_core::TextSystem for TextSystem<A> {
         binary_font: Vec<u8>,
         atlas_options: Option<AtlasOptions>,
     ) -> &AtlasInfo {
-        let font =
-            FontRef::try_from_slice(Box::leak(binary_font.clone().into_boxed_slice())).unwrap();
+        // The font keeps the bytes, so this no longer has to leak a copy of them
+        // for the lifetime of the process.
+        let font = Font::parse(binary_font.clone()).expect("could not read the font");
         let font_atlas = A::generate_with_options(&binary_font, atlas_options);
         let atlas_key = (font_family, font_weight);
         self.fonts.insert(atlas_key.clone(), (font, font_atlas));
@@ -70,34 +72,52 @@ impl<A: Atlas> xs_core::TextSystem for TextSystem<A> {
 mod tests {
     use super::*;
     use crate::AtlasSdf;
-    use xs_core::TextProperties;
+    use xs_core::{AtlasOptions, TextProperties, TextSystem as _};
+
+    static FONT_DATA: &[u8] = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
 
     #[test]
     fn test_render_text_texture_coordinates() {
-        let font_data = include_bytes!("../../../ressources/fonts/IBMPlexSans-Regular.ttf");
-        let font =
-            FontRef::try_from_slice(Box::leak(font_data.to_vec().into_boxed_slice())).unwrap();
-        let (atlas, _format, _) = AtlasSdf::generate(&font_data, 32.0, 4.0);
+        let font = Font::parse(FONT_DATA.to_vec()).unwrap();
+        let atlas = AtlasSdf::generate_with_options(
+            FONT_DATA,
+            Some(AtlasOptions {
+                font_size: 32.0,
+                padding: 4.0,
+            }),
+        );
 
         let char_to_render = 'X';
-        let glyph_id = font.glyph_id(char_to_render);
-
+        let glyph_id = font.glyph_index(char_to_render).unwrap();
         let glyph_info = atlas
             .atlas
             .glyphs
             .get(&glyph_id)
             .expect("'X' should be in atlas");
 
-        let atlas_width = atlas.atlas.width as f32;
-        let atlas_height = atlas.atlas.height as f32;
+        let atlas_width = atlas.atlas.image.width as f32;
+        let atlas_height = atlas.atlas.image.height as f32;
 
-        let expected_u1 = glyph_info.x / atlas_width;
-        let expected_v1 = glyph_info.y / atlas_height;
-        let expected_u2 = (glyph_info.x + glyph_info.width) / atlas_width;
-        let expected_v2 = (glyph_info.y + glyph_info.height) / atlas_height;
+        // The sampled rectangle is the glyph plus the padding ring around it,
+        // which is what the distance field stores and what the shader reads.
+        let padding = 4.0;
+        let expected_u1 = (glyph_info.atlas_x - padding) / atlas_width;
+        let expected_v1 = (glyph_info.atlas_y - padding) / atlas_height;
+        let expected_u2 =
+            (glyph_info.atlas_x - padding + glyph_info.bounds.width + padding * 2.0) / atlas_width;
+        let expected_v2 = (glyph_info.atlas_y - padding + glyph_info.bounds.height + padding * 2.0)
+            / atlas_height;
 
         let mut text_system: TextSystem<AtlasSdf> = TextSystem::new();
-        text_system.load_font("test", 400, 32.0, 4.0, font_data.to_vec());
+        text_system.load_font_with_options(
+            "test".to_string(),
+            400,
+            FONT_DATA.to_vec(),
+            Some(AtlasOptions {
+                font_size: 32.0,
+                padding: 4.0,
+            }),
+        );
 
         let text_props = TextProperties {
             font_family: "test".to_string(),
@@ -121,19 +141,11 @@ mod tests {
 
             assert!(
                 u >= expected_u1 - 0.001 && u <= expected_u2 + 0.001,
-                "V{} u={:.6} should be between {:.6} and {:.6}",
-                i,
-                u,
-                expected_u1,
-                expected_u2
+                "V{i} u={u:.6} should be between {expected_u1:.6} and {expected_u2:.6}"
             );
             assert!(
                 v >= expected_v1 - 0.001 && v <= expected_v2 + 0.001,
-                "V{} v={:.6} should be between {:.6} and {:.6}",
-                i,
-                v,
-                expected_v1,
-                expected_v2
+                "V{i} v={v:.6} should be between {expected_v1:.6} and {expected_v2:.6}"
             );
         }
     }
