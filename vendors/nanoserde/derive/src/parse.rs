@@ -279,7 +279,7 @@ impl Generic {
 
     fn get_bounds(&self) -> Vec<String> {
         match &self {
-            Generic::ConstGeneric { _type, .. } => vec![format!("{}", _type.full())],
+            Generic::ConstGeneric { _type, .. } => vec![_type.full().to_string()],
             Generic::Generic { bounds, .. } => bounds.iter().map(Type::full).collect(),
             Generic::Lifetime { bounds, .. } => {
                 bounds.iter().map(|x| format!("'{}", x.ident)).collect()
@@ -1115,7 +1115,7 @@ fn next_attributes_list(source: &mut Peekable<impl Iterator<Item = TokenTree>>) 
 
     while let Some(attr) = next_attribute(source) {
         if let Some(structdiff_attr) = attr {
-            attributes.extend(structdiff_attr.into_iter());
+            attributes.extend(structdiff_attr);
         }
     }
 
@@ -1514,21 +1514,16 @@ pub fn parse_data(input: TokenStream) -> Data {
         pub_or_type
     };
 
-    let res;
-
-    match type_keyword.as_str() {
+    let res = match type_keyword.as_str() {
         "struct" => {
             let mut struct_ = next_struct(&mut source);
             struct_.attributes = attributes;
-            res = Data::Struct(struct_);
+            Data::Struct(struct_)
         }
-        "enum" => {
-            let enum_ = next_enum(&mut source);
-            res = Data::Enum(enum_);
-        }
+        "enum" => Data::Enum(next_enum(&mut source)),
         "union" => unimplemented!("Unions are not supported"),
         unexpected => panic!("Unexpected keyword: {}", unexpected),
-    }
+    };
 
     assert!(
         source.next().is_none(),

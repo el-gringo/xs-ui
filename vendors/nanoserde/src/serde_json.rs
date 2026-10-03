@@ -518,7 +518,7 @@ impl DeJsonState {
                 Ok(())
             }
             '-' | '+' | '0'..='9' => {
-                self.numbuf.truncate(0);
+                self.numbuf.clear();
                 let is_neg = if self.cur == '-' || self.cur == '+' {
                     let sign = self.cur;
                     self.numbuf.push(self.cur);
@@ -579,7 +579,7 @@ impl DeJsonState {
                 }
             }
             'a'..='z' | 'A'..='Z' | '_' => {
-                self.identbuf.truncate(0);
+                self.identbuf.clear();
                 while self.cur >= 'a' && self.cur <= 'z'
                     || self.cur >= 'A' && self.cur <= 'Z'
                     || self.cur == '_'
@@ -606,7 +606,7 @@ impl DeJsonState {
                 )))
             }
             '"' => {
-                self.strbuf.truncate(0);
+                self.strbuf.clear();
                 self.next(i);
                 while self.cur != '"' {
                     if self.cur == '\\' {

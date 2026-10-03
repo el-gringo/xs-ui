@@ -60,6 +60,9 @@ fn key_without_value() {
     assert!(TomlParser::parse(data).is_err());
 }
 
+// The float in the document is `3.14`, and the assertion has to name that same
+// literal; it is not standing in for a mathematical constant.
+#[allow(clippy::approx_constant)]
 #[test]
 fn assert_specific_toml_types() {
     let data = r#"
@@ -74,7 +77,7 @@ fn assert_specific_toml_types() {
         TomlParser::parse(data).unwrap()["str"].str(),
         "quoth the raven"
     );
-    assert_eq!(TomlParser::parse(data).unwrap()["boolean"].boolean(), false);
+    assert!(!TomlParser::parse(data).unwrap()["boolean"].boolean());
     assert_eq!(
         TomlParser::parse(data).unwrap()["date"].date(),
         "1979-05-27".to_string()
@@ -120,5 +123,5 @@ fn carriage_return() {
     let toml = TomlParser::parse(toml_str).unwrap();
 
     assert_eq!(toml["foo"].num(), 1.0);
-    assert_eq!(toml["bar"].boolean(), false);
+    assert!(!toml["bar"].boolean());
 }

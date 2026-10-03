@@ -483,7 +483,7 @@ pub fn derive_de_json_enum(enum_: &Enum, crate_name: &str) -> TokenStream {
                 ..
             } => {
                 let body = derive_de_json_named(
-                    &format!("Self::{}", &field_name),
+                    &format!("Self::{field_name}"),
                     false,
                     &contents.fields,
                     crate_name,

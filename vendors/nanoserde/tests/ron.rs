@@ -390,7 +390,7 @@ fn ronerror() {
 
     let res: Result<Foo, _> = DeRon::deserialize_ron(ron);
     match res {
-        Ok(_) => assert!(false),
+        Ok(_) => panic!("Unexpected success"),
         Err(e) => {
             let _dyn_e: Box<dyn std::error::Error> = std::convert::From::from(e);
         }
@@ -560,7 +560,7 @@ fn test_surrogate_pairs_exhaustively() {
 
             let ron = format!(r#""\u{:04x}\u{:04x}""#, lead, trail);
             let result: String = DeRon::deserialize_ron(&ron).unwrap_or_else(|e| {
-                panic!("should be able to parse {}: {:?}", &ron, e);
+                panic!("should be able to parse {ron}: {e:?}");
             });
             assert_eq!(result, expected_string, "failed on input {}", ron);
             assert_eq!(result.chars().count(), 1);
@@ -574,6 +574,7 @@ fn tuple_struct() {
     pub struct Test(i32, pub i32, pub(crate) String, f32);
 
     #[derive(DeRon, SerRon, PartialEq)]
+    #[allow(dead_code)]
     pub struct Vec2(pub(crate) f32, pub(crate) f32);
 
     let test = Test(0, 1, "asd".to_string(), 2.);
@@ -603,8 +604,7 @@ fn array_leak_test() {
     let serialized = nanoserde::SerRon::serialize_ron(&items);
     let corrupted_serialized = &serialized[..serialized.len() - 1];
 
-    if let Ok(_) = <[IncrementOnDrop; 2] as nanoserde::DeRon>::deserialize_ron(corrupted_serialized)
-    {
+    if <[IncrementOnDrop; 2] as nanoserde::DeRon>::deserialize_ron(corrupted_serialized).is_ok() {
         panic!("Unexpected success")
     }
 

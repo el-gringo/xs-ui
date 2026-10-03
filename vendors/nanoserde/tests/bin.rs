@@ -91,14 +91,14 @@ fn field_proxy() {
         x: i32,
     }
 
-    impl Into<NonSerializable> for &Serializable {
-        fn into(self) -> NonSerializable {
-            NonSerializable { foo: self.x }
+    impl From<&Serializable> for NonSerializable {
+        fn from(serializable: &Serializable) -> NonSerializable {
+            NonSerializable { foo: serializable.x }
         }
     }
-    impl Into<Serializable> for &NonSerializable {
-        fn into(self) -> Serializable {
-            Serializable { x: self.foo }
+    impl From<&NonSerializable> for Serializable {
+        fn from(non_serializable: &NonSerializable) -> Serializable {
+            Serializable { x: non_serializable.foo }
         }
     }
 
@@ -161,18 +161,18 @@ fn struct_proxy() {
         y: u64,
     }
 
-    impl Into<SimdVec2> for &PortableVec2 {
-        fn into(self) -> SimdVec2 {
+    impl From<&PortableVec2> for SimdVec2 {
+        fn from(portable: &PortableVec2) -> SimdVec2 {
             SimdVec2 {
-                simd_data: NonSerializable { s: self.x + self.y },
+                simd_data: NonSerializable { s: portable.x + portable.y },
             }
         }
     }
-    impl Into<PortableVec2> for &SimdVec2 {
-        fn into(self) -> PortableVec2 {
+    impl From<&SimdVec2> for PortableVec2 {
+        fn from(simd: &SimdVec2) -> PortableVec2 {
             PortableVec2 {
-                x: self.simd_data.s / 2,
-                y: self.simd_data.s / 2 + self.simd_data.s % 2,
+                x: simd.simd_data.s / 2,
+                y: simd.simd_data.s / 2 + simd.simd_data.s % 2,
             }
         }
     }
@@ -193,6 +193,7 @@ fn tuple_struct() {
     pub struct Test(i32, pub i32, pub(crate) String, f32, [u64; 100]);
 
     #[derive(DeBin, SerBin, PartialEq)]
+    #[allow(dead_code)]
     pub struct Vec2(pub(crate) f32, pub(crate) f32);
 
     let test = Test(0, 1, "asd".to_string(), 2., [3_u64; 100]);
@@ -245,6 +246,7 @@ fn enums() {
 #[test]
 fn pub_tuple_struct() {
     #[derive(DeBin, SerBin, PartialEq)]
+    #[allow(dead_code)]
     struct Foo(pub [u8; 3]);
 }
 
@@ -291,8 +293,7 @@ fn array_leak_test() {
     let serialized = nanoserde::SerBin::serialize_bin(&items);
     let corrupted_serialized = &serialized[..serialized.len() - 1];
 
-    if let Ok(_) = <[IncrementOnDrop; 2] as nanoserde::DeBin>::deserialize_bin(corrupted_serialized)
-    {
+    if <[IncrementOnDrop; 2] as nanoserde::DeBin>::deserialize_bin(corrupted_serialized).is_ok() {
         panic!("Unexpected success")
     }
 

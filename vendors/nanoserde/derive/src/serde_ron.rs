@@ -141,7 +141,7 @@ pub fn derive_ser_ron_struct_unnamed(struct_: &Struct, crate_name: &str) -> Toke
 
 pub fn derive_de_ron_named(
     name: &String,
-    fields: &Vec<Field>,
+    fields: &[Field],
     attributes: &[Attribute],
     crate_name: &str,
 ) -> String {

@@ -242,18 +242,13 @@ fn rename() {
         pub b: Bar,
     }
 
-    #[derive(DeJson, SerJson, PartialEq, Debug)]
+    #[derive(DeJson, SerJson, PartialEq, Debug, Default)]
     pub enum Bar {
+        #[default]
         #[nserde(rename = "fooValue")]
         A,
         #[nserde(rename = "barValue")]
         B,
-    }
-
-    impl Default for Bar {
-        fn default() -> Self {
-            Self::A
-        }
     }
 
     let json = r#"{
@@ -686,7 +681,7 @@ fn jsonerror() {
 
     let res: Result<Foo, _> = DeJson::deserialize_json(json);
     match res {
-        Ok(_) => assert!(false),
+        Ok(_) => panic!("Unexpected success"),
         Err(e) => {
             let _dyn_e: Box<dyn std::error::Error> = std::convert::From::from(e);
         }
@@ -882,7 +877,7 @@ fn test_surrogate_pairs_exhaustively() {
 
             let json = format!(r#""\u{:04x}\u{:04x}""#, lead, trail);
             let result: String = DeJson::deserialize_json(&json).unwrap_or_else(|e| {
-                panic!("should be able to parse {}: {:?}", &json, e);
+                panic!("should be able to parse {json}: {e:?}");
             });
             assert_eq!(result, expected_string, "failed on input {}", json);
             assert_eq!(result.chars().count(), 1);
@@ -1091,6 +1086,7 @@ fn tuple_struct2() {
     pub struct Test(i32, pub i32, pub(crate) String, f32);
 
     #[derive(DeJson, SerJson, PartialEq)]
+    #[allow(dead_code)]
     pub struct Vec2(pub(crate) f32, pub(crate) f32);
 
     let test = Test(0, 1, "asd".to_string(), 2.);
@@ -1167,9 +1163,7 @@ fn array_leak_test() {
     let serialized = nanoserde::SerJson::serialize_json(&items);
     let corrupted_serialized = &serialized[..serialized.len() - 1];
 
-    if let Ok(_) =
-        <[IncrementOnDrop; 2] as nanoserde::DeJson>::deserialize_json(corrupted_serialized)
-    {
+    if <[IncrementOnDrop; 2] as nanoserde::DeJson>::deserialize_json(corrupted_serialized).is_ok() {
         panic!("Unexpected success")
     }
 

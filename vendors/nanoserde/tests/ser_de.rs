@@ -16,6 +16,9 @@ struct Test2 {
     pub a: u32,
 }
 
+// `2.718281828459045` is arbitrary test data being round-tripped, not an
+// approximation anyone meant to compare against a real constant.
+#[allow(clippy::approx_constant, clippy::excessive_precision)]
 #[test]
 fn ser_de() {
     #[derive(PartialEq, Debug)]
