@@ -8,9 +8,15 @@ edition.workspace = true
 default = [
     "image"
 ]
+# Image decoding is xs-image, which dlopens libjpeg / libpng16 / libwebp /
+# libjxl at runtime. Nothing is linked at build time, so a device missing one of
+# them still builds and still decodes the others; xs-image leaves that codec out
+# of its registry and answers `supports(format)` accordingly.
+#
+# QOI was dropped here: zune-image carried it and xs-image has no codec for it.
 image = [
     "xs-http",
-    "zune-image"
+    "xs-image"
 ]
 
 [dependencies]
@@ -30,14 +36,5 @@ xs-renderer-core.workspace = true
 xs-http.optional = true
 xs-http.path = "../xs-http"
 
-# External dependencies
-zune-image.optional = true
-zune-image.version = "0.5"
-zune-image.default-features = false
-zune-image.features = [
-    "jpeg",
-    #"jpeg-xl",
-    "png",
-    #"webp",
-    "qoi"
-]
+xs-image.optional = true
+xs-image.path = "../xs-image"

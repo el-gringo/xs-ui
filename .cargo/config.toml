@@ -5,7 +5,7 @@
 # pin wasm32-unknown-unknown to the "mvp" (pre-SIMD, pre-sign-ext) baseline
 # and rebuild `std` from source so no newer instruction set leaks in.
 [unstable]
-build-std = ["std", "panic_abort"]
+#build-std = ["std", "panic_abort"]
 
 [target.wasm32-unknown-unknown]
 # Note: rustc >= the active nightly renamed `target-features` (plural) to

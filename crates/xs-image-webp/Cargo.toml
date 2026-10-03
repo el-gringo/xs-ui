@@ -1,0 +1,12 @@
+[package]
+name = "xs-image-webp"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-image-core = { workspace = true }
+xs-platform-linux = { workspace = true }
+
+[dev-dependencies]
+test_utils.workspace = true

@@ -1,0 +1,9 @@
+[package]
+name = "xs-image-jpeg"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-image-core = { workspace = true }
+xs-platform-linux = { workspace = true }

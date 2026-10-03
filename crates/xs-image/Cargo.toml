@@ -1,0 +1,33 @@
+[package]
+name = "xs-image"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+# Each codec is dlopened lazily, so a feature only controls whether the crate is
+# compiled in at all. Turning one off drops its symbols and its decoder from the
+# registry; it does not make the image formats unrecognised, since the sniffer
+# lives in xs-image-core and has no idea which crates exist.
+[features]
+default = [ "jpeg", "jpeg-xl", "png", "webp" ]
+jpeg = [ "dep:xs-image-jpeg" ]
+jpeg-xl = [ "dep:xs-image-jpeg-xl" ]
+png = [ "dep:xs-image-png" ]
+webp = [ "dep:xs-image-webp" ]
+
+# Every fixture the integration tests use is fed through `Image::read`, so the
+# target only makes sense with the full codec set compiled in.
+[[test]]
+name = "decode"
+required-features = [ "jpeg", "jpeg-xl", "png", "webp" ]
+
+[dependencies]
+xs-image-core = { workspace = true }
+
+xs-image-jpeg = { workspace = true, optional = true }
+xs-image-jpeg-xl = { workspace = true, optional = true }
+xs-image-png = { workspace = true, optional = true }
+xs-image-webp = { workspace = true, optional = true }
+
+[dev-dependencies]
+test_utils.workspace = true

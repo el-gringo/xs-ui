@@ -1,0 +1,10 @@
+[package]
+name = "xs-image-core"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dev-dependencies]
+test_utils.workspace = true
+
+[dependencies]

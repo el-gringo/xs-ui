@@ -97,20 +97,22 @@ pub fn load_image(_src: String, _tx: Sender<BackendResponse>) {}
 #[cfg(feature = "image")]
 pub fn load_image(src: String, tx: Sender<BackendResponse>) {
     use xs_http::HttpClient;
-    use zune_image::codecs::qoi::zune_core::{colorspace::ColorSpace, options::DecoderOptions};
+    use xs_image::{ColorSpace, Image, ImageOptions};
+
     let http = HttpClient::new();
-    http.get(
-        src.clone(),
-        move |response| match zune_image::image::Image::read(
-            std::io::Cursor::new(response.body),
-            DecoderOptions::default(),
+    http.get(src.clone(), move |response| {
+        // `xs_image` sniffs the container itself, so no `Content-Type` and no
+        // file extension are needed to pick a codec. RGBA is requested because
+        // `Application::read_messages` hands the samples straight to
+        // `glTexImage2D` as `GL_RGBA`, so the byte count has to be
+        // `width * height * 4`.
+        match Image::read(
+            response.body.as_slice(),
+            ImageOptions::default().color_space(ColorSpace::Rgba),
         ) {
-            Ok(mut image) => {
+            Ok(image) => {
                 let (width, height) = image.dimensions();
-                let width = width as u32;
-                let height = height as u32;
-                let _ = image.convert_color(ColorSpace::RGBA);
-                let bytes = image.flatten_to_u8().first().unwrap().clone();
+                let bytes = image.into_buffer().into_vec();
                 let _ = tx.send(BackendResponse::ImageLoaded(
                     src.clone(),
                     -1,
@@ -120,10 +122,10 @@ pub fn load_image(src: String, tx: Sender<BackendResponse>) {
                 ));
             }
             Err(error) => {
-                eprintln!("Backend::load_image error: {:?}", error);
+                eprintln!("Backend::load_image error: {}", error);
             }
-        },
-    );
+        }
+    });
 }
 
 pub fn reload() {

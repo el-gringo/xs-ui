@@ -35,6 +35,12 @@ xs-gl-sys = { path = "crates/xs-gl-sys" }
 xs-js-sys = { path = "crates/xs-js-sys" }
 xs-layout = { path = "crates/xs-layout" }
 xs-http = { path = "crates/xs-http" }
+xs-image = { path = "crates/xs-image" }
+xs-image-core = { path = "crates/xs-image-core" }
+xs-image-jpeg = { path = "crates/xs-image-jpeg" }
+xs-image-jpeg-xl = { path = "crates/xs-image-jpeg-xl" }
+xs-image-png = { path = "crates/xs-image-png" }
+xs-image-webp = { path = "crates/xs-image-webp" }
 xs-math = { path = "crates/xs-math" }
 xs-platform-event = { path = "crates/xs-platform-event" }
 xs-platform-linux = { path = "crates/xs-platform-linux" }
