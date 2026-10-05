@@ -46,6 +46,11 @@ impl Easing {
         self
     }
 
+    pub fn infinite(mut self) -> Self {
+        self.repeat = u32::MAX;
+        self
+    }
+
     pub fn direction(mut self, direction: AnimationDirection) -> Self {
         self.direction = direction;
         match direction {
@@ -54,6 +59,11 @@ impl Easing {
                 self.forward = false;
             }
         }
+        self
+    }
+
+    pub fn linear(mut self) -> Self {
+        self.timing = EasingTiming::Linear;
         self
     }
 
@@ -103,7 +113,11 @@ impl crate::Animate for Easing {
         }
 
         let progress = (self.elapsed.as_secs_f32() / self.duration.as_secs_f32()).clamp(0.0, 1.0);
-        let t = if self.forward { progress } else { 1.0 - progress };
+        let t = if self.forward {
+            progress
+        } else {
+            1.0 - progress
+        };
         self.value = match self.timing {
             EasingTiming::Linear => t,
             EasingTiming::EaseIn => t * t,

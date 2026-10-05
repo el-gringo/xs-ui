@@ -17,7 +17,15 @@ attribute vec4 a_clip;
 
 uniform vec2 u_resolution;
 
+// The element's own untransformed pixel space, which is what the rounded corner,
+// border and shadow fields are defined in. Recovered from the box and the texture
+// coordinates rather than from `a_position`, because `a_position` has already been
+// moved onto the screen by the node's transform. Every vertex of the quad agrees
+// on the value, so this interpolates to a constant with no error in it.
 varying vec2 v_pixelPos;
+// The on-screen position, i.e. after the node's transform. This is what the clip
+// test needs, since the clip rectangle arrives in screen space.
+varying vec2 v_screenPos;
 varying vec2 v_textureCoords;
 varying vec4 v_box;
 varying vec4 v_color;
@@ -36,7 +44,8 @@ void main() {
     float ndc_x = a_position.x / u_resolution.x * 2.0 - 1.0;
     float ndc_y = 1.0 - a_position.y / u_resolution.y * 2.0;
     gl_Position = vec4(ndc_x, ndc_y, 0.0, 1.0);
-    v_pixelPos = a_position;
+    v_pixelPos = a_box.xy + a_textureCoords * a_box.zw;
+    v_screenPos = a_position;
     v_textureCoords = a_textureCoords;
     v_box = a_box;
     v_color = a_color;

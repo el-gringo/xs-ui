@@ -2,7 +2,7 @@ use crate::RendererOpenGl;
 use xs_core::Color;
 use xs_gl::{Buffer, GL_FLOAT, Shader};
 use xs_layout::{Background, QuadProps};
-use xs_math::Rectangle;
+use xs_math::{Matrix3, Rectangle, Vector2};
 
 /// Number of f32 components in one interleaved quad vertex.
 pub(crate) const QUAD_VERTEX_FLOATS: usize = 46;
@@ -60,6 +60,7 @@ impl RendererOpenGl {
         quad: &Rectangle,
         props: &QuadProps,
         clip: Option<Rectangle>,
+        transform: &Matrix3,
         out: &mut Vec<f32>,
     ) {
         let borders = [
@@ -137,8 +138,15 @@ impl RendererOpenGl {
             let (cx, cy, cu, cv) = corners[corner];
             let start = base + slot * QUAD_VERTEX_FLOATS;
             let (dst, head) = out[start..start + QUAD_VERTEX_FLOATS].split_at_mut(CORNER_FLOATS);
-            dst[0] = cx;
-            dst[1] = cy;
+            // Only the position is moved. `a_box` and everything derived from it stay
+            // in the element's own untransformed pixels, which is the space the
+            // fragment shader evaluates its rounded corners, border and shadow in -
+            // so a rotated quad still has round corners in its own space, and they
+            // rotate with it. The shader recovers this local position from `a_box`
+            // and the texture coordinates.
+            let moved = transform.transform_point(Vector2::new(cx, cy));
+            dst[0] = moved.x;
+            dst[1] = moved.y;
             dst[2] = cu;
             dst[3] = cv;
             head.copy_from_slice(&vertex[CORNER_FLOATS..]);
@@ -175,6 +183,7 @@ impl RendererOpenGl {
         quad: &Rectangle,
         color: Color,
         clip: Option<Rectangle>,
+        transform: &Matrix3,
         out: &mut Vec<f32>,
     ) {
         let default_no_clip = Rectangle::new(0.0, 0.0, f32::INFINITY, f32::INFINITY);
@@ -195,8 +204,9 @@ impl RendererOpenGl {
         for (slot, &corner) in triangle_order.iter().enumerate() {
             let (cx, cy, u, v) = corners[corner];
             let start = base + slot * SIMPLE_QUAD_VERTEX_FLOATS;
-            out[start] = cx;
-            out[start + 1] = cy;
+            let moved = transform.transform_point(Vector2::new(cx, cy));
+            out[start] = moved.x;
+            out[start + 1] = moved.y;
             out[start + 2] = u;
             out[start + 3] = v;
             out[start + 4..start + 8].copy_from_slice(&color);

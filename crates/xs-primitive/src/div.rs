@@ -9,6 +9,7 @@ use xs_layout::{
     FlexDirection, FlexWrap, JustifyContent, Material, Overflow, Positioned, QuadProps, Style,
     StyleDisplay, StylePosition, View,
 };
+use xs_math::{Matrix3, Vector2};
 
 pub struct DivAnimation {
     pub id: &'static str,
@@ -240,6 +241,60 @@ impl Div {
     pub fn background_image(mut self, image: String) -> Self {
         self.style.background_image = Some(image);
         self
+    }
+
+    //
+    // TRANSFORM
+    //
+    //
+    /// Replace this element's whole transform.
+    ///
+    /// `translate`, `scale` and `rotate` all accumulate into the same matrix, and
+    /// this overwrites it rather than composing, so it is the one to reach for when
+    /// the matrix is being built somewhere else.
+    pub fn transform(mut self, transform: Matrix3) -> Self {
+        self.style.transform = transform;
+        self
+    }
+
+    /// Move the element and its subtree by `offset` pixels.
+    pub fn translate(mut self, offset: Vector2) -> Self {
+        self.style.transform = self.style.transform * Matrix3::translation(offset);
+        self
+    }
+
+    /// Move the element and its subtree by `x` and `y` pixels.
+    pub fn translate_xy(self, x: f32, y: f32) -> Self {
+        self.translate(Vector2::new(x, y))
+    }
+
+    /// Scale the element and its subtree by the same factor on both axes.
+    pub fn scale(mut self, factor: f32) -> Self {
+        self.style.transform = self.style.transform * Matrix3::uniform_scale(factor);
+        self
+    }
+
+    /// Scale the element and its subtree per axis.
+    pub fn scale_xy(mut self, x: f32, y: f32) -> Self {
+        self.style.transform = self.style.transform * Matrix3::scale(Vector2::new(x, y));
+        self
+    }
+
+    /// Rotate the element and its subtree, in radians.
+    ///
+    /// Positive is **clockwise** on screen, because this crate's screen space has y
+    /// growing downwards. Rotation and scale happen about the element's own centre,
+    /// the same default CSS calls `transform-origin: 50% 50%`, so a rotated card
+    /// turns in place rather than pivoting on its top-left corner. The whole
+    /// subtree is carried along.
+    pub fn rotate(mut self, radians: f32) -> Self {
+        self.style.transform = self.style.transform * Matrix3::rotation(radians);
+        self
+    }
+
+    /// [`Div::rotate`] with an angle in degrees.
+    pub fn rotate_degrees(self, degrees: f32) -> Self {
+        self.rotate(degrees.to_radians())
     }
 
     //

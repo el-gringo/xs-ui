@@ -46,6 +46,7 @@ fn measure_items(
                 max_main: if is_absolute { 0.0 } else { child.max_main() },
                 children: layout.children,
                 material: layout.material,
+                transform: child.transform(),
 
                 margin: child.margin(),
                 padding: child.padding(),
@@ -130,6 +131,7 @@ struct FlexItem {
     padding: EdgeInsets,
     children: Vec<LayoutBoxId>,
     material: Option<Material>,
+    transform: xs_math::Matrix3,
 
     is_absolute: bool,
 }
@@ -390,6 +392,7 @@ impl Layout for Flex {
                                 item.size.y + item.padding.top + item.padding.bottom,
                             ),
                             margin: item.margin,
+                            transform: item.transform,
                             children: item.children.clone(),
                             material: item.material.clone(),
                         });
@@ -442,6 +445,7 @@ impl Layout for Flex {
             margin: style.margin,
             children: child_ids.clone(),
             material: self.material.clone(),
+            transform: style.transform,
         });
 
         SizedLayoutBox {
@@ -449,6 +453,7 @@ impl Layout for Flex {
             size: Vector2::new(final_w, final_h),
             children: child_ids,
             material: self.material.clone(),
+            transform: style.transform,
         }
     }
     fn margin(&self) -> EdgeInsets {
@@ -456,6 +461,9 @@ impl Layout for Flex {
     }
     fn padding(&self) -> EdgeInsets {
         self.style.padding
+    }
+    fn transform(&self) -> xs_math::Matrix3 {
+        self.style.transform
     }
 }
 

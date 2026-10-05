@@ -54,6 +54,11 @@ impl Spring {
         self
     }
 
+    pub fn infinite(mut self) -> Self {
+        self.repeat = u32::MAX;
+        self
+    }
+
     pub fn direction(mut self, direction: AnimationDirection) -> Self {
         self.direction = direction;
         self
@@ -61,8 +66,7 @@ impl Spring {
 
     fn is_at_rest(&self) -> bool {
         let goal = if self.forward { 1.0 } else { 0.0 };
-        (goal - self.value).abs() < self.threshold
-            && self.velocity.abs() < self.threshold
+        (goal - self.value).abs() < self.threshold && self.velocity.abs() < self.threshold
     }
 }
 

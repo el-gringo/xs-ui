@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use xs_math::Vector2;
+use xs_math::{Matrix3, Vector2};
 
 use crate::base::{Alignment, EdgeInsets};
 use crate::decoration::{Borders, Material, QuadProps};
@@ -25,6 +25,7 @@ impl Layout for DummyContainer {
             size: constraints.max,
             children: Vec::new(),
             material: None,
+            transform: Matrix3::identity(),
         }
     }
 }
@@ -122,6 +123,7 @@ impl Container {
                 ..Default::default()
             }))),
             margin: self.margin,
+            ..Default::default()
         }
     }
 
@@ -141,6 +143,7 @@ impl Container {
                 ..Default::default()
             }))),
             margin: self.margin,
+            ..Default::default()
         }
     }
 

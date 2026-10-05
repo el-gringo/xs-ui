@@ -1,6 +1,6 @@
 use xs_core::{Color, TextVertices};
 use xs_gl::{Buffer, GL_FLOAT, Shader};
-use xs_math::Rectangle;
+use xs_math::{Matrix3, Rectangle, Vector2};
 
 use crate::RendererOpenGl;
 
@@ -19,14 +19,7 @@ impl RendererOpenGl {
                 let offset = |component: usize| (component * size_of_float) as i64;
                 let buffer = Buffer::new()
                     .add_attribute("a_position", 2, GL_FLOAT, false, stride, offset(0))
-                    .add_attribute(
-                        "a_textureCoords",
-                        2,
-                        GL_FLOAT,
-                        false,
-                        stride,
-                        offset(2),
-                    )
+                    .add_attribute("a_textureCoords", 2, GL_FLOAT, false, stride, offset(2))
                     .add_attribute("a_color", 4, GL_FLOAT, false, stride, offset(4))
                     .add_attribute("a_clip", 4, GL_FLOAT, false, stride, offset(8));
                 shader.add_buffer(buffer);
@@ -46,6 +39,7 @@ impl RendererOpenGl {
         color: &Color,
         text_vertices: &TextVertices,
         clip: Option<Rectangle>,
+        transform: &Matrix3,
         out: &mut Vec<f32>,
     ) {
         let num_vertices = text_vertices.vertices.len() / 4;
@@ -63,8 +57,16 @@ impl RendererOpenGl {
         for i in 0..num_vertices {
             let src = i * 4;
             let dst = base + i * TEXT_VERTEX_FLOATS;
-            out[dst] = text_vertices.vertices[src] + quad.x;
-            out[dst + 1] = text_vertices.vertices[src + 1] + quad.y;
+            // The text system lays the run out relative to its own origin, so the
+            // node's absolute pixel position and its transform are the two things
+            // that place it. Text has no per-pixel distance field to keep in step,
+            // so the transform applies to the position alone.
+            let at = transform.transform_point(Vector2::new(
+                text_vertices.vertices[src] + quad.x,
+                text_vertices.vertices[src + 1] + quad.y,
+            ));
+            out[dst] = at.x;
+            out[dst + 1] = at.y;
             out[dst + 2] = text_vertices.vertices[src + 2];
             out[dst + 3] = text_vertices.vertices[src + 3];
             out[dst + 4..dst + 8].copy_from_slice(&color4);

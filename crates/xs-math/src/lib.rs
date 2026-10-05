@@ -1,3 +1,6 @@
+mod matrix3;
+pub use matrix3::Matrix3;
+
 mod rectangle;
 pub use rectangle::Rectangle;
 

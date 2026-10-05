@@ -180,7 +180,7 @@ impl Renderer for RendererOpenGl {
         let mut text_batches: Vec<(u32, Vec<f32>)> = Vec::new();
         let mut text_indices: HashMap<u32, usize> = HashMap::new();
 
-        for (_, parent_id, _, child_id, child, offset) in layout_tree.iter() {
+        for (_, parent_id, _, child_id, child, offset, transform) in layout_tree.iter() {
             let origin = Vector2::new(child.bounds.x, child.bounds.y);
             let min = offset + origin + child.margin.min();
             let quad = Rectangle::new(min.x, min.y, child.bounds.width, child.bounds.height);
@@ -197,6 +197,12 @@ impl Renderer for RendererOpenGl {
             } else {
                 parent_clip
             };
+            // The clip is stored axis-aligned, so a rotated ancestor's overflow
+            // region becomes the box around its transformed corners. That is
+            // conservative - it can clip slightly less than the exact rotated
+            // shape, never more - and it keeps the clip test a cheap four-way
+            // compare in every shader instead of a full inverse transform.
+            let clip = clip.map(|rect| transform.transform_rect_bounds(rect));
             clip_rects[child_id] = clip;
 
             if child.material.is_some()
@@ -219,7 +225,7 @@ impl Renderer for RendererOpenGl {
                                 index
                             }
                         };
-                        self.push_quad(&quad, props, clip, &mut quad_batches[batch].1);
+                        self.push_quad(&quad, props, clip, &transform, &mut quad_batches[batch].1);
                     }
                     SimpleQuad(color, texture) => {
                         self.flush_quads(&mut quad_batches, &mut quad_indices, ctx);
@@ -239,7 +245,13 @@ impl Renderer for RendererOpenGl {
                                 index
                             }
                         };
-                        self.push_simple_quad(&quad, *color, clip, &mut simple_batches[batch].1);
+                        self.push_simple_quad(
+                            &quad,
+                            *color,
+                            clip,
+                            &transform,
+                            &mut simple_batches[batch].1,
+                        );
                     }
                     Text(color, text_properties, text_vertices) => {
                         self.flush_simple(&mut simple_batches, &mut simple_indices, ctx);
@@ -262,6 +274,7 @@ impl Renderer for RendererOpenGl {
                             color,
                             text_vertices,
                             clip,
+                            &transform,
                             &mut text_batches[batch].1,
                         );
                     }

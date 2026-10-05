@@ -118,6 +118,15 @@ pub enum Overflow {
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Style {
+    /// Affine transform applied to this element and its whole subtree.
+    ///
+    /// Defaults to the identity, so an element without a transform lays out and
+    /// draws exactly as it did before this field existed. Setters on the element
+    /// (`translate`, `scale`, `rotate`) accumulate into it; see
+    /// [`TransformOrigin`](crate::TransformOrigin) for where rotation happens
+    /// about.
+    pub transform: xs_math::Matrix3,
+
     pub color: Color,
     pub background: Background,
     pub background_image: Option<String>,

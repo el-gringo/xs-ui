@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::{collections::VecDeque, rc::Rc};
 
-use xs_math::{Rectangle, Vector2};
+use xs_math::{Matrix3, Rectangle, Vector2};
 
 use crate::AlignItems;
 use crate::Background;
@@ -61,6 +61,10 @@ pub trait Layout {
     fn position(&self) -> StylePosition {
         StylePosition::Static
     }
+    /// The affine transform this component applies to itself and its subtree.
+    fn transform(&self) -> Matrix3 {
+        Matrix3::identity()
+    }
 }
 
 pub type View = Rc<dyn Layout>;
@@ -119,6 +123,7 @@ pub struct SizedLayoutBox {
     pub size: Vector2,
     pub children: Vec<LayoutBoxId>,
     pub material: Option<Material>,
+    pub transform: Matrix3,
 }
 
 /// An element that has finished layout. It has been been sized and positioned.
@@ -128,6 +133,10 @@ pub struct LayoutBox {
     pub margin: EdgeInsets,
     pub children: Vec<LayoutBoxId>,
     pub material: Option<Material>,
+    /// This node's own transform, relative to its parent. The render driver
+    /// composes it down the tree, so a transform reaches the whole subtree
+    /// without layout having to transform any coordinates.
+    pub transform: Matrix3,
 }
 
 impl Eq for LayoutBox {}
@@ -146,6 +155,7 @@ impl LayoutBox {
             margin: child.margin,
             children: child.children,
             material: child.material,
+            transform: child.transform,
         }
     }
 }
@@ -208,6 +218,10 @@ impl LayoutTree {
                 Some(_) => VecDeque::from([Vector2::new(0.0, 0.0)]),
                 None => VecDeque::new(),
             },
+            transforms: match self.root {
+                Some(_) => VecDeque::from([Matrix3::identity()]),
+                None => VecDeque::new(),
+            },
             remaining: match self.root {
                 Some(root) => VecDeque::from([(root, 0)]),
                 None => VecDeque::new(),
@@ -217,7 +231,7 @@ impl LayoutTree {
 
     pub fn debug(&self) {
         println!("tree size: {}", self.boxes.len());
-        for (depth, parent_id, _, child_id, child, offset) in self {
+        for (depth, parent_id, _, child_id, child, offset, _transform) in self {
             let material = child.clone().material;
             println!(
                 "{} {} {} {:?} {:?} {}",
@@ -251,6 +265,7 @@ impl<'a> IntoIterator for &'a LayoutTree {
         LayoutBoxId,
         &'a LayoutBox,
         Vector2,
+        Matrix3,
     );
     type IntoIter = LayoutTreeIterator<'a>;
 
@@ -263,26 +278,60 @@ pub struct LayoutTreeIterator<'a> {
     tree: &'a LayoutTree,
     parents: VecDeque<LayoutBoxId>,
     offsets: VecDeque<Vector2>,
+    transforms: VecDeque<Matrix3>,
     remaining: VecDeque<(LayoutBoxId, usize)>,
 }
 
 impl<'a> Iterator for LayoutTreeIterator<'a> {
-    type Item = (usize, usize, &'a LayoutBox, usize, &'a LayoutBox, Vector2);
+    /// `(depth, parent_id, parent, child_id, child, parent_offset, transform)`
+    ///
+    /// `transform` is the accumulated transform of everything above `child`,
+    /// composed with `child`'s own, in a form ready to map the child's
+    /// untransformed pixel rectangle onto the screen.
+    type Item = (
+        usize,
+        usize,
+        &'a LayoutBox,
+        usize,
+        &'a LayoutBox,
+        Vector2,
+        Matrix3,
+    );
 
     fn next(&mut self) -> Option<Self::Item> {
         let parent_id = self.parents.pop_front()?;
         let (child_id, depth) = self.remaining.pop_front()?;
         let parent_offset = self.offsets.pop_front()?;
+        let parent_transform = self.transforms.pop_front()?;
         let parent = self.tree.get(parent_id)?;
         let child = self.tree.get(child_id)?;
         let offset =
             Vector2::new(child.bounds.x, child.bounds.y) + parent_offset + child.margin.min();
+        // The transform is applied about the node's own centre, so `rotate` and
+        // `scale` spin and grow an element in place instead of swinging it away
+        // from its layout position. This is CSS's `transform-origin: 50% 50%`,
+        // and doing it here rather than in the setters is what lets the setters
+        // stay size-agnostic - the box is not known until layout runs.
+        let center = offset + Vector2::new(child.bounds.width, child.bounds.height) * 0.5;
+        let transform = parent_transform
+            * Matrix3::translation(center)
+            * child.transform
+            * Matrix3::translation(Vector2::new(-center.x, -center.y));
         for child in child.children.iter().rev() {
             self.parents.push_front(child_id);
             self.remaining.push_front((*child, depth + 1));
             self.offsets.push_front(offset);
+            self.transforms.push_front(transform);
         }
-        Some((depth, parent_id, parent, child_id, child, parent_offset))
+        Some((
+            depth,
+            parent_id,
+            parent,
+            child_id,
+            child,
+            parent_offset,
+            transform,
+        ))
     }
 }
 

@@ -8,3 +8,4 @@ edition.workspace = true
 xs-animation.workspace = true
 xs-core.workspace = true
 xs-layout.workspace = true
+xs-math.workspace = true

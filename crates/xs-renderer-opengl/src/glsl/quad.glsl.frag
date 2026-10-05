@@ -1,6 +1,7 @@
 precision mediump float;
 
 varying vec2 v_pixelPos;
+varying vec2 v_screenPos;
 varying vec2 v_textureCoords;
 varying vec4 v_box;
 varying vec4 v_color;
@@ -43,7 +44,10 @@ float erf(float x) {
 void main() {
     vec4 texColor = texture2D(u_texture, v_textureCoords);
 
-    vec2 vertex = v_pixelPos.xy;
+    // Local, untransformed pixels: keeping the corner radius, border and shadow in
+    // the element's own space is what makes them turn with it instead of being
+    // squashed against an axis-aligned bounding box.
+    vec2 vertex = v_pixelPos;
     vec2 p = v_box.xy;
     vec2 size = v_box.zw;
 
@@ -100,8 +104,8 @@ void main() {
 
     vec2 clipL = v_clip.xy;
     vec2 clipU = v_clip.xy + v_clip.zw;
-    if (v_pixelPos.x < clipL.x || v_pixelPos.x > clipU.x ||
-            v_pixelPos.y < clipL.y || v_pixelPos.y > clipU.y) {
+    if (v_screenPos.x < clipL.x || v_screenPos.x > clipU.x ||
+            v_screenPos.y < clipL.y || v_screenPos.y > clipU.y) {
         discard;
     }
 
