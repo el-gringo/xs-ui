@@ -16,12 +16,63 @@ use xs_math::{Rectangle, Vector2};
 use crate::render_quad::{QUAD_VERTEX_FLOATS, SIMPLE_QUAD_VERTEX_FLOATS};
 use crate::render_text::TEXT_VERTEX_FLOATS;
 
+/// The three shader programs a frame batches into, and the slot each one owns
+/// in [`Frame`]. The order is the order the arenas are uploaded in.
+const SH_QUAD: usize = 0;
+const SH_SIMPLE: usize = 1;
+const SH_TEXT: usize = 2;
+const SHADER_COUNT: usize = 3;
+
+const SHADER_NAMES: [&str; SHADER_COUNT] = ["quad", "simple_quad", "text_alpha"];
+const SHADER_FLOATS: [usize; SHADER_COUNT] = [
+    QUAD_VERTEX_FLOATS,
+    SIMPLE_QUAD_VERTEX_FLOATS,
+    TEXT_VERTEX_FLOATS,
+];
+
+/// Geometry written since this shader was last flushed: a texture and the
+/// span of floats it occupies in that shader's arena.
+struct Batch {
+    texture: u32,
+    first: usize,
+    len: usize,
+}
+
+/// One `glDrawArrays`, in the order the frame issues them.
+struct DrawCall {
+    shader: usize,
+    texture: u32,
+    /// First vertex in that shader's arena, which is what `glDrawArrays` wants.
+    first: i32,
+    count: i32,
+}
+
+/// Everything one frame accumulates, kept on the renderer so the vectors keep
+/// their capacity between frames.
+///
+/// The arenas are the reason this exists. Batching by texture alone still means
+/// a separate `glBufferData` per batch, and peertube's 73 draws per frame were
+/// 73 of them - measured on a Mali-TDVX at 7.8us each, which is more than the
+/// draws themselves cost. Since the vertex data for a whole frame is known
+/// before any of it is drawn, each arena is uploaded once and the draws then
+/// index into it.
+#[derive(Default)]
+struct Frame {
+    vertices: [Vec<f32>; SHADER_COUNT],
+    pending: [Vec<Batch>; SHADER_COUNT],
+    /// Texture -> slot in `pending`, so a run of same-textured nodes merges into
+    /// one draw instead of one each.
+    indices: [HashMap<u32, usize>; SHADER_COUNT],
+    draws: Vec<DrawCall>,
+}
+
 #[derive(Default)]
 pub struct RendererOpenGl {
     shaders: HashMap<&'static str, Shader>,
     fonts: HashMap<(&'static str, u16), (u32, f32)>,
     pub texture_place_holder: u32,
     index_buffer: u32,
+    frame: Frame,
 }
 
 impl RendererOpenGl {
@@ -47,95 +98,90 @@ impl RendererOpenGl {
         Rectangle::new(x, y, (right - x).max(0.0), (bottom - y).max(0.0))
     }
 
-    fn flush_quads(
-        &mut self,
-        batches: &mut Vec<(u32, Vec<f32>)>,
-        indices: &mut HashMap<u32, usize>,
-        ctx: &AppContext,
+    /// Runs `emit` into the given shader's arena and records the span as a
+    /// batch of `texture`, merging into the run already collected for that
+    /// texture if there is one.
+    fn add(
+        &self,
+        frame: &mut Frame,
+        shader: usize,
+        texture: u32,
+        emit: impl FnOnce(&mut Vec<f32>),
     ) {
-        if batches.iter().all(|(_, v)| v.is_empty()) {
+        let arena = &mut frame.vertices[shader];
+        let first = arena.len();
+        emit(arena);
+        let len = arena.len() - first;
+        if len == 0 {
             return;
         }
-        let shader = self.get_shader("quad");
-        shader.use_program();
-        shader.uniform_2f(
-            "u_resolution",
-            ctx.screen.width as _,
-            ctx.screen.height as _,
-        );
-        for (texture, vertices) in batches.iter() {
-            if vertices.is_empty() {
-                continue;
+        match frame.indices[shader].get(&texture) {
+            Some(&slot) => frame.pending[shader][slot].len += len,
+            None => {
+                frame.pending[shader].push(Batch {
+                    texture,
+                    first,
+                    len,
+                });
+                frame.indices[shader].insert(texture, frame.pending[shader].len() - 1);
             }
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, *texture);
-            shader.get_buffer(0).push_data(vertices);
-            glDrawArrays(GL_TRIANGLES, 0, (vertices.len() / QUAD_VERTEX_FLOATS) as _);
         }
-        batches.clear();
-        indices.clear();
     }
 
-    fn flush_texts(
-        &mut self,
-        batches: &mut Vec<(u32, Vec<f32>)>,
-        indices: &mut HashMap<u32, usize>,
-        ctx: &AppContext,
-    ) {
-        if batches.iter().all(|(_, v)| v.is_empty()) {
-            return;
+    /// Ends the current run of batches for `shader`: they are recorded as draw
+    /// calls, in order, and the next node starts a fresh run.
+    fn flush(&self, frame: &mut Frame, shader: usize) {
+        let floats = SHADER_FLOATS[shader];
+        for batch in frame.pending[shader].drain(..) {
+            frame.draws.push(DrawCall {
+                shader,
+                texture: batch.texture,
+                first: (batch.first / floats) as i32,
+                count: (batch.len / floats) as i32,
+            });
         }
-        let shader = self.get_shader("text_alpha");
-        shader.use_program();
-        shader.uniform_2f(
-            "u_resolution",
-            ctx.screen.width as _,
-            ctx.screen.height as _,
-        );
-        for (texture, vertices) in batches.iter() {
-            if vertices.is_empty() {
-                continue;
-            }
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, *texture);
-            shader.get_buffer(0).push_data(vertices);
-            glDrawArrays(GL_TRIANGLES, 0, (vertices.len() / TEXT_VERTEX_FLOATS) as _);
-        }
-        batches.clear();
-        indices.clear();
+        frame.indices[shader].clear();
     }
 
-    fn flush_simple(
-        &mut self,
-        batches: &mut Vec<(u32, Vec<f32>)>,
-        indices: &mut HashMap<u32, usize>,
-        ctx: &AppContext,
-    ) {
-        if batches.iter().all(|(_, v)| v.is_empty()) {
-            return;
-        }
-        let shader = self.get_shader("simple_quad");
-        shader.use_program();
-        shader.uniform_2f(
-            "u_resolution",
-            ctx.screen.width as _,
-            ctx.screen.height as _,
-        );
-        for (texture, vertices) in batches.iter() {
-            if vertices.is_empty() {
-                continue;
+    /// Uploads each arena once and replays the recorded draws.
+    fn submit(&mut self, frame: &mut Frame, ctx: &AppContext) {
+        let draws = std::mem::take(&mut frame.draws);
+
+        for (shader, name) in SHADER_NAMES.iter().enumerate() {
+            let vertices = &frame.vertices[shader];
+            if !vertices.is_empty() {
+                self.get_shader(name).get_buffer(0).push_data(vertices);
             }
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, *texture);
-            shader.get_buffer(0).push_data(vertices);
-            glDrawArrays(
-                GL_TRIANGLES,
-                0,
-                (vertices.len() / SIMPLE_QUAD_VERTEX_FLOATS) as _,
-            );
         }
-        batches.clear();
-        indices.clear();
+
+        let mut bound_shader = usize::MAX;
+        let mut bound_texture = u32::MAX;
+        for draw in &draws {
+            // `use_program` rebinds the vertex attributes and `u_resolution` is
+            // the same for every node of a frame, so both are done once per
+            // program rather than once per batch as they were.
+            if draw.shader != bound_shader {
+                let shader = self.get_shader(SHADER_NAMES[draw.shader]);
+                shader.use_program();
+                shader.uniform_2f(
+                    "u_resolution",
+                    ctx.screen.width as _,
+                    ctx.screen.height as _,
+                );
+                bound_shader = draw.shader;
+                bound_texture = u32::MAX;
+            }
+            if draw.texture != bound_texture {
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, draw.texture);
+                bound_texture = draw.texture;
+            }
+            glDrawArrays(GL_TRIANGLES, draw.first, draw.count);
+        }
+
+        for arena in &mut frame.vertices {
+            arena.clear();
+        }
     }
 }
 
@@ -169,16 +215,14 @@ impl Renderer for RendererOpenGl {
         let node_count = layout_tree.boxes.len();
         let mut clip_rects: Vec<Option<Rectangle>> = vec![None; node_count];
 
-        // All three material types are batched independently and drawn
-        // in tree order. A batch is flushed whenever the material type
-        // changes so that SimpleQuads, Quads, and Texts interleave
-        // correctly.
-        let mut quad_batches: Vec<(u32, Vec<f32>)> = Vec::new();
-        let mut quad_indices: HashMap<u32, usize> = HashMap::new();
-        let mut simple_batches: Vec<(u32, Vec<f32>)> = Vec::new();
-        let mut simple_indices: HashMap<u32, usize> = HashMap::new();
-        let mut text_batches: Vec<(u32, Vec<f32>)> = Vec::new();
-        let mut text_indices: HashMap<u32, usize> = HashMap::new();
+        // All three material types are batched independently and drawn in tree
+        // order. A batch is flushed whenever the material type changes so that
+        // SimpleQuads, Quads and Texts interleave correctly.
+        //
+        // Flushing only ends a run of batches now - it records draw calls and
+        // touches no GL. Nothing reaches the driver until `submit`, which
+        // uploads each shader's arena once and replays the recorded draws.
+        let mut frame = std::mem::take(&mut self.frame);
 
         for (_, parent_id, _, child_id, child, offset, transform) in layout_tree.iter() {
             let origin = Vector2::new(child.bounds.x, child.bounds.y);
@@ -210,81 +254,62 @@ impl Renderer for RendererOpenGl {
             {
                 match material {
                     Quad(props) => {
-                        self.flush_simple(&mut simple_batches, &mut simple_indices, ctx);
+                        self.flush(&mut frame, SH_SIMPLE);
 
                         let texture = props
                             .background_image
                             .as_ref()
                             .map_or(self.texture_place_holder, |img| img.texture);
-                        let batch = match quad_indices.get(&texture) {
-                            Some(&index) => index,
-                            None => {
-                                quad_batches.push((texture, Vec::new()));
-                                let index = quad_batches.len() - 1;
-                                quad_indices.insert(texture, index);
-                                index
-                            }
-                        };
-                        self.push_quad(&quad, props, clip, &transform, &mut quad_batches[batch].1);
+                        self.add(&mut frame, SH_QUAD, texture, |out| {
+                            self.push_quad(&quad, props, clip, &transform, out);
+                        });
                     }
                     SimpleQuad(color, texture) => {
-                        self.flush_quads(&mut quad_batches, &mut quad_indices, ctx);
-                        self.flush_texts(&mut text_batches, &mut text_indices, ctx);
+                        self.flush(&mut frame, SH_QUAD);
+                        self.flush(&mut frame, SH_TEXT);
 
                         let tex = if *texture == 0 {
                             self.texture_place_holder
                         } else {
                             *texture
                         };
-                        let batch = match simple_indices.get(&tex) {
-                            Some(&index) => index,
-                            None => {
-                                simple_batches.push((tex, Vec::new()));
-                                let index = simple_batches.len() - 1;
-                                simple_indices.insert(tex, index);
-                                index
-                            }
-                        };
-                        self.push_simple_quad(
-                            &quad,
-                            *color,
-                            clip,
-                            &transform,
-                            &mut simple_batches[batch].1,
-                        );
+                        // A quad with no alpha and no texture of its own blends
+                        // every pixel it covers to exactly what was already
+                        // there, so it can be dropped whole. Layout produces a
+                        // lot of them: peertube's card wraps its title in two
+                        // `background_color(Color::TRANSPARENT)` divs, which is
+                        // 34k pixels of pure overdraw per card, 500k a frame.
+                        // The frame is fill-rate bound on the TV GPU (measured:
+                        // frame time scales with the drawing buffer while the
+                        // JS cost does not), so this is worth more than the
+                        // draw call it saves.
+                        let draws_nothing = color.a <= 0.0 && *texture == 0;
+                        if !draws_nothing {
+                            self.add(&mut frame, SH_SIMPLE, tex, |out| {
+                                self.push_simple_quad(&quad, *color, clip, &transform, out);
+                            });
+                        }
                     }
                     Text(color, text_properties, text_vertices) => {
-                        self.flush_simple(&mut simple_batches, &mut simple_indices, ctx);
+                        self.flush(&mut frame, SH_SIMPLE);
 
                         let (atlas_texture, _atlas_font_size) = self
                             .fonts
                             .get(&(&text_properties.font_family, text_properties.font_weight))
                             .unwrap();
-                        let batch = match text_indices.get(atlas_texture) {
-                            Some(&index) => index,
-                            None => {
-                                text_batches.push((*atlas_texture, Vec::new()));
-                                let index = text_batches.len() - 1;
-                                text_indices.insert(*atlas_texture, index);
-                                index
-                            }
-                        };
-                        self.push_text(
-                            &quad,
-                            color,
-                            text_vertices,
-                            clip,
-                            &transform,
-                            &mut text_batches[batch].1,
-                        );
+                        self.add(&mut frame, SH_TEXT, *atlas_texture, |out| {
+                            self.push_text(&quad, color, text_vertices, clip, &transform, out);
+                        });
                     }
                 }
             }
         }
 
-        self.flush_simple(&mut simple_batches, &mut simple_indices, ctx);
-        self.flush_quads(&mut quad_batches, &mut quad_indices, ctx);
-        self.flush_texts(&mut text_batches, &mut text_indices, ctx);
+        self.flush(&mut frame, SH_SIMPLE);
+        self.flush(&mut frame, SH_QUAD);
+        self.flush(&mut frame, SH_TEXT);
+        self.submit(&mut frame, ctx);
+        self.frame = frame;
     }
 
     fn load_font_atlas(
