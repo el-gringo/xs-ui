@@ -3,7 +3,6 @@ use xs::{AlignItems, Color, Context, NavigationNode, ParentElement, Render, div,
 use crate::theme;
 
 pub struct Card {
-    id: &'static str,
     thumbnail: String,
     title: String,
     on_focus: Option<std::rc::Rc<dyn Fn() + 'static>>,
@@ -12,16 +11,10 @@ pub struct Card {
 impl Card {
     pub fn new() -> Self {
         Self {
-            id: "card",
             thumbnail: String::new(),
             title: String::new(),
             on_focus: None,
         }
-    }
-
-    pub fn id(mut self, id: &'static str) -> Self {
-        self.id = id;
-        self
     }
 
     pub fn thumbnail(mut self, thumbnail: impl Into<String>) -> Self {
@@ -37,7 +30,7 @@ impl Card {
 
 impl Render for Card {
     fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
-        let mut focus_handle = ctx.focus_handle(NavigationNode::new().id(self.id));
+        let mut focus_handle = ctx.focus_handle(NavigationNode::new());
 
         if let Some(callback) = &self.on_focus {
             let cb = callback.clone();

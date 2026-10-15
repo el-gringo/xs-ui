@@ -66,9 +66,8 @@ impl Render for Peertube {
                                     .cell_width(320.)
                                     .cell_height(320.)
                                     .gap(48.)
-                                    .cell_renderer(|index, video, _ctx| -> xs::AnyElement {
+                                    .cell_renderer(|_index, video, _ctx| -> xs::AnyElement {
                                         card()
-                                            .id(format!("card-{index}").leak())
                                             .thumbnail(video.thumbnail_url())
                                             .title(video.name.clone())
                                             .into()
