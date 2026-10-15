@@ -339,7 +339,7 @@ impl Layout for Flex {
             padding_min.x + style.border.min().x
         };
 
-        for line in &lines {
+        for line in lines {
             let line_cross: f32 = line
                 .iter()
                 .map(|i| {
@@ -353,60 +353,53 @@ impl Layout for Flex {
             // Per-line justify: each wrapped line is justified independently
             let line_content_main: f32 = line.iter().map(|i| i.main(main_is_x)).sum::<f32>()
                 + gap * child_gap_count(line.len());
-            let line_main_start =
+            let mut cursor =
                 justify_offset(container_main, line_content_main, style.justify_content);
 
-            let (line_ids, _new_cursor) =
-                line.iter()
-                    .fold((Vec::new(), line_main_start), |(mut ids, cursor), item| {
-                        if item.is_absolute {
-                            ids.extend(item.children.clone());
-                            return (ids, cursor);
-                        }
+            for item in line {
+                if item.is_absolute {
+                    child_ids.extend(item.children);
+                    continue;
+                }
 
-                        let (margin_main_start, margin_main_end) = item.main_margin(main_is_x);
-                        let (margin_cross_start, margin_cross_end) = item.cross_margin(main_is_x);
-                        let cross_offset = align_offset(
-                            container_cross,
-                            item.cross(main_is_x),
-                            (margin_cross_start, margin_cross_end),
-                            style.align_items,
-                        );
+                let (margin_main_start, margin_main_end) = item.main_margin(main_is_x);
+                let (margin_cross_start, margin_cross_end) = item.cross_margin(main_is_x);
+                let cross_offset = align_offset(
+                    container_cross,
+                    item.cross(main_is_x),
+                    (margin_cross_start, margin_cross_end),
+                    style.align_items,
+                );
 
-                        let px = if main_is_x {
-                            cursor + margin_main_start + style.padding.left + style.border.min().x
-                        } else {
-                            cross_pos + cross_offset + margin_cross_start
-                        };
-                        let py = if main_is_x {
-                            line_cross_start + cross_offset + margin_cross_start
-                        } else {
-                            cursor + margin_main_start + style.padding.top + style.border.min().y
-                        };
+                let px = if main_is_x {
+                    cursor + margin_main_start + style.padding.left + style.border.min().x
+                } else {
+                    cross_pos + cross_offset + margin_cross_start
+                };
+                let py = if main_is_x {
+                    line_cross_start + cross_offset + margin_cross_start
+                } else {
+                    cursor + margin_main_start + style.padding.top + style.border.min().y
+                };
 
-                        let box_id = tree.insert(LayoutBox {
-                            bounds: Rectangle::new(
-                                px,
-                                py,
-                                item.size.x + item.padding.left + item.padding.right,
-                                item.size.y + item.padding.top + item.padding.bottom,
-                            ),
-                            margin: item.margin,
-                            transform: item.transform,
-                            children: item.children.clone(),
-                            material: item.material.clone(),
-                        });
-                        ids.push(box_id);
-                        (
-                            ids,
-                            cursor
-                                + item.main(main_is_x)
-                                + margin_main_start
-                                + margin_main_end
-                                + gap,
-                        )
-                    });
-            child_ids.extend(line_ids);
+                let next_cursor =
+                    cursor + item.main(main_is_x) + margin_main_start + margin_main_end + gap;
+
+                let box_id = tree.insert(LayoutBox {
+                    bounds: Rectangle::new(
+                        px,
+                        py,
+                        item.size.x + item.padding.left + item.padding.right,
+                        item.size.y + item.padding.top + item.padding.bottom,
+                    ),
+                    margin: item.margin,
+                    transform: item.transform,
+                    children: item.children,
+                    material: item.material,
+                });
+                child_ids.push(box_id);
+                cursor = next_cursor;
+            }
             cross_pos += line_cross + gap;
         }
         #[cfg(target_arch = "wasm32")]
