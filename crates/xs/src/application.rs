@@ -107,7 +107,7 @@ impl<R: Render> AppEventLoop<R> {
                 }
             }
         }
-        if let Ok(message) = self.rx.try_recv() {
+        while let Ok(message) = self.rx.try_recv() {
             match message {
                 BackendResponse::ImageLoaded(src, image_handle, bytes, width, height) => {
                     let texture = self.renderer.load_texture(
