@@ -5,8 +5,6 @@
  * @param {App} app
  */
 function initializeCanvasBindings(app) {
-  const { heap } = app;
-
   return {
     // Asking a canvas for a context is also how the app says which canvas it
     // renders into: the gl bindings read `app.gl` and the canvas sizing reads
