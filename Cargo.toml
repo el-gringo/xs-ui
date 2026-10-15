@@ -85,3 +85,5 @@ panic = "abort"
 [profile.release-smartv]
 inherits = "release"
 lto = "thin"
+# Thin LTO still keeps this smaller than a plain fat-LTO release.
+opt-level = 3

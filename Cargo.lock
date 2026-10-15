@@ -110,6 +110,13 @@ name = "test_utils"
 version = "0.1.0"
 
 [[package]]
+name = "transform"
+version = "0.1.0"
+dependencies = [
+ "xs",
+]
+
+[[package]]
 name = "xs"
 version = "0.1.0"
 dependencies = [
@@ -368,6 +375,7 @@ dependencies = [
  "xs-animation",
  "xs-core",
  "xs-layout",
+ "xs-math",
 ]
 
 [[package]]
