@@ -9,25 +9,28 @@ use xs_gl::{
 };
 use xs_layout::{
     LayoutTree,
-    Material::{Quad, SimpleQuad, Text},
+    Material::{Quad, SimpleQuad, Text, Vector},
 };
 use xs_math::{Rectangle, Vector2};
 
 use crate::render_quad::{QUAD_VERTEX_FLOATS, SIMPLE_QUAD_VERTEX_FLOATS};
 use crate::render_text::TEXT_VERTEX_FLOATS;
+use crate::render_vector::DRAWN_STROKE_VERTEX_FLOATS;
 
-/// The three shader programs a frame batches into, and the slot each one owns
-/// in [`Frame`]. The order is the order the arenas are uploaded in.
+/// The shader programs a frame batches into, and the slot each one owns in
+/// [`Frame`]. The order is the order the arenas are uploaded in.
 const SH_QUAD: usize = 0;
 const SH_SIMPLE: usize = 1;
 const SH_TEXT: usize = 2;
-const SHADER_COUNT: usize = 3;
+const SH_STROKE: usize = 3;
+const SHADER_COUNT: usize = 4;
 
-const SHADER_NAMES: [&str; SHADER_COUNT] = ["quad", "simple_quad", "text_alpha"];
+const SHADER_NAMES: [&str; SHADER_COUNT] = ["quad", "simple_quad", "text_alpha", "vector_stroke"];
 const SHADER_FLOATS: [usize; SHADER_COUNT] = [
     QUAD_VERTEX_FLOATS,
     SIMPLE_QUAD_VERTEX_FLOATS,
     TEXT_VERTEX_FLOATS,
+    DRAWN_STROKE_VERTEX_FLOATS,
 ];
 
 /// Geometry written since this shader was last flushed: a texture and the
@@ -64,6 +67,13 @@ struct Frame {
     /// one draw instead of one each.
     indices: [HashMap<u32, usize>; SHADER_COUNT],
     draws: Vec<DrawCall>,
+    /// The shaders with an unrecorded run, in the order they were started.
+    ///
+    /// This is what makes the recorded draws come out in tree order. A batch is
+    /// only turned into a draw call when something flushes it, so without an order
+    /// to flush by, geometry queued between two of another shader's is recorded
+    /// after both and painted underneath them.
+    order: Vec<usize>,
 }
 
 #[derive(Default)]
@@ -101,6 +111,18 @@ impl RendererOpenGl {
     /// Runs `emit` into the given shader's arena and records the span as a
     /// batch of `texture`, merging into the run already collected for that
     /// texture if there is one.
+    ///
+    /// A shader's run ends when a *different* shader's begins, and every run ended
+    /// so far is recorded before the new one starts.
+    ///
+    /// Continuing an existing run just appends, which is where the batching comes
+    /// from: a screen of plain quads is one run of one shader and one draw. This
+    /// bites hardest on a vector fill, because a fill shares the solid-colour
+    /// arena while the background it has to sit on top of is in the decorated one -
+    /// and a `Div`'s own material rides the box its *parent* made for it, which the
+    /// tree visits before the `Div`'s children. The panel's background and the
+    /// vector inside it are therefore two different nodes, in that order, and a fill
+    /// recorded lazily loses to the background that was queued before it.
     fn add(
         &self,
         frame: &mut Frame,
@@ -108,6 +130,12 @@ impl RendererOpenGl {
         texture: u32,
         emit: impl FnOnce(&mut Vec<f32>),
     ) {
+        if !frame.order.contains(&shader) {
+            for queued in std::mem::take(&mut frame.order) {
+                self.flush(frame, queued);
+            }
+            frame.order.push(shader);
+        }
         let arena = &mut frame.vertices[shader];
         let first = arena.len();
         emit(arena);
@@ -146,7 +174,6 @@ impl RendererOpenGl {
     /// Uploads each arena once and replays the recorded draws.
     fn submit(&mut self, frame: &mut Frame, ctx: &AppContext) {
         let draws = std::mem::take(&mut frame.draws);
-
         for (shader, name) in SHADER_NAMES.iter().enumerate() {
             let vertices = &frame.vertices[shader];
             if !vertices.is_empty() {
@@ -204,6 +231,7 @@ impl Renderer for RendererOpenGl {
         self.initialize_quad_shader();
         self.initialize_simple_quad_shader();
         self.initialize_text_shader();
+        self.initialize_vector_stroke_shader();
     }
 
     fn present(&mut self) {
@@ -256,8 +284,6 @@ impl Renderer for RendererOpenGl {
             {
                 match material {
                     Quad(props) => {
-                        self.flush(&mut frame, SH_SIMPLE);
-
                         let texture = props
                             .background_image
                             .as_ref()
@@ -267,9 +293,6 @@ impl Renderer for RendererOpenGl {
                         });
                     }
                     SimpleQuad(color, texture) => {
-                        self.flush(&mut frame, SH_QUAD);
-                        self.flush(&mut frame, SH_TEXT);
-
                         let tex = if *texture == 0 {
                             self.texture_place_holder
                         } else {
@@ -293,8 +316,6 @@ impl Renderer for RendererOpenGl {
                         }
                     }
                     Text(color, text_properties, text_vertices) => {
-                        self.flush(&mut frame, SH_SIMPLE);
-
                         let (atlas_texture, _atlas_font_size) = self
                             .fonts
                             .get(&(&text_properties.font_family, text_properties.font_weight))
@@ -303,13 +324,43 @@ impl Renderer for RendererOpenGl {
                             self.push_text(&quad, color, text_vertices, clip, &transform, out);
                         });
                     }
+                    Vector(geometry) => {
+                        if geometry.is_empty() {
+                            continue;
+                        }
+                        // The fill goes in with the plain solid-colour quads -
+                        // that is the whole reason it needs no shader of its own -
+                        // and the placeholder, not 0. A fill samples no texture, but
+                        // it still goes through the simple-quad fragment shader,
+                        // which blends by the texture's alpha; texture object 0 is
+                        // *no* texture, and sampling one is undefined - it comes back
+                        // opaque black on most drivers, which paints every fill in
+                        // the app black.
+                        if !geometry.fill_vertices.is_empty() {
+                            self.add(&mut frame, SH_SIMPLE, self.texture_place_holder, |out| {
+                                self.push_vector_fill(min, clip, geometry, &transform, out);
+                            });
+                        }
+                        if !geometry.stroke_vertices.is_empty() {
+                            self.add(&mut frame, SH_STROKE, 0, |out| {
+                                self.push_vector_stroke(
+                                    min,
+                                    transform.scale_factor(),
+                                    clip,
+                                    geometry,
+                                    &transform,
+                                    out,
+                                );
+                            });
+                        }
+                    }
                 }
             }
         }
 
-        self.flush(&mut frame, SH_SIMPLE);
-        self.flush(&mut frame, SH_QUAD);
-        self.flush(&mut frame, SH_TEXT);
+        for queued in std::mem::take(&mut frame.order) {
+            self.flush(&mut frame, queued);
+        }
         self.submit(&mut frame, ctx);
         self.frame = frame;
     }

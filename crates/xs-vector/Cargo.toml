@@ -1,0 +1,11 @@
+[package]
+name = "xs-vector"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-animation.workspace = true
+xs-core.workspace = true
+xs-layout.workspace = true
+xs-math.workspace = true

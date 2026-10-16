@@ -10,8 +10,16 @@ pub(crate) const QUAD_VERTEX_FLOATS: usize = 46;
 const CORNER_FLOATS: usize = 4;
 const VERTICES_PER_QUAD: usize = 6;
 
-/// Simple quad: position(2) + texcoord(2) + color(4) + clip(4) = 14 floats per vertex.
-pub(crate) const SIMPLE_QUAD_VERTEX_FLOATS: usize = 14;
+/// Simple quad: position(2) + texcoord(2) + color(4) + clip(4) = 12 floats per
+/// vertex.
+///
+/// The arithmetic in that sum used to come out at 14, and the stride was built
+/// from it. Nothing broke - the attributes only ever describe the first 12
+/// floats, so the two extra were dead padding the CPU zeroed and the GPU skipped -
+/// but it was 16% of the vertex bandwidth of the shader most of the frame goes
+/// through, on hardware where that is not free. A vector fill shares this format
+/// exactly, which is what `a_fill_vertex_is_a_simple_quad_vertex` pins down.
+pub(crate) const SIMPLE_QUAD_VERTEX_FLOATS: usize = 12;
 
 impl RendererOpenGl {
     pub fn initialize_quad_shader(&mut self) {
@@ -25,14 +33,7 @@ impl RendererOpenGl {
                 let offset = |component: usize| (component * size_of_float) as i64;
                 let buffer = Buffer::new()
                     .add_attribute("a_position", 2, GL_FLOAT, false, stride, offset(0))
-                    .add_attribute(
-                        "a_textureCoords",
-                        2,
-                        GL_FLOAT,
-                        false,
-                        stride,
-                        offset(2),
-                    )
+                    .add_attribute("a_textureCoords", 2, GL_FLOAT, false, stride, offset(2))
                     .add_attribute("a_box", 4, GL_FLOAT, false, stride, offset(4))
                     .add_attribute("a_color", 4, GL_FLOAT, false, stride, offset(8))
                     .add_attribute("a_gradientStart", 4, GL_FLOAT, false, stride, offset(12))
@@ -99,8 +100,7 @@ impl RendererOpenGl {
         // Shadow padding covers the box plus the gaussian falloff (the shader
         // drops to <1% beyond 3 sigma), the shadow offset and the spread.
         let sigma = shadow[2] + 0.25;
-        let padding =
-            4.0 * sigma + shadow[0].abs().max(shadow[1].abs()) + shadow[3].max(0.0);
+        let padding = 4.0 * sigma + shadow[0].abs().max(shadow[1].abs()) + shadow[3].max(0.0);
         let x1 = quad.x - padding;
         let y1 = quad.y - padding;
         let x2 = quad.x + quad.width + padding;
@@ -122,8 +122,16 @@ impl RendererOpenGl {
 
         // UVs are mapped to the true box (not the padded geometry) so the
         // shadow region samples the box edge texels via CLAMP_TO_EDGE.
-        let inv_w = if quad.width > 0.0 { 1.0 / quad.width } else { 0.0 };
-        let inv_h = if quad.height > 0.0 { 1.0 / quad.height } else { 0.0 };
+        let inv_w = if quad.width > 0.0 {
+            1.0 / quad.width
+        } else {
+            0.0
+        };
+        let inv_h = if quad.height > 0.0 {
+            1.0 / quad.height
+        } else {
+            0.0
+        };
         let corners = [
             (x1, y1, (x1 - quad.x) * inv_w, (y1 - quad.y) * inv_h),
             (x2, y1, (x2 - quad.x) * inv_w, (y1 - quad.y) * inv_h),

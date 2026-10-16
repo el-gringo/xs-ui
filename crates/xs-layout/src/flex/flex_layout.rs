@@ -328,6 +328,49 @@ impl Layout for Flex {
             .sum::<f32>()
             + gap * child_gap_count(lines.len());
 
+        // The box this element is *going* to be, worked out before anything is
+        // placed into it.
+        let pw = style.padding.left + style.padding.right + style.border.total_width();
+        let ph = style.padding.top + style.padding.bottom + style.border.total_height();
+        let content_w = if main_is_x { total_main } else { total_cross };
+        let content_h = if main_is_x { total_cross } else { total_main };
+        let has_explicit_width = style.width.is_some();
+        let has_explicit_height = style.height.is_some();
+        let has_padding = pw > 0.0 || ph > 0.0;
+        let final_w = if has_explicit_width {
+            style.width.unwrap_or(w)
+        } else if has_padding {
+            content_w + pw
+        } else {
+            w
+        };
+        let final_h = if has_explicit_height {
+            style.height.unwrap_or(h)
+        } else if has_padding {
+            content_h + ph
+        } else {
+            h
+        };
+
+        // Where the children go inside that box.
+        //
+        // These are recomputed from `final_w`/`final_h` rather than reused from
+        // `inner`, and the difference matters for every element that does not set
+        // an explicit size. `inner` is derived from the space the *parent offered*,
+        // so for an auto-sized element it describes a box far wider than the one
+        // that element ends up being - a padded column of cards in a row gets the
+        // row's whole width. Centring against that puts the children hundreds of
+        // pixels to the right of their own background, which looks like the
+        // backgrounds are in one place and the contents in another.
+        //
+        // The children are still *offered* the loose `inner_constraints`, which is
+        // right: they should see the space available and shrink to fit, rather than
+        // being clamped to a size this element has not committed to yet.
+        let place_w = (final_w - pw).max(0.0);
+        let place_h = (final_h - ph).max(0.0);
+        let container_main = if main_is_x { place_w } else { place_h };
+        let container_cross = if main_is_x { place_h } else { place_w };
+
         let mut child_ids = Vec::new();
         let padding_min = style.padding.min();
 
@@ -409,29 +452,9 @@ impl Layout for Flex {
             child_ids.reverse();
         }
 
-        let pw = style.padding.left + style.padding.right + style.border.total_width();
-        let ph = style.padding.top + style.padding.bottom + style.border.total_height();
-        let content_w = if main_is_x { total_main } else { total_cross };
-        let content_h = if main_is_x { total_cross } else { total_main };
-        let content_plus_padding_w = content_w + pw;
-        let content_plus_padding_h = content_h + ph;
-        let has_explicit_width = style.width.is_some();
-        let has_explicit_height = style.height.is_some();
-        let has_padding = pw > 0.0 || ph > 0.0;
-        let final_w = if has_explicit_width {
-            style.width.unwrap()
-        } else if has_padding {
-            content_plus_padding_w
-        } else {
-            w
-        };
-        let final_h = if has_explicit_height {
-            style.height.unwrap()
-        } else if has_padding {
-            content_plus_padding_h
-        } else {
-            h
-        };
+        // `pw`, `ph`, `content_w`, `content_h` and the final sizes are all worked
+        // out above the placement loop, because placing a child needs to know how
+        // big the box it is going into will be.
 
         tree.insert(LayoutBox {
             bounds: Rectangle::new(0.0, 0.0, final_w, final_h),

@@ -49,6 +49,7 @@ xs-renderer-opengl = { path = "crates/xs-renderer-opengl" }
 xs-text-system = { path = "crates/xs-text-system" }
 xs-tls = { path = "crates/xs-tls" }
 xs-url = { path = "crates/xs-url" }
+xs-vector = { path = "crates/xs-vector" }
 xs-websocket = { path = "crates/xs-websocket" }
 
 # External dependencies

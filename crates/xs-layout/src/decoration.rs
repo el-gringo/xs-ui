@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{Background, Color, Image, TextProperties, TextVertices};
+use crate::{Background, Color, Image, TextProperties, TextVertices, VectorGeometry};
 use xs_math::Vector2;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -67,6 +67,14 @@ pub enum Material {
     /// texture).
     SimpleQuad(Color, u32),
     Text(Color, TextProperties, Rc<TextVertices>),
+    /// A stroked and/or filled path.
+    ///
+    /// Unlike the other two this carries no decoration properties: everything
+    /// about how the path turns into geometry - flattening tolerance, caps,
+    /// dashes, the fill rule - is decided when the element is built and arrives
+    /// here as the finished vertex data, because the shape is the element's own
+    /// rather than something the box model derives from a style.
+    Vector(Rc<VectorGeometry>),
 }
 
 impl Material {

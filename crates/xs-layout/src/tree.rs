@@ -8,6 +8,7 @@ use crate::Background;
 use crate::StylePosition;
 use crate::base::EdgeInsets;
 use crate::decoration::Material;
+use crate::{FILL_VERTEX_FLOATS, STROKE_VERTEX_FLOATS};
 
 /// This is the essential trait of the box model. It is implemented by all
 /// components that undergo the box layout process.
@@ -241,14 +242,29 @@ impl LayoutTree {
                 offset,
                 child.clone().bounds,
                 if let Some(m) = material {
-                    let color = match m {
-                        Material::Quad(props) => match props.background {
-                            Background::Gradient(g) => g.start,
-                            Background::Color(c) => c,
-                        },
-                        Material::SimpleQuad(color, _) | Material::Text(color, _, _) => color,
-                    };
-                    format!("{color:?}")
+                    // A path has no single colour to report: it can carry a
+                    // different one per shape, per dash, and a fill as well as a
+                    // stroke.
+                    match m {
+                        Material::Vector(geometry) => format!(
+                            "vector: {} stroke segments, {} fill triangles",
+                            geometry.stroke_vertices.len() / STROKE_VERTEX_FLOATS,
+                            geometry.fill_vertices.len() / (FILL_VERTEX_FLOATS * 3),
+                        ),
+                        other => {
+                            let color = match other {
+                                Material::Quad(props) => match props.background {
+                                    Background::Gradient(g) => g.start,
+                                    Background::Color(c) => c,
+                                },
+                                Material::SimpleQuad(color, _) | Material::Text(color, _, _) => {
+                                    color
+                                }
+                                Material::Vector(_) => unreachable!(),
+                            };
+                            format!("{color:?}")
+                        }
+                    }
                 } else {
                     String::new()
                 }

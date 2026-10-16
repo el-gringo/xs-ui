@@ -117,6 +117,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "vector"
+version = "0.1.0"
+dependencies = [
+ "xs",
+]
+
+[[package]]
 name = "xs"
 version = "0.1.0"
 dependencies = [
@@ -131,6 +138,7 @@ dependencies = [
  "xs-primitive",
  "xs-renderer",
  "xs-text-system",
+ "xs-vector",
 ]
 
 [[package]]
@@ -423,6 +431,16 @@ dependencies = [
 [[package]]
 name = "xs-url"
 version = "0.1.0"
+
+[[package]]
+name = "xs-vector"
+version = "0.1.0"
+dependencies = [
+ "xs-animation",
+ "xs-core",
+ "xs-layout",
+ "xs-math",
+]
 
 [[package]]
 name = "xs-websocket"

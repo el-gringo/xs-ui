@@ -32,6 +32,9 @@ pub use style::*;
 mod text;
 pub use text::*;
 
+mod vector;
+pub use vector::*;
+
 mod tree;
 pub use tree::*;
 
