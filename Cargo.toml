@@ -7,15 +7,13 @@ members = [
     "tools/*"
 ]
 default-members = [
-    "examples/counter",
-    "examples/peertube",
-    "examples/playground"
+    "tools/cli"
 ]
 
 [workspace.package]
 version = "0.1.0"
 authors = [
-    "christophe.bosse@gmail.com"
+    "christophe.bosse@proton.me"
 ]
 edition = "2024"
 
