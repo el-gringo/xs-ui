@@ -81,8 +81,8 @@ impl Shape {
     /// that is going to produce nothing.
     #[must_use]
     pub fn is_visible(&self) -> bool {
-        self.path.is_empty()
-            || (self.fill.is_some_and(Fill::is_visible)
+        !self.path.is_empty()
+            && (self.fill.is_some_and(Fill::is_visible)
                 || self.stroke.as_ref().is_some_and(Stroke::is_visible))
     }
 }
@@ -171,23 +171,33 @@ impl MeshBuilder {
     /// ancestor clips. Including the half width is what keeps a stroke inside its
     /// layout box.
     pub fn bounds(&self) -> Rectangle {
-        let mut bounds = self.geometry.bounds;
+        // Accumulated out of an `Option` rather than seeded from a zeroed
+        // rectangle, because a zeroed rectangle *is* a legal answer - a shape
+        // whose first vertex is the origin has one point in common with it, and
+        // nothing in the value distinguishes "empty so far" from "empty
+        // forever". Losing that point collapses the node to no width at all.
+        let mut bounds: Option<Rectangle> = None;
+        let mut grow = |point: Vector2| {
+            bounds = Some(match bounds {
+                None => Rectangle::new(point.x, point.y, 0.0, 0.0),
+                Some(into) => {
+                    let max_x = (into.x + into.width).max(point.x);
+                    let max_y = (into.y + into.height).max(point.y);
+                    let min_x = into.x.min(point.x);
+                    let min_y = into.y.min(point.y);
+                    Rectangle::new(min_x, min_y, max_x - min_x, max_y - min_y)
+                }
+            });
+        };
         for vertex in self.geometry.fill_vertices.chunks(FILL_VERTEX_FLOATS) {
-            let point = Vector2::new(vertex[0], vertex[1]);
-            bounds = union(bounds, point);
+            grow(Vector2::new(vertex[0], vertex[1]));
         }
         for vertex in self.geometry.stroke_vertices.chunks(STROKE_VERTEX_FLOATS) {
             let half_width = vertex[4];
-            bounds = union(
-                bounds,
-                Vector2::new(vertex[0] - half_width, vertex[1] - half_width),
-            );
-            bounds = union(
-                bounds,
-                Vector2::new(vertex[2] + half_width, vertex[3] + half_width),
-            );
+            grow(Vector2::new(vertex[0] - half_width, vertex[1] - half_width));
+            grow(Vector2::new(vertex[2] + half_width, vertex[3] + half_width));
         }
-        bounds
+        bounds.unwrap_or_default()
     }
 
     /// The finished geometry, bounds included.
@@ -198,19 +208,6 @@ impl MeshBuilder {
     }
 }
 
-fn union(into: Rectangle, point: Vector2) -> Rectangle {
-    if into.width <= 0.0 && into.height <= 0.0 && into.x == 0.0 && into.y == 0.0 {
-        // Nothing has been added yet, so this is the first point rather than a
-        // degenerate rectangle at the origin.
-        return Rectangle::new(point.x, point.y, 0.0, 0.0);
-    }
-    let max_x = (into.x + into.width).max(point.x);
-    let max_y = (into.y + into.height).max(point.y);
-    let min_x = into.x.min(point.x);
-    let min_y = into.y.min(point.y);
-    Rectangle::new(min_x, min_y, max_x - min_x, max_y - min_y)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -219,6 +216,38 @@ mod tests {
 
     fn bounds_of(geometry: &VectorGeometry) -> Rectangle {
         geometry.bounds
+    }
+
+    /// A first vertex at the origin used to be swallowed: `bounds` seeded itself
+    /// from a zeroed rectangle to mean "nothing yet", and (0, 0) is a legitimate
+    /// point that zeroed rectangle cannot distinguish itself from. The node then
+    /// sized itself to that bounds and collapsed to zero width.
+    #[test]
+    fn bounds_keep_a_first_vertex_at_the_origin() {
+        let mut builder = MeshBuilder::new();
+        builder.shape(
+            &Shape::new(Path::build(|path| {
+                path.move_to(0.0, 0.0).line_to(10.0, 0.0).line_to(10.0, 10.0);
+            }))
+            .fill(Color::RED),
+        );
+        let bounds = bounds_of(&builder.build());
+        assert_eq!(bounds, Rectangle::new(0.0, 0.0, 10.0, 10.0));
+    }
+
+    #[test]
+    fn a_builder_with_nothing_in_it_bounds_to_nothing() {
+        let bounds = bounds_of(&MeshBuilder::new().build());
+        assert_eq!(bounds, Rectangle::new(0.0, 0.0, 0.0, 0.0));
+    }
+
+    /// An empty path cannot produce geometry, so reporting it visible would send
+    /// the caller walking a path that flattens to nothing.
+    #[test]
+    fn an_empty_path_is_not_visible_however_it_is_painted() {
+        let empty = Shape::new(Path::new()).fill(Color::RED);
+        assert!(!empty.is_visible());
+        assert!(!Shape::new(Path::new()).is_visible());
     }
 
     #[test]

@@ -194,9 +194,21 @@ impl DashCursor {
         }
     }
 
+    /// Walks the pattern forward without emitting, which is how a dash offset is
+    /// applied at the start of a contour.
+    ///
+    /// The amount is taken modulo the pattern's total first. Dashing is periodic,
+    /// so an offset of 1000 on a pattern summing to 24 lands where 16 does, and
+    /// walking the thousand would be linear work for an answer nobody can see -
+    /// which is reachable, since an offset is usually an animated value.
     fn skip(&mut self, pattern: &[f32], amount: f32) {
+        let total: f32 = pattern.iter().sum();
+        if total <= 0.0 {
+            return;
+        }
+        let amount = amount.max(0.0) % total;
         let mut sink = Vec::new();
-        self.take(pattern, amount.max(0.0), &mut sink);
+        self.take(pattern, amount, &mut sink);
     }
 }
 

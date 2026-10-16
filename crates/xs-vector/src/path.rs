@@ -68,9 +68,11 @@ impl Segment {
 
     /// The point at `t` along a line, quadratic or cubic.
     ///
-    /// `Segment::ArcTo` and `LineTo` are handled because a line is a degree-one
-    /// Bézier, which is what makes a flattened contour and an exact curve the
-    /// same shape to sample. `MoveTo` and `Close` return `None`.
+    /// `LineTo` is a degree-one Bézier, which is what makes a flattened contour
+    /// and an exact curve the same shape to sample. `MoveTo`, `Close` and
+    /// `ArcTo` return `None`: an arc is stored as a segment but is only ever
+    /// sampled after `arc_to_cubics` has replaced it, and there is no reason to
+    /// carry a second evaluator for it.
     #[must_use]
     pub fn point_at(&self, p0: Vector2, t: f32) -> Option<Vector2> {
         let u = 1.0 - t;
@@ -450,10 +452,10 @@ impl Path {
 
     /// The same path scaled about `origin` by `factor`, uniformly.
     ///
-    /// This is how `view_box` fits a path authored in its own coordinates into
-    /// the node's box: the scale is computed by the caller from the two extents
-    /// and applied here about the box's centre, which is SVG's
-    /// `preserveAspectRatio` for the case that matters.
+    /// Scaling about the origin in place is almost never what is meant - it slides
+    /// the path off its own anchor as it grows - so this form takes the point to
+    /// hold still. `view_box` does *not* use it: a view box scales about its own
+    /// min corner, because that corner is what the coordinates are relative to.
     #[must_use]
     pub fn scaled_about(&self, origin: Vector2, factor: f32) -> Self {
         self.translated(-origin).scaled(factor).translated(origin)

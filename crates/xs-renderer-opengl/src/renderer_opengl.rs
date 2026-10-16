@@ -67,13 +67,19 @@ struct Frame {
     /// one draw instead of one each.
     indices: [HashMap<u32, usize>; SHADER_COUNT],
     draws: Vec<DrawCall>,
-    /// The shaders with an unrecorded run, in the order they were started.
+    /// The one shader with an unrecorded run, if any.
     ///
     /// This is what makes the recorded draws come out in tree order. A batch is
     /// only turned into a draw call when something flushes it, so without an order
     /// to flush by, geometry queued between two of another shader's is recorded
     /// after both and painted underneath them.
-    order: Vec<usize>,
+    ///
+    /// One, not several: a shader's run is closed the moment another shader is
+    /// added, so at most one can be open. Closing a run on *any* change of shader
+    /// is also the rule that fixed the vector fill losing to the panel background
+    /// under it, which is in a different shader and is queued by the node visited
+    /// *before* the fill.
+    current: Option<usize>,
 }
 
 #[derive(Default)]
@@ -130,11 +136,11 @@ impl RendererOpenGl {
         texture: u32,
         emit: impl FnOnce(&mut Vec<f32>),
     ) {
-        if !frame.order.contains(&shader) {
-            for queued in std::mem::take(&mut frame.order) {
+        if frame.current != Some(shader) {
+            if let Some(queued) = frame.current.take() {
                 self.flush(frame, queued);
             }
-            frame.order.push(shader);
+            frame.current = Some(shader);
         }
         let arena = &mut frame.vertices[shader];
         let first = arena.len();
@@ -144,8 +150,20 @@ impl RendererOpenGl {
             return;
         }
         match frame.indices[shader].get(&texture) {
-            Some(&slot) => frame.pending[shader][slot].len += len,
-            None => {
+            // Merging is only valid when this geometry starts exactly where that
+            // batch ends. `first + len` is what a draw call reads, so adding the
+            // length regardless would make one batch span whatever another
+            // texture's vertices were appended in between - and a plain
+            // background sitting between two others that share a texture is the
+            // case, since backgrounds and vector fills both draw from the
+            // placeholder. A batch that cannot be extended starts its own, and
+            // leaves the one it was going to extend alone.
+            Some(&slot)
+                if frame.pending[shader][slot].first + frame.pending[shader][slot].len == first =>
+            {
+                frame.pending[shader][slot].len += len;
+            }
+            _ => {
                 frame.pending[shader].push(Batch {
                     texture,
                     first,
@@ -358,7 +376,7 @@ impl Renderer for RendererOpenGl {
             }
         }
 
-        for queued in std::mem::take(&mut frame.order) {
+        if let Some(queued) = frame.current.take() {
             self.flush(&mut frame, queued);
         }
         self.submit(&mut frame, ctx);
@@ -390,5 +408,105 @@ impl Renderer for RendererOpenGl {
         image_format: ImageFormat,
     ) -> u32 {
         load_texture(bytes, image_handler, width, height, image_format)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::render_quad::SIMPLE_QUAD_VERTEX_FLOATS;
+
+    /// One simple quad *vertex*, in the 12 floats `push_simple_quad` actually
+    /// writes: position, texture coordinate, colour, clip rect.
+    ///
+    /// The stride is not a formality. A helper that wrote 11 floats per vertex
+    /// drops a vertex per quad here and the only symptom is a `count` one short.
+    fn vertex(vec: &mut Vec<f32>, x: f32) {
+        let before = vec.len();
+        vec.extend_from_slice(&[
+            x, 0.0, // position
+            0.0, 0.0, // texture coordinate
+            1.0, 1.0, 1.0, 1.0, // colour
+            0.0, 0.0, 1920.0, 1080.0, // clip rect
+        ]);
+        assert_eq!(vec.len() - before, SIMPLE_QUAD_VERTEX_FLOATS);
+    }
+
+    /// A batch is `first`/`len` over one arena, so merging two spans that are not
+    /// adjacent hands one draw call geometry that belongs to whatever was queued in
+    /// between. Textures A -> B -> A used to produce a single draw for A covering
+    /// all three, and B was never drawn at all.
+    #[test]
+    fn a_batch_never_spans_another_textures_vertices() {
+        let renderer = RendererOpenGl::default();
+        let mut frame = Frame::default();
+        let a = 7;
+        let b = 9;
+        for (texture, x) in [(a, 0.0), (b, 100.0), (a, 200.0)] {
+            renderer.add(&mut frame, SH_SIMPLE, texture, |arena| {
+                vertex(arena, x);
+            });
+        }
+        if let Some(queued) = frame.current.take() {
+            renderer.flush(&mut frame, queued);
+        }
+
+        let batches = &frame.pending[SH_SIMPLE];
+        let mut spans: Vec<(u32, i32, i32)> = frame
+            .draws
+            .iter()
+            .filter(|d| d.shader == SH_SIMPLE)
+            .map(|d| (d.texture, d.first, d.first + d.count))
+            .collect();
+        // By position, which is the order they are drawn in.
+        spans.sort_unstable_by_key(|span| span.1);
+
+        // Two draws for A, one for B, and no draw covers another's vertices.
+        assert_eq!(spans.len(), 3, "{spans:?}");
+        assert_eq!(spans[0], (a, 0, 1));
+        assert_eq!(spans[1], (b, 1, 2));
+        assert_eq!(spans[2], (a, 2, 3));
+        assert!(batches.is_empty(), "everything was flushed");
+    }
+
+    /// Adjacent same-textured geometry is the whole point of the batching: it is
+    /// one draw instead of one each.
+    #[test]
+    fn adjacent_same_textured_geometry_stays_one_draw() {
+        let renderer = RendererOpenGl::default();
+        let mut frame = Frame::default();
+        for x in [0.0, 100.0, 200.0] {
+            renderer.add(&mut frame, SH_SIMPLE, 7, |arena| {
+                vertex(arena, x);
+            });
+        }
+        if let Some(queued) = frame.current.take() {
+            renderer.flush(&mut frame, queued);
+        }
+        let draws: Vec<_> = frame.draws.iter().filter(|d| d.shader == SH_SIMPLE).collect();
+        assert_eq!(draws.len(), 1);
+        // `first`/`count` are vertices, not floats, and the stride is the
+        // vertex's own size - which is the other half of the reason the old 14 for
+        // a 12 float vertex was dead weight rather than a visual bug.
+        assert_eq!(draws[0].count, 3);
+    }
+
+    /// The reason the flush happens on a shader *change* rather than when a
+    /// shader's geometry happens to end: a vector fill rides the simple quad arena
+    /// while the panel it sits on rides the decorated one, and the panel's node is
+    /// visited first. The fill has to be painted second.
+    #[test]
+    fn a_shader_change_flushes_the_run_that_was_open() {
+        let renderer = RendererOpenGl::default();
+        let mut frame = Frame::default();
+        renderer.add(&mut frame, SH_QUAD, 0, |arena| {
+            vertex(arena, 0.0);
+        });
+        assert!(frame.draws.is_empty(), "the run is still open");
+        renderer.add(&mut frame, SH_SIMPLE, 0, |arena| {
+            vertex(arena, 0.0);
+        });
+        let quad_draws = frame.draws.iter().filter(|d| d.shader == SH_QUAD).count();
+        assert_eq!(quad_draws, 1, "the quad run was recorded before the fill's");
     }
 }

@@ -196,7 +196,10 @@ fn from_svg() -> Div {
         .child(text("svg path data"))
         .child(
             vector()
-                .view_box(Vector2::zero(), 0., 0.)
+                // The icon's own viewBox, from Lucide - which is the point of
+                // having one: the path only reaches 2..22, so fitting its bounds
+                // instead would zoom past the 2 unit margin the drawing intends.
+                .view_box(Vector2::zero(), 24., 24.)
                 .width(96.)
                 .height(96.)
                 .path(

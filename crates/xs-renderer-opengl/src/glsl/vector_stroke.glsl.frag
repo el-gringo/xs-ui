@@ -9,14 +9,21 @@
 //
 // GLSL ES 1.00, like the rest of the renderer and the webviews the older TVs
 // ship.
-precision mediump float;
+//
+// `highp` throughout, and repeated per varying rather than inherited from the
+// vertex stage: a varying's precision is the one declared in the shader that
+// *reads* it. It is also load-bearing - `v_pixelPos`, `v_p0` and `v_p1` are
+// absolute screen coordinates, and the coverage ramp needs sub-pixel accuracy on
+// the difference between two of them. mediump is an fp16 mantissa on the TVs this
+// ships to, so at 1024 one ulp is already a whole pixel.
+precision highp float;
 
-varying vec2 v_pixelPos;
-varying vec2 v_p0;
-varying vec2 v_p1;
+varying highp vec2 v_pixelPos;
+varying highp vec2 v_p0;
+varying highp vec2 v_p1;
 // (along, across) in pixels, measured from the middle of the segment.
-varying vec2 v_local;
-varying float v_halfWidth;
+varying highp vec2 v_local;
+varying highp float v_halfWidth;
 varying float v_cap;
 varying vec4 v_color;
 varying vec4 v_clip;

@@ -134,10 +134,16 @@ impl Vector {
         self
     }
 
-    /// Scales the shapes to fit `view_box` and centres them in it.
+    /// Shows the `view_box` region of the shapes' own coordinates in the node,
+    /// SVG's `viewBox`.
     ///
-    /// The scale is uniform and the smaller of the two ratios wins, so nothing is
-    /// distorted. `origin` maps the view box's own top-left corner onto the node's.
+    /// The scale is uniform - the smaller of the two ratios wins, so nothing is
+    /// distorted - and the scaled view box is centred, which is
+    /// `preserveAspectRatio="xMidYMid meet"`. Padding that is baked into the
+    /// authored coordinates is part of the artwork, so an icon on a 24 unit grid
+    /// keeps its margin instead of being scaled until its ink touches the edge.
+    ///
+    /// Shapes outside the view box are still drawn; see [`view_box_fit`].
     #[must_use]
     pub fn view_box(mut self, origin: Vector2, width: f32, height: f32) -> Self {
         self.view_box = Some(Rectangle::new(origin.x, origin.y, width, height));
@@ -330,18 +336,17 @@ impl Vector {
         for shape in &self.shapes {
             scaled.push(match &self.view_box {
                 Some(view) => {
-                    let Some(placement) = fit_to_box(shape, view, size) else {
+                    let Some(fit) = view_box_fit(view, size) else {
                         continue;
                     };
                     Shape {
-                        // Scale about the shape's own centre to keep its
-                        // proportions, then move that centre onto the box's. The
-                        // first step alone would double the size *in place*, which
-                        // is the half of the transform that is easy to forget.
-                        path: shape
-                            .path
-                            .scaled_about(placement.centre, placement.scale)
-                            .translated(placement.offset),
+                        // `p * scale + offset`, in that order. Mapping about the
+                        // *view box's* corner rather than the shape's own centre is
+                        // the whole point of a view box: the padding baked into
+                        // authored coordinates is part of the artwork, so an icon
+                        // drawn on a 24 unit grid keeps its 2 unit margin instead of
+                        // being scaled up to fill its box edge to edge.
+                        path: shape.path.scaled(fit.scale).translated(fit.offset),
                         ..shape.clone()
                     }
                 }
@@ -354,32 +359,44 @@ impl Vector {
 }
 
 /// Where a shape's centre goes and how much it is scaled by, to fit `box_rect`.
-///
-/// The smaller of the two ratios wins, so the shape is never distorted, and the
-/// result lands in the middle of the box - which is SVG's `preserveAspectRatio` for
-/// the case that comes up. A shape with no bounds, or a box with no extent, has no
-/// meaningful scale and yields nothing.
-struct Placement {
-    /// The shape's own centre, which the scale happens about.
-    centre: Vector2,
-    /// How far to move it afterwards, to reach the box's centre.
-    offset: Vector2,
+/// How a view box of authored coordinates covers a node box of local pixels.
+struct ViewBoxFit {
+    /// How much a view box unit is worth in local pixels.
     scale: f32,
+    /// Applied after the scale: it lands the view box's own top-left corner, so
+    /// that `scale * view.min + offset` is the top-left of the node box.
+    offset: Vector2,
 }
 
-fn fit_to_box(shape: &Shape, view: &Rectangle, box_size: Vector2) -> Option<Placement> {
-    let (min, max) = shape.path.control_bounds()?;
-    let width = max.x - min.x;
-    let height = max.y - min.y;
-    if width <= 0.0 || height <= 0.0 || box_size.x <= 0.0 || box_size.y <= 0.0 {
+/// Maps the `view_box` region onto `box_size`, SVG's `viewBox` with the default
+/// `preserveAspectRatio="xMidYMid meet"`.
+///
+/// The scale comes from the *view box*, not from the shape: that is the whole
+/// difference between a view box and scaling artwork to fit. An icon authored on a
+/// 24 unit grid with a 2 unit margin keeps that margin when drawn at 96px, whereas
+/// fitting its own bounds would zoom to the ink and eat it. Nothing is distorted,
+/// because the smaller ratio wins, and the scaled view box is centred in the node
+/// box - which leaves bars on the other axis, as SVG does.
+///
+/// A view box with no extent, or a node box with no extent, has no meaningful
+/// scale and yields nothing. Note that shapes *outside* the view box are still
+/// drawn, where SVG would clip them to the viewport: this framework has no
+/// viewport clip of its own, and inventing one here would hide artwork rather than
+/// misplace it.
+fn view_box_fit(view: &Rectangle, box_size: Vector2) -> Option<ViewBoxFit> {
+    if view.width <= 0.0 || view.height <= 0.0 || box_size.x <= 0.0 || box_size.y <= 0.0 {
         return None;
     }
-    let centre = Vector2::new(min.x + width * 0.5, min.y + height * 0.5);
-    let target = Vector2::new(view.x + box_size.x * 0.5, view.y + box_size.y * 0.5);
-    Some(Placement {
-        centre,
-        offset: target - centre,
-        scale: (box_size.x / width).min(box_size.y / height),
+    let scale = (box_size.x / view.width).min(box_size.y / view.height);
+    // Centre the scaled view box, then back the view box's own origin out of the
+    // translation so that `p * scale + offset` maps its min corner, not (0, 0).
+    let centred = Vector2::new(
+        (box_size.x - view.width * scale) * 0.5,
+        (box_size.y - view.height * scale) * 0.5,
+    );
+    Some(ViewBoxFit {
+        scale,
+        offset: centred - Vector2::new(view.x, view.y) * scale,
     })
 }
 
@@ -450,6 +467,17 @@ impl ElementObject for Vector {
                 // shapes around it.
                 stroke.width *= scale;
             }
+        }
+        // The view box is expressed in the shapes' own coordinates, which have just
+        // been converted to device pixels above. Leaving it behind would mix units
+        // in `view_box_fit`: a 24 unit grid under a 2x screen would ask for a scale
+        // of 96/24 out of coordinates that are now twice as large as they were, and
+        // draw the icon at half the size asked for.
+        if let Some(view) = self.view_box.as_mut() {
+            view.x *= scale;
+            view.y *= scale;
+            view.width *= scale;
+            view.height *= scale;
         }
 
         if let Some(text_properties) = self.style.text_properties.clone() {
@@ -741,40 +769,48 @@ mod tests {
     /// The view box is SVG's, and the scale has to be the smaller ratio or the
     /// shape is distorted.
     #[test]
-    fn a_view_box_fits_the_shape_without_distorting_it() {
-        let vector = vector()
-            .width(200.0)
+    /// The scale comes from the view box, not from the shape: the old
+    /// implementation divided the node's size by the shape's own extent and read
+    /// nothing at all out of `view_box`'s width and height, so all three of these
+    /// were the same call.
+    #[test]
+    fn a_view_box_sizes_the_artwork_and_not_the_artwork_sizes_the_box() {
+        let fits = |view: (f32, f32)| {
+            vector()
+                .width(200.0)
+                .height(200.0)
+                .view_box(Vector2::zero(), view.0, view.1)
+                // 100 units of ink centred in a 200 unit view box: half of it is
+                // margin, and that margin is the thing being tested.
+                .shape(shape::rect(50.0, 50.0, 100.0, 100.0).fill(Color::RED))
+                .geometry(Vector2::new(200.0, 200.0))
+                .bounds
+        };
+        // A 200 unit view box in a 200px box is 1:1, so the ink lands where it was
+        // authored: the 50 unit margin survives.
+        assert_eq!(fits((200.0, 200.0)), Rectangle::new(50.0, 50.0, 100.0, 100.0));
+        // Half the view box is 2:1.
+        assert_eq!(fits((100.0, 100.0)), Rectangle::new(100.0, 100.0, 200.0, 200.0));
+        // A wide view box scales by its height - 0.5 - and is centred on the other
+        // axis, as SVG does with `xMidYMid meet`.
+        assert_eq!(fits((400.0, 200.0)), Rectangle::new(25.0, 75.0, 50.0, 50.0));
+    }
+
+    #[test]
+    fn a_view_box_maps_its_own_min_corner_and_not_the_origin() {
+        // Authored on a grid starting at 20, so the view box's min is not (0, 0).
+        let bounds = vector()
+            .width(100.0)
             .height(100.0)
-            .view_box(Vector2::zero(), 0.0, 0.0)
-            .shape(shape::rect(0.0, 0.0, 100.0, 50.0).fill(Color::RED));
-        let geometry = vector.geometry(Vector2::new(200.0, 100.0));
-        let bounds = geometry.bounds;
-        // 100x50 into 200x100 is a factor of two on both, so it still fits.
-        assert!((bounds.width - 200.0).abs() < 1.0, "width {}", bounds.width);
-        assert!(
-            (bounds.height - 100.0).abs() < 1.0,
-            "height {}",
-            bounds.height
-        );
+            .view_box(Vector2::new(20.0, 30.0), 10.0, 10.0)
+            // Exactly fills the view box, so it lands exactly on the node's box.
+            .shape(shape::rect(20.0, 30.0, 10.0, 10.0).fill(Color::RED))
+            .geometry(Vector2::new(100.0, 100.0))
+            .bounds;
+        // The min corner lands on the box's min corner and the shape fills it.
+        assert_eq!(bounds, Rectangle::new(0.0, 0.0, 100.0, 100.0));
     }
 
-    #[test]
-    fn a_view_box_centres_a_shape_that_does_not_fill_it() {
-        let vector = vector()
-            .width(200.0)
-            .height(200.0)
-            .view_box(Vector2::zero(), 0.0, 0.0)
-            .shape(shape::rect(0.0, 0.0, 100.0, 100.0).fill(Color::RED));
-        let bounds = vector.geometry(Vector2::new(200.0, 200.0)).bounds;
-        // Scaled by two and centred: the box is 200 wide, the shape 200, so it
-        // starts at the origin's centred position of -0.
-        assert!((bounds.x - 0.0).abs() < 1.0, "x {}", bounds.x);
-        assert!((bounds.width - 200.0).abs() < 1.0, "width {}", bounds.width);
-    }
-
-    /// A box with no extent, or a path with no bounds, has no scale to speak of and
-    /// must not divide by zero.
-    #[test]
     fn a_degenerate_view_box_produces_nothing_rather_than_nonsense() {
         let vector = vector()
             .width(0.0)

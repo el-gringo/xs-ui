@@ -61,7 +61,7 @@ impl Render for Peertube {
                             this.child(
                                 grid()
                                     .items(videos.read().clone())
-                                    .columns(3)
+                                    .columns(5)
                                     .rows(3)
                                     .cell_width(320.)
                                     .cell_height(320.)

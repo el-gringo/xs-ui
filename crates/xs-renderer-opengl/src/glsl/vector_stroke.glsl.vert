@@ -9,7 +9,14 @@
 // ship. The branch-free `mix` in the fragment stage is deliberate: GLSL ES 1.00
 // leaves texture sampling in non-uniform control flow undefined, and a select
 // costs nothing here.
-precision mediump float;
+//
+// `highp` is not optional. The endpoints and `v_pixelPos` are absolute screen
+// coordinates, up to the framebuffer's own size, and mediump is an fp16 range on
+// the hardware this ships to - where one ulp at 2048 is 2.0. A coverage ramp
+// that subtracts two such numbers to decide how much of a pixel is ink would come
+// out quantised to whole pixels, which is not antialiasing but the opposite of it.
+// It costs nothing on a desktop, which is exactly why it would have survived review.
+precision highp float;
 
 attribute vec2 a_p0;
 attribute vec2 a_p1;
@@ -27,12 +34,12 @@ uniform vec2 u_resolution;
 
 // Where this vertex lands, in screen pixels. The clip rectangle arrives in
 // screen space, so unlike the quad shader there is nothing to recover here.
-varying vec2 v_pixelPos;
-varying vec2 v_p0;
-varying vec2 v_p1;
+varying highp vec2 v_pixelPos;
+varying highp vec2 v_p0;
+varying highp vec2 v_p1;
 // (along, across) in pixels, measured from the middle of the segment.
 varying vec2 v_local;
-varying float v_halfWidth;
+varying highp float v_halfWidth;
 varying float v_cap;
 varying vec4 v_color;
 varying vec4 v_clip;
