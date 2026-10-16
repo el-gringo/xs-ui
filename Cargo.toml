@@ -34,7 +34,6 @@ xs-gl-sys = { path = "crates/xs-gl-sys" }
 xs-js-sys = { path = "crates/xs-js-sys" }
 xs-layout = { path = "crates/xs-layout" }
 xs-http = { path = "crates/xs-http" }
-xs-image = { path = "crates/xs-image" }
 xs-image-core = { path = "crates/xs-image-core" }
 xs-image-jpeg = { path = "crates/xs-image-jpeg" }
 xs-image-jpeg-xl = { path = "crates/xs-image-jpeg-xl" }
