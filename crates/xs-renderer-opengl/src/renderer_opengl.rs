@@ -156,6 +156,11 @@ impl RendererOpenGl {
 
         let mut bound_shader = usize::MAX;
         let mut bound_texture = u32::MAX;
+        // Device pixels, because that is what the vertices are in: a style is
+        // scaled by `screen.scale` before it reaches layout, so the drawing
+        // buffer and the geometry share one space. The viewport below reads the
+        // same value and the two have to agree or everything lands off centre.
+        let (width, height) = ctx.screen.framebuffer_size();
         for draw in &draws {
             // `use_program` rebinds the vertex attributes and `u_resolution` is
             // the same for every node of a frame, so both are done once per
@@ -163,11 +168,7 @@ impl RendererOpenGl {
             if draw.shader != bound_shader {
                 let shader = self.get_shader(SHADER_NAMES[draw.shader]);
                 shader.use_program();
-                shader.uniform_2f(
-                    "u_resolution",
-                    ctx.screen.width as _,
-                    ctx.screen.height as _,
-                );
+                shader.uniform_2f("u_resolution", width as _, height as _);
                 bound_shader = draw.shader;
                 bound_texture = u32::MAX;
             }
@@ -210,7 +211,8 @@ impl Renderer for RendererOpenGl {
     }
 
     fn render(&mut self, ctx: &AppContext, layout_tree: &LayoutTree) {
-        glViewport(0, 0, ctx.screen.width as _, ctx.screen.height as _);
+        let (width, height) = ctx.screen.framebuffer_size();
+        glViewport(0, 0, width as _, height as _);
 
         let node_count = layout_tree.boxes.len();
         let mut clip_rects: Vec<Option<Rectangle>> = vec![None; node_count];

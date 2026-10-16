@@ -96,6 +96,15 @@ impl BorderSide {
     pub fn new(color: Color, width: f32) -> BorderSide {
         BorderSide { color, width }
     }
+
+    /// The width multiplied by `scale`. The colour is not a length, so it stays.
+    #[must_use]
+    pub fn scaled(&self, scale: f32) -> BorderSide {
+        BorderSide {
+            color: self.color,
+            width: self.width * scale,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Debug)]
@@ -139,8 +148,14 @@ impl From<BoxShadow> for [f32; 4] {
 
 impl BoxShadow {
     #[must_use]
-    pub fn new(offset_left: f32, offset_top: f32, blur: f32, spread: f32, color: Color) -> Self {
-        Self {
+    pub fn new(
+        offset_left: f32,
+        offset_top: f32,
+        blur: f32,
+        spread: f32,
+        color: Color,
+    ) -> BoxShadow {
+        BoxShadow {
             offset_left,
             offset_top,
             blur,
@@ -148,16 +163,42 @@ impl BoxShadow {
             color,
         }
     }
+
+    /// The offset, the blur radius and the spread all multiplied by `scale`.
+    /// The blur is a length like any other: it is how wide the penumbra is, so
+    /// it has to grow with the resolution rather than stay the same number of
+    /// pixels wide.
+    #[must_use]
+    pub fn scaled(&self, scale: f32) -> BoxShadow {
+        BoxShadow {
+            offset_left: self.offset_left * scale,
+            offset_top: self.offset_top * scale,
+            blur: self.blur * scale,
+            spread: self.spread * scale,
+            color: self.color,
+        }
+    }
 }
 
 impl BorderRadius {
     #[must_use]
-    pub fn new(top_left: f32, top_right: f32, bottom_right: f32, bottom_left: f32) -> Self {
-        Self {
+    pub fn new(top_left: f32, top_right: f32, bottom_right: f32, bottom_left: f32) -> BorderRadius {
+        BorderRadius {
             top_left,
             top_right,
             bottom_right,
             bottom_left,
+        }
+    }
+
+    /// Every corner multiplied by `scale`.
+    #[must_use]
+    pub fn scaled(&self, scale: f32) -> BorderRadius {
+        BorderRadius {
+            top_left: self.top_left * scale,
+            top_right: self.top_right * scale,
+            bottom_right: self.bottom_right * scale,
+            bottom_left: self.bottom_left * scale,
         }
     }
 }
@@ -273,5 +314,18 @@ impl Borders {
             None => 0.0,
         };
         top + bottom
+    }
+
+    /// Every present side's width multiplied by `scale`. Absent sides stay
+    /// absent rather than becoming a zero-width border that the layout would
+    /// still have to account for.
+    #[must_use]
+    pub fn scaled(&self, scale: f32) -> Borders {
+        Borders {
+            top: self.top.map(|b| b.scaled(scale)),
+            bottom: self.bottom.map(|b| b.scaled(scale)),
+            left: self.left.map(|b| b.scaled(scale)),
+            right: self.right.map(|b| b.scaled(scale)),
+        }
     }
 }

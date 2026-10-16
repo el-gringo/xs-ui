@@ -117,6 +117,24 @@ impl Matrix3 {
         (a * d - b * c).abs().sqrt()
     }
 
+    /// Scales the translation by `scale`, leaving the linear part alone.
+    ///
+    /// This is what converting a style authored in logical pixels into device
+    /// pixels needs: a `translate(10, 0)` is ten pixels however the element is
+    /// rotated, so the offset has to be scaled after it has been composed
+    /// rather than before. Scaling the column in place is exactly that, because
+    /// the column already holds the composed offset.
+    ///
+    /// Scaling the linear part here would be wrong - `scale(2)` is a factor,
+    /// not a length, and doubling it changes what the element looks like
+    /// instead of how many device pixels it covers.
+    #[must_use]
+    pub fn scale_translation(mut self, scale: f32) -> Matrix3 {
+        self.columns[2][0] *= scale;
+        self.columns[2][1] *= scale;
+        self
+    }
+
     /// The nine elements in column-major order, ready for `u_transform`.
     pub fn to_array(&self) -> [f32; 9] {
         let c = &self.columns;
@@ -351,5 +369,51 @@ mod tests {
         // because the offset goes through the scale on its way out.
         let m = Matrix3::uniform_scale(2.0) * Matrix3::translation(Vector2::new(10.0, 0.0));
         assert_point(&m, Vector2::new(0.0, 0.0), Vector2::new(20.0, 0.0));
+    }
+
+    #[test]
+    fn scale_translation_moves_by_more_without_resizing() {
+        let m = Matrix3::translation(Vector2::new(10.0, -4.0)).scale_translation(2.0);
+        assert_point(&m, Vector2::new(1.0, 1.0), Vector2::new(21.0, -7.0));
+        assert!(
+            close(m.scale_factor(), 1.0),
+            "the linear part should be untouched, was {}",
+            m.scale_factor()
+        );
+    }
+
+    #[test]
+    fn scale_translation_leaves_the_factors_alone() {
+        // The mistake this guards against is scaling the whole matrix: a
+        // `scale(2)` is a factor and not a length, so doubling it would change
+        // what the element looks like rather than how many pixels it covers.
+        let scaled = Matrix3::uniform_scale(3.0).scale_translation(2.0);
+        assert!(
+            close(scaled.scale_factor(), 3.0),
+            "was {}",
+            scaled.scale_factor()
+        );
+    }
+
+    #[test]
+    fn scale_translation_scales_a_composed_offset() {
+        // `rotate * translate(10, 0)` puts the offset in the second column, and
+        // ten logical pixels is twenty device pixels whatever direction the
+        // element happens to face. Scaling the column is what expresses that.
+        let rotated = Matrix3::rotation(0.5);
+        let single = rotated * Matrix3::translation(Vector2::new(10.0, 0.0));
+        let doubled = single.scale_translation(2.0);
+        assert_point(
+            &doubled,
+            Vector2::new(0.0, 0.0),
+            (rotated * Matrix3::translation(Vector2::new(20.0, 0.0)))
+                .transform_point(Vector2::new(0.0, 0.0)),
+        );
+    }
+
+    #[test]
+    fn scale_translation_by_one_is_the_identity() {
+        let m = Matrix3::rotation(0.9) * Matrix3::translation(Vector2::new(3.0, 4.0));
+        assert_eq!(m.scale_translation(1.0), m);
     }
 }

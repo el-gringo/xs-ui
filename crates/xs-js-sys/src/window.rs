@@ -12,6 +12,7 @@ mod js {
         pub fn request_animation_frame(closure: *mut (), vcall: usize);
         pub fn window() -> u32;
         pub fn performance_now() -> u32;
+        pub fn device_pixel_ratio() -> f32;
         pub fn time(ptr: u32, len: u32);
         pub fn time_end(ptr: u32, len: u32);
         pub fn reload();
@@ -47,6 +48,26 @@ pub fn window() -> impl Window {
 
 pub fn performance_now() -> u32 {
     unsafe { js::performance_now() }
+}
+
+/// Device pixels per css pixel.
+///
+/// This is the one number that decides whether a frame is sharp: a css size
+/// tells the browser how big the canvas looks, but the drawing buffer has to be
+/// that many times larger or the GPU rasterises into a small image and the
+/// compositor stretches it.
+///
+/// Returns `1.0` when the browser reports nothing usable. A zoomed page, a
+/// browser zoomed out, and a TV webview all report `1.0` legitimately, and a
+/// missing or zero reading must not be allowed to collapse the drawing buffer
+/// to nothing.
+pub fn device_pixel_ratio() -> f32 {
+    let ratio = unsafe { js::device_pixel_ratio() };
+    if ratio > 0.0 && ratio.is_finite() {
+        ratio
+    } else {
+        1.0
+    }
 }
 
 pub fn time(label: &str) {

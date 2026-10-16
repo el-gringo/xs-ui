@@ -404,16 +404,6 @@ impl ElementObject for Div {
     }
 
     fn post_render(&mut self, ctx: &mut Context) {
-        if let Some(text_properties) = self.style.text_properties.clone() {
-            ctx.text_properties = text_properties;
-        }
-        ctx.color = self.style.color;
-        if let Some(w) = self.style.width {
-            ctx.constraints.max.x = w;
-        };
-        if let Some(h) = self.style.height {
-            ctx.constraints.max.y = h;
-        };
         if let Some(ref anim) = self.animation {
             let now = ctx.app_context.now;
             let initial = anim.animate.clone_box();
@@ -438,6 +428,31 @@ impl ElementObject for Div {
             let this = (callback)(self.clone(), value);
             self.style = this.style;
         }
+
+        // Convert this element's logical lengths into device pixels, once, on
+        // the way out of the app's hands and before anything downstream sees
+        // them. After this point the whole stack - the constraints pushed to
+        // the children, the layout, the glyphs, the clip rectangles - is in the
+        // framebuffer's units, which is also what the GL viewport and
+        // `u_resolution` are. Doing it here rather than in the renderer is what
+        // makes a 2x display sharp rather than merely bigger: the text is
+        // rasterised at the device size and the antialiasing windows in the
+        // quad shader are measured in the pixels they are actually drawn in.
+        //
+        // It has to come after the animation above, because the callback hands
+        // back a Div with the same logical style the app wrote.
+        self.style = self.style.scaled(ctx.app_context.screen.scale);
+
+        if let Some(text_properties) = self.style.text_properties.clone() {
+            ctx.text_properties = text_properties;
+        }
+        ctx.color = self.style.color;
+        if let Some(w) = self.style.width {
+            ctx.constraints.max.x = w;
+        };
+        if let Some(h) = self.style.height {
+            ctx.constraints.max.y = h;
+        };
     }
 
     fn paint(&self, app_context: &mut AppContext, children: &[View]) -> View {

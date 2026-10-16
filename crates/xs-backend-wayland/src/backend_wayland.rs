@@ -1,13 +1,13 @@
 use std::{ptr::null_mut, sync::mpsc::Sender, time::Instant};
 
 use xs_backend_wayland_client::{
-    WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface,
+    WL_COMPOSITOR_CREATE_SURFACE, wl_proxy, wl_request_constructor, wl_surface, wl_surface_listener,
 };
 use xs_core::{AppConfig, AppContext, Backend, BackendResponse, EventLoop};
 
 use crate::{
-    config::WaylandConfig, context::WaylandContext, egl::create_egl_window,
-    registry::create_registry, seat::create_seat, xdg::create_xdg,
+    context::WaylandContext, egl::create_egl_window, registry::create_registry, seat::create_seat,
+    xdg::create_xdg,
 };
 
 pub fn connect(ctx: &mut WaylandContext) {
@@ -18,6 +18,31 @@ pub fn connect(ctx: &mut WaylandContext) {
         }
     }
 }
+
+/// `wl_surface.preferred_buffer_scale`: how many buffer pixels this surface
+/// would like per surface-local pixel.
+///
+/// This is the scale that matters, and the protocol says to prefer it over
+/// `wl_output.scale`: it is a property of *this* surface rather than of the
+/// output, and a compositor is required to keep it current. It is the native
+/// counterpart of the browser reading `devicePixelRatio` once per frame.
+unsafe extern "C" fn surface_handle_preferred_buffer_scale(
+    data: *mut std::ffi::c_void,
+    _surface: *mut wl_surface,
+    factor: std::ffi::c_int,
+) {
+    unsafe {
+        assert!(!data.is_null());
+        let ctx: &mut WaylandContext = &mut *(data as *mut _);
+        ctx.apply_scale(factor as f32, true);
+    }
+}
+
+static SURFACE_LISTENER: wl_surface_listener = {
+    let mut listener = wl_surface_listener::dummy();
+    listener.preferred_buffer_scale = surface_handle_preferred_buffer_scale;
+    listener
+};
 
 pub fn create_surface(ctx: &mut WaylandContext) -> *mut wl_surface {
     unsafe {
@@ -30,6 +55,11 @@ pub fn create_surface(ctx: &mut WaylandContext) -> *mut wl_surface {
         if ctx.wl_surface.is_null() {
             panic!("failed to create wayland surface");
         }
+        (ctx.client.wl_proxy_add_listener)(
+            ctx.wl_surface as _,
+            &raw const SURFACE_LISTENER as *const _ as _,
+            ctx as *mut _ as _,
+        );
         ctx.wl_surface
     }
 }
@@ -52,22 +82,29 @@ impl Backend for BackendWayland {
         mut app_context: AppContext,
         mut event_loop: Box<dyn EventLoop>,
     ) {
-        let config = WaylandConfig {
-            app_id: app.id,
-            window_title: app.title,
-            window_width: app.width,
-            window_height: app.height,
-            fullscreen: false,
-        };
+        // The declared size is a surface-local one, which is what `Screen` holds
+        // and what the compositor's configure will replace. It is set here so
+        // the egl window has something to be created with before that configure
+        // arrives - on a compositor that never sends one, the app would
+        // otherwise have a zero-sized viewport.
+        app_context.screen.width = app.width.max(0) as u32;
+        app_context.screen.height = app.height.max(0) as u32;
         let mut ctx = WaylandContext::new(&mut app_context);
         let app_id = app.id;
         let app_title = app.title;
         connect(&mut ctx);
         create_registry(&mut ctx);
+        // The output's geometry, mode and scale are only delivered to a proxy
+        // created during the registry round trip on the *next* one, so the
+        // scale is still unknown here until this returns.
+        ctx.round_trip();
         create_seat(&mut ctx);
         create_surface(&mut ctx);
+        // Announced before the first commit, so the very buffer the egl window
+        // is sized for is the one the compositor expects to receive.
+        ctx.set_buffer_scale(ctx.app_context.screen.scale);
         create_xdg(&mut ctx, app_id, app_title);
-        create_egl_window(&mut ctx, config.window_width, config.window_height);
+        create_egl_window(&mut ctx);
         event_loop.initialize(ctx.app_context);
         let start = Instant::now();
         ctx.swap_buffers();

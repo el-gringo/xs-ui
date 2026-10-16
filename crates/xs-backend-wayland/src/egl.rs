@@ -89,7 +89,15 @@ pub unsafe fn create_egl_context(
     }
 }
 
-pub fn create_egl_window(ctx: &mut WaylandContext, width: i32, height: i32) {
+/// Creates the egl window, sized in **buffer** pixels.
+///
+/// The size comes from [`WaylandContext::buffer_size`] rather than from the
+/// caller's arguments because that is the one that knows about the output's
+/// scale: `wl_egl_window_create` wants the number of pixels the GPU rasterises
+/// into, not the surface-local size the compositor talks about. The compositor's
+/// own size replaces this as soon as the first `xdg_toplevel.configure` lands.
+pub fn create_egl_window(ctx: &mut WaylandContext) {
+    let (width, height) = ctx.buffer_size();
     unsafe {
         load_gl_funcs(|proc| match std::ffi::CString::new(proc) {
             Ok(name) => (ctx.lib_egl.eglGetProcAddress)(name.as_ptr() as _),

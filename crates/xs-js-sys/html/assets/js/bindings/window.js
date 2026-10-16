@@ -33,6 +33,15 @@ function initializeWindowBindings(app) {
       return performance.now() * 1000;
     },
 
+    // How many device pixels one css pixel is worth. A css size only tells the
+    // browser how big the canvas looks, so this is what the drawing buffer has
+    // to be multiplied by to stay sharp. `|| 1` rather than a plain read: a
+    // browser with no `devicePixelRatio` would otherwise hand back `undefined`,
+    // which arrives in the f32 as NaN.
+    device_pixel_ratio() {
+      return window.devicePixelRatio || 1;
+    },
+
     time(ptr, len) {
       const { utf8 } = app;
       const label = utf8.fromWasm(ptr, len);

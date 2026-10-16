@@ -1,3 +1,11 @@
+/// What the app declares about itself before a backend exists.
+///
+/// `width` and `height` are **logical** pixels - css pixels on the web, surface
+/// coordinates under Wayland - and are the size the layout is built against.
+/// The backend turns them into a drawing buffer by multiplying by the device
+/// pixel ratio it discovers, which lives on [`Screen::scale`] rather than here:
+/// 1920x1080 is a full HD panel at any ratio, and a HiDPI display is not a
+/// different design.
 pub struct AppConfig {
     pub id: &'static str,
     pub title: &'static str,
@@ -10,8 +18,8 @@ impl Default for AppConfig {
         Self {
             id: "app",
             title: "App",
-            width: 1440,
-            height: 810,
+            width: 1920,
+            height: 1080,
         }
     }
 }

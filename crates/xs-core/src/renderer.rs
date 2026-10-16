@@ -42,12 +42,13 @@ pub trait Renderer {
 
     fn build_element_tree(&mut self, app_context: &mut AppContext, root: AnyElement) -> View {
         app_context.nav.update();
+        // Layout runs in device pixels, because a style has already been scaled
+        // into them by the time it gets here - so the root is constrained to the
+        // drawing buffer, not to the logical size the app was declared at.
+        let (width, height) = app_context.screen.framebuffer_size();
         let constraints = BoxConstraints {
             min: Vector2::new(0.0, 0.0),
-            max: Vector2::new(
-                app_context.screen.width as f32,
-                app_context.screen.height as f32,
-            ),
+            max: Vector2::new(width as f32, height as f32),
         };
         let mut stack: VecDeque<StackItem> = Default::default();
         stack.push_front(StackItem {

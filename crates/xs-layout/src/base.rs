@@ -150,6 +150,18 @@ impl EdgeInsets {
         }
     }
 
+    /// Every edge multiplied by `scale`. Insets are lengths, so this is part of
+    /// converting a style from logical pixels to device pixels.
+    #[must_use]
+    pub fn scaled(&self, scale: f32) -> EdgeInsets {
+        EdgeInsets {
+            top: self.top * scale,
+            bottom: self.bottom * scale,
+            left: self.left * scale,
+            right: self.right * scale,
+        }
+    }
+
     #[must_use]
     pub fn total_height(&self) -> f32 {
         self.left + self.right

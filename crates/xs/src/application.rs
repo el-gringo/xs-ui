@@ -149,9 +149,13 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
         }
         ctx.dirty = false;
 
+        // Layout works in device pixels - a style is scaled into them before it
+        // reaches the tree - so the root is constrained to the drawing buffer
+        // rather than to the logical size the app was declared at.
+        let (width, height) = ctx.screen.framebuffer_size();
         let constraints = xs_core::BoxConstraints {
             min: xs_layout::Vector2::new(0.0, 0.0),
-            max: xs_layout::Vector2::new(ctx.screen.width as f32, ctx.screen.height as f32),
+            max: xs_layout::Vector2::new(width as f32, height as f32),
         };
         let mut node_ctx = xs_core::Context::new(
             ctx,
@@ -176,9 +180,7 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
         let build_tree_ms = t1.wrapping_sub(t0).min(u32::MAX / 2);
         #[cfg(target_arch = "wasm32")]
         let t2 = xs_js_sys::performance_now();
-        let layout_tree =
-            self.renderer
-                .layout(&widget_tree, ctx.screen.width as _, ctx.screen.height as _);
+        let layout_tree = self.renderer.layout(&widget_tree, width as _, height as _);
         #[cfg(target_arch = "wasm32")]
         let layout_ms = t2.wrapping_sub(t1).min(u32::MAX / 2);
         #[cfg(target_arch = "wasm32")]
@@ -236,6 +238,13 @@ impl Application {
     {
         let text_system = Box::new(TextSystem::<AtlasAlpha>::new());
         let mut app_context = AppContext::new(text_system);
+        // The declared size is the logical one, and it is known before any
+        // backend has run. Seeding it here means the first frame already has a
+        // viewport on both backends rather than a zero-sized one waiting for a
+        // compositor configure that may never arrive. A backend that knows the
+        // real size, or the device pixel ratio, overwrites it.
+        app_context.screen.width = self.0.width.max(0) as u32;
+        app_context.screen.height = self.0.height.max(0) as u32;
         let renderer = Box::new(xs_renderer::Renderer::new());
         let root = on_initialize(&mut app_context);
         let mut backend = xs_backend::Backend::new();

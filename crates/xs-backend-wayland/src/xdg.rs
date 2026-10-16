@@ -50,11 +50,23 @@ unsafe extern "C" fn xdg_toplevel_handle_configure(
     assert!(!data.is_null());
     unsafe {
         let ctx: &mut WaylandContext = &mut *(data as *mut _);
-        if width != 0 && height != 0 {
-            (ctx.lib_wayland_egl.wl_egl_window_resize)(ctx.egl_window, width, height, 0, 0);
-            ctx.app_context.screen.width = width as _;
-            ctx.app_context.screen.height = height as _;
+        // A zero on either axis means "you choose", not "collapse to nothing",
+        // so the size the app asked for stands rather than the surface going to
+        // a viewport that can never draw.
+        if width <= 0 || height <= 0 {
+            return;
         }
+        // The compositor's numbers are surface-local, which is exactly what
+        // `Screen` holds, so they go in unscaled. `buffer_size` turns them into
+        // the buffer size `wl_egl_window_resize` wants.
+        ctx.app_context.screen.width = width as u32;
+        ctx.app_context.screen.height = height as u32;
+        let (width, height) = ctx.buffer_size();
+        (ctx.lib_wayland_egl.wl_egl_window_resize)(ctx.egl_window, width, height, 0, 0);
+        // A frame is only drawn when something dirties the app, and nothing
+        // else will have: a resize while idle would otherwise leave the old
+        // frame stretched across the new surface until the next keypress.
+        ctx.app_context.dirty = true;
     }
 }
 
