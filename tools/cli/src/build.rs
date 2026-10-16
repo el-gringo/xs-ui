@@ -60,12 +60,26 @@ fn package_dist(options: &Options, package: &str) {
     if let Err(error) = std::fs::create_dir_all(&dist) {
         fail(format!("unable to create {}: {error}", dist.display()));
     }
-    // The assets the page refers to, resolved next to the html file.
-    if let Err(error) = copy_dir(html.directory(), &dist) {
-        fail(format!(
-            "unable to copy the assets of {}: {error}",
-            html.directory().display()
-        ));
+    // The assets the page refers to: the shared `assets` tree, overridden by a
+    // page that ships its own.
+    //
+    // Only the `assets` directory is copied, never the directory the page
+    // happens to live in. That tree is what every xs-ui page refers to and it
+    // is where the binding system's bindings are, but the page's own directory
+    // is arbitrary - a scratch page kept in the project root while debugging
+    // would otherwise have its whole directory, `target/` and all, copied into
+    // the output.
+    //
+    // Least specific first, so the page's own `assets` overwrites the shared one
+    // wherever the two have a file of the same name.
+    for directory in html.asset_directories().into_iter().rev() {
+        let assets = directory.join("assets");
+        if !assets.is_dir() {
+            continue;
+        }
+        if let Err(error) = copy_dir(&assets, &dist.join("assets")) {
+            fail(format!("unable to copy {}: {error}", assets.display()));
+        }
     }
     let page = html.render(WASM_NAME, false);
     if let Err(error) = std::fs::write(dist.join("index.html"), page) {

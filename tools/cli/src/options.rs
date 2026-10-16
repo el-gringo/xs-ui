@@ -1,8 +1,10 @@
 use std::path::PathBuf;
 
 /// The page served when the caller names none: the one the binding system
-/// ships, which any xs-ui project can serve as it is.
-const SHARED_HTML: &str = "crates/xs-js-sys/html/index.html";
+/// ships, which any xs-ui project can serve as it is. Its directory is also
+/// where the `assets` tree every page refers to lives, so it doubles as the
+/// asset fallback - see `Html::asset_directories`.
+pub const SHARED_HTML: &str = "crates/xs-js-sys/html/index.html";
 /// Used when the project has no xs-ui page to share.
 const LOCAL_HTML: &str = "index.html";
 const DEFAULT_HOST: &str = "0.0.0.0";

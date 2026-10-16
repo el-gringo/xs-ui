@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Reads the html file the dev server serves and injects the wasm loader into
 /// it. The file on disk stays free of any xs-ui specific markup, the tool owns
@@ -7,23 +7,42 @@ pub struct Html {
     /// The file as it is on disk, injected into on every request so editing it
     /// is picked up without a restart.
     source: String,
-    /// Directory the html lives in, where its assets are served from.
-    directory: std::path::PathBuf,
+    /// Directory the html lives in, the most specific place to look for its
+    /// assets.
+    directory: PathBuf,
 }
 
 impl Html {
     pub fn read(path: &Path) -> Result<Html, String> {
         let source = std::fs::read_to_string(path)
             .map_err(|error| format!("unable to read {}: {error}", path.display()))?;
-        let directory = path
-            .parent()
-            .map(|parent| parent.to_path_buf())
-            .unwrap_or_else(|| std::path::PathBuf::from("."));
-        Ok(Html { source, directory })
+        Ok(Html {
+            source,
+            directory: directory_of(path),
+        })
     }
 
-    pub fn directory(&self) -> &Path {
-        &self.directory
+    /// Every directory an asset is looked up in, most specific first.
+    ///
+    /// The page's own directory, then the one the binding system ships from.
+    /// The fallback is what makes the html argument mean *which page* rather
+    /// than *where the assets are*: every xs-ui page refers to `assets/js/boot.js`,
+    /// and there is exactly one such tree in a project - the one next to
+    /// `crates/xs-js-sys/html/index.html`. A page kept somewhere else, a
+    /// scratch one in the project root while debugging, says nothing about
+    /// where its assets are, so asking for it 404s unless the shared tree is
+    /// still in the list.
+    ///
+    /// The page's own `assets` wins where the two overlap, which is what lets a
+    /// project override the shipped bindings rather than edit them.
+    pub fn asset_directories(&self) -> Vec<PathBuf> {
+        let mut directories = vec![self.directory.clone()];
+        if let Some(shared) = shared_directory()
+            && shared != self.directory
+        {
+            directories.push(shared);
+        }
+        directories
     }
 
     /// The page with the wasm loader injected. It goes where the
@@ -34,6 +53,32 @@ impl Html {
     pub fn render(&self, wasm_url: &str, dev: bool) -> String {
         let script = loader(wasm_url, dev);
         inject_at(&self.source, &script).unwrap_or_else(|| inject(&self.source, &script))
+    }
+}
+
+/// Where the shipped page keeps its assets, when `xs` is run inside the xs-ui
+/// repository itself.
+///
+/// Derived from the shared page's path rather than spelled out again, so there
+/// is one place that knows where the binding system lives. Outside this
+/// repository the path does not resolve and the list is just the page's own
+/// directory, which is where a project that ships its own assets puts them.
+fn shared_directory() -> Option<PathBuf> {
+    Path::new(crate::options::SHARED_HTML)
+        .parent()
+        .filter(|parent| parent.is_dir())
+        .map(Path::to_path_buf)
+}
+
+/// The directory a page keeps its assets in.
+///
+/// `parent` of a bare filename is an empty path rather than `.`, which `join`
+/// happens to tolerate but which reads like a mistake everywhere it is
+/// printed.
+fn directory_of(path: &Path) -> PathBuf {
+    match path.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent.to_path_buf(),
+        _ => PathBuf::from("."),
     }
 }
 
@@ -244,5 +289,51 @@ mod tests {
         let script = loader("app.wasm", false);
         assert!(script.contains(r#"loadWasm("app.wasm")"#));
         assert!(!script.contains("/ws"));
+    }
+
+    #[test]
+    fn a_bare_filename_means_the_current_directory() {
+        // `parent` of a bare filename is an empty path rather than `.`, and an
+        // empty path is the kind of thing that reads as a mistake wherever it
+        // is printed.
+        assert_eq!(directory_of(Path::new("debug.html")), PathBuf::from("."));
+        assert_eq!(
+            directory_of(Path::new("pages/a.html")),
+            PathBuf::from("pages")
+        );
+    }
+
+    #[test]
+    fn the_page_s_directory_is_searched_before_the_shared_one() {
+        // Paths here are anchored on the repository rather than left relative,
+        // because a test binary runs with the package directory as its working
+        // directory and `../../crates/...` in an assertion is only meaningful on
+        // the machine that wrote it.
+        let Some(shared) = shared_directory().map(|d| canonical(&d)) else {
+            return;
+        };
+        let root = shared
+            .parent()
+            .and_then(Path::parent)
+            .and_then(Path::parent)
+            .expect("crates/xs-js-sys/html is three directories down")
+            .to_path_buf();
+        let html = Html::read(&root.join("debug.html")).unwrap();
+        assert_eq!(html.asset_directories(), vec![root, shared]);
+    }
+
+    #[test]
+    fn the_shipped_page_is_not_also_its_own_fallback() {
+        // The page's directory and the shared one are the same directory here,
+        // and listing it twice would have every asset looked up twice.
+        let Ok(html) = Html::read(&canonical(Path::new(crate::options::SHARED_HTML))) else {
+            return;
+        };
+        let directories = html.asset_directories();
+        assert_eq!(directories.len(), 1, "{directories:?}");
+    }
+
+    fn canonical(path: &Path) -> PathBuf {
+        std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
     }
 }

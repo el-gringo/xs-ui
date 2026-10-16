@@ -25,12 +25,19 @@ type Clients = Arc<Mutex<Vec<TcpStream>>>;
 pub fn run(options: &Options) {
     let package = crate::resolve_package(options);
     let metadata = crate::cargo_metadata::get_config();
-    if let Err(error) = Html::read(&options.html) {
-        eprintln!("error: {error}");
-        std::process::exit(1);
-    }
+    // Read once here for the asset directories and for the sake of failing
+    // before the port is bound. The page's contents are read again on every
+    // request; where it lives is fixed for the life of the server.
+    let html = match Html::read(&options.html) {
+        Ok(html) => html,
+        Err(error) => {
+            eprintln!("error: {error}");
+            std::process::exit(1);
+        }
+    };
     let site = Arc::new(Site {
         html: options.html.clone(),
+        assets: html.asset_directories(),
         wasm_name: WASM_NAME.to_string(),
         wasm_path: options.wasm_path(&metadata.target_directory),
         dev: !options.release,
