@@ -50,21 +50,19 @@ fn visit_function_argument(iter: &mut IntoIter) -> Result<Prop, ()> {
             TokenTree::Ident(ident) => {
                 name = Some(ident);
             }
-            TokenTree::Punct(punct) => {
-                if punct.as_char() == ':' {
-                    let mut stream: Vec<TokenTree> = Vec::new();
-                    while let Some(token) = iter.next() {
-                        if let TokenTree::Punct(punct) = &token
-                            && punct.as_char() == ','
-                        {
-                            break;
-                        } else {
-                            stream.push(token);
-                        }
+            TokenTree::Punct(punct) if punct.as_char() == ':' => {
+                let mut stream: Vec<TokenTree> = Vec::new();
+                for token in iter.by_ref() {
+                    if let TokenTree::Punct(punct) = &token
+                        && punct.as_char() == ','
+                    {
+                        break;
+                    } else {
+                        stream.push(token);
                     }
-                    ty.extend(stream);
-                    break;
                 }
+                ty.extend(stream);
+                break;
             }
             _ => {}
         }
@@ -77,46 +75,43 @@ fn visit_function_argument(iter: &mut IntoIter) -> Result<Prop, ()> {
 
 fn visit_function_arguments(iter: &mut IntoIter) -> Vec<Prop> {
     let mut props: Vec<Prop> = Vec::new();
-    if let Some(token) = iter.next() {
-        if let TokenTree::Group(group) = token {
-            let mut iter = group.stream().into_iter();
-            while let Ok(prop) = visit_function_argument(&mut iter) {
-                props.push(prop);
-            }
-            return props;
+    if let Some(token) = iter.next()
+        && let TokenTree::Group(group) = token
+    {
+        let mut iter = group.stream().into_iter();
+        while let Ok(prop) = visit_function_argument(&mut iter) {
+            props.push(prop);
         }
+        return props;
     }
     if let Some(_token) = iter.next() {
         // return value
     }
-    return props;
+    props
 }
 
 fn visit_function_return_type(iter: &mut IntoIter) -> (TokenStream, TokenStream) {
     let mut is_return = false;
     let mut stream = TokenStream::new();
     while let Some(token) = iter.next() {
-        match token {
-            TokenTree::Punct(punct) => {
-                if is_return && punct.as_char() == '>' {
-                    while let Some(token) = iter.next() {
-                        match token {
-                            TokenTree::Group(group) => {
-                                if group.delimiter() == Delimiter::Brace {
-                                    return (group.stream(), stream);
-                                }
-                            },
-                            _ => {
-                                stream.extend(vec![token]);
+        if let TokenTree::Punct(punct) = token {
+            if is_return && punct.as_char() == '>' {
+                for token in iter.by_ref() {
+                    match token {
+                        TokenTree::Group(group) => {
+                            if group.delimiter() == Delimiter::Brace {
+                                return (group.stream(), stream);
                             }
+                        },
+                        _ => {
+                            stream.extend(vec![token]);
                         }
                     }
                 }
-                if punct.as_char() == '-' {
-                    is_return = true;
-                }
-            },
-            _ => {}
+            }
+            if punct.as_char() == '-' {
+                is_return = true;
+            }
         }
     }
     (TokenStream::new(), TokenStream::new())

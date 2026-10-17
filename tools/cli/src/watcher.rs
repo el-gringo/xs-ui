@@ -5,49 +5,22 @@ use crate::options::Options;
 
 use nanoserde::DeJson;
 
-#[derive(Debug, DeJson)]
+#[derive(Debug, Default, DeJson)]
 struct CargoBuildMessageSpan {
     file_name: String,
 }
 
-impl Default for CargoBuildMessageSpan {
-    fn default() -> Self {
-        Self {
-            file_name: String::new(),
-        }
-    }
-}
-
-#[derive(Debug, DeJson)]
+#[derive(Debug, Default, DeJson)]
 struct CargoBuildMessage {
     rendered: String,
     spans: Vec<CargoBuildMessageSpan>,
 }
 
-impl Default for CargoBuildMessage {
-    fn default() -> Self {
-        Self {
-            rendered: String::new(),
-            spans: Vec::new(),
-        }
-    }
-}
-
-#[derive(Debug, DeJson)]
+#[derive(Debug, Default, DeJson)]
 struct CargoBuildOutput {
     reason: String,
     executable: Option<String>,
     message: Option<CargoBuildMessage>,
-}
-
-impl Default for CargoBuildOutput {
-    fn default() -> Self {
-        Self {
-            reason: String::new(),
-            executable: None,
-            message: None,
-        }
-    }
 }
 
 /// What the browser is told when the app is rebuilt: the url to load, with a
@@ -131,10 +104,10 @@ fn build(
                 }
             }
             "compiler-message" => {
-                if let Some(message) = output.message {
-                    if let Some(span) = message.spans.first() {
-                        println!("{}: {}", span.file_name, message.rendered);
-                    }
+                if let Some(message) = output.message
+                    && let Some(span) = message.spans.first()
+                {
+                    println!("{}: {}", span.file_name, message.rendered);
                 };
             }
             _ => {}

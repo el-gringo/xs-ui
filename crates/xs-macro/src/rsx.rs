@@ -67,7 +67,7 @@ impl Node {
         props_body.extend(vec![ Group::new(Delimiter::Bracket, children_body) ]);
         render_body.extend(vec![ Group::new(Delimiter::Brace, props_body) ]);
         output.extend(vec![ Group::new(Delimiter::Parenthesis, render_body) ]);
-        println!("output: {}", output.to_string());
+        println!("output: {output}");
         output
     }
 }
@@ -116,7 +116,7 @@ fn visit_tag(iter: &mut IntoIter) -> Result<Node, &'static str> {
 
 fn visit_attibute(iter: &mut IntoIter) -> Option<(Ident, TokenStream)> {
     let mut name: Option<Ident> = None;
-    while let Some(token) = iter.next() {
+    for token in iter.by_ref() {
         match token {
             TokenTree::Ident(ident) => {
                 name = Some(ident);

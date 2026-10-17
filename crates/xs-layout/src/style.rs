@@ -101,8 +101,20 @@ impl TextProperties {
     /// browser. The family, weight and style are not lengths and stay put.
     #[must_use]
     pub fn scaled(&self, scale: f32) -> TextProperties {
+        // `max(1.0)` keeps a scaled-down or degenerate ratio from reaching a
+        // zero line height, and `min` brings the result inside what a `u16`
+        // holds. Together they leave the cast nothing to truncate and nothing
+        // to lose the sign of, which is what it cannot see for itself: std has
+        // no `TryFrom<f32>` for an integer, so the bounds are the statement of
+        // intent. `max` first also means a NaN scale cannot reach the cast -
+        // `f32::max` returns the other operand - and so cannot become a 0.
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let font_size = (f32::from(self.font_size) * scale)
+            .round()
+            .max(1.0)
+            .min(f32::from(u16::MAX)) as u16;
         TextProperties {
-            font_size: (self.font_size as f32 * scale).round().max(1.0) as u16,
+            font_size,
             ..self.clone()
         }
     }
