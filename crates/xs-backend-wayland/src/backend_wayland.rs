@@ -94,11 +94,21 @@ impl Backend for BackendWayland {
         let app_title = app.title;
         connect(&mut ctx);
         create_registry(&mut ctx);
-        // The output's geometry, mode and scale are only delivered to a proxy
-        // created during the registry round trip on the *next* one, so the
-        // scale is still unknown here until this returns.
-        ctx.round_trip();
+        // The listener has to be attached *before* anything dispatches, and
+        // this is the first call that would: the compositor sends
+        // `wl_seat.capabilities` as soon as the seat is bound inside
+        // `create_registry`'s round trip, so the event is already queued. A
+        // round trip here would consume it with no listener on the proxy, which
+        // discards it - and the compositor only resends `capabilities` when the
+        // set changes, so `wl_keyboard` would never be created and no key
+        // would ever reach the app.
         create_seat(&mut ctx);
+        // Safe to dispatch now that both listeners are in place. The output's
+        // geometry, mode and scale are only delivered to a proxy created
+        // during the registry round trip on the *next* one, so the scale is
+        // still unknown until this returns - and it is read two lines down, to
+        // size the egl window.
+        ctx.round_trip();
         create_surface(&mut ctx);
         // Announced before the first commit, so the very buffer the egl window
         // is sized for is the one the compositor expects to receive.
