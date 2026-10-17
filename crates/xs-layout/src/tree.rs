@@ -7,6 +7,7 @@ use crate::AlignItems;
 use crate::Background;
 use crate::StylePosition;
 use crate::base::EdgeInsets;
+use crate::mesh_cache::MeshCache;
 use crate::decoration::Material;
 use crate::{FILL_VERTEX_FLOATS, STROKE_VERTEX_FLOATS};
 
@@ -174,6 +175,17 @@ impl LayoutBox {
 pub struct LayoutTree {
     pub root: Option<LayoutBoxId>,
     pub boxes: Vec<LayoutBox>,
+    /// The meshes this pass may reuse.
+    ///
+    /// Held rather than referenced because layout is handed the tree and nothing
+    /// else: a node that builds geometry - a `Vector` - has no other route to the
+    /// app it is being laid out for, and a cache that could not be reached from
+    /// here would be a cache that never survives a frame.
+    ///
+    /// Shared with the [`AppContext`](xs_core::AppContext) that owns it, which is
+    /// what makes a hit on the second frame rather than on the second node. A tree
+    /// built by hand gets a cache of its own, so it never sees anyone else's.
+    meshes: Rc<MeshCache>,
 }
 
 impl LayoutTree {
@@ -183,7 +195,23 @@ impl LayoutTree {
         LayoutTree {
             root: None,
             boxes: vec![],
+            meshes: Rc::new(MeshCache::new()),
         }
+    }
+
+    /// The same tree, sharing the mesh cache of the app it is being laid out for.
+    #[must_use]
+    pub fn with_meshes(meshes: Rc<MeshCache>) -> LayoutTree {
+        LayoutTree {
+            meshes,
+            ..LayoutTree::new()
+        }
+    }
+
+    /// The mesh cache for this pass. See the field of the same name.
+    #[must_use]
+    pub fn meshes(&self) -> &MeshCache {
+        &self.meshes
     }
 
     /// Set the root of the tree. This assumes that the `LayoutBoxId` provided

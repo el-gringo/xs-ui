@@ -180,7 +180,9 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
         let build_tree_ms = t1.wrapping_sub(t0).min(u32::MAX / 2);
         #[cfg(target_arch = "wasm32")]
         let t2 = xs_js_sys::performance_now();
-        let layout_tree = self.renderer.layout(&widget_tree, width as _, height as _);
+        let layout_tree =
+            self.renderer
+                .layout(ctx, &widget_tree, width as _, height as _);
         #[cfg(target_arch = "wasm32")]
         let layout_ms = t2.wrapping_sub(t1).min(u32::MAX / 2);
         #[cfg(target_arch = "wasm32")]

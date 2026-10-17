@@ -1,9 +1,10 @@
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
+    rc::Rc,
 };
 
-use xs_layout::{Image, TextProperties};
+use xs_layout::{Image, MeshCache, TextProperties};
 use xs_platform_event::KeyEvent;
 
 use crate::{
@@ -96,6 +97,16 @@ pub struct AppContext {
     pub requests: HashMap<(String, String), Option<String>>,
     pub messages: Vec<BackendRequest>,
     pub dirty: bool,
+    /// Meshes reused between frames, by whatever built them.
+    ///
+    /// Owned here because this is the one object that outlives a frame: the
+    /// element tree is rebuilt from scratch every time, so a cache held by a node
+    /// would be a new cache every frame and would never hit.
+    ///
+    /// Type-erased keys and a linear scan over a handful of entries - see
+    /// [`MeshCache`]. Not shared between threads, and not shared between two apps:
+    /// two apps in one process get two of these.
+    pub meshes: Rc<MeshCache>,
 }
 
 impl Default for AppContext {
@@ -109,6 +120,7 @@ impl Default for AppContext {
             nav: FocusManager::new(),
             current_node_id: (TypeId::of::<Self>(), 0, 0),
             current_nav_node_id: 0,
+            meshes: Rc::new(MeshCache::new()),
             nodes: Default::default(),
             states: Default::default(),
             text_system: Box::new(TextSystemDummy::default()),

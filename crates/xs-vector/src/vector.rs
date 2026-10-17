@@ -31,7 +31,8 @@ use xs_layout::{
 };
 use xs_math::{Matrix3, Vector2};
 
-use crate::mesh::{MeshBuilder, Shape};
+use crate::build::{MeshKey, build_mesh};
+use crate::mesh::Shape;
 use crate::path::Path;
 
 /// A node that draws paths.
@@ -143,7 +144,8 @@ impl Vector {
     /// authored coordinates is part of the artwork, so an icon on a 24 unit grid
     /// keeps its margin instead of being scaled until its ink touches the edge.
     ///
-    /// Shapes outside the view box are still drawn; see [`view_box_fit`].
+    /// Shapes outside the view box are still drawn, where SVG would clip them to
+    /// the viewport: there is no viewport clip here.
     #[must_use]
     pub fn view_box(mut self, origin: Vector2, width: f32, height: f32) -> Self {
         self.view_box = Some(Rectangle::new(origin.x, origin.y, width, height));
@@ -321,83 +323,26 @@ impl Vector {
         self
     }
 
-    /// Builds the geometry for a box of `size`, in the node's own pixels.
+    /// Builds the geometry for a box of `size`, in the node's own pixels, without
+    /// consulting the cache.
     ///
-    /// Public because it is the only piece of this that has real logic, and
-    /// because a test that wants to know what a node will emit has no other way to
-    /// ask.
+    /// This is what [`Vector::layout`] builds through the cache; this is the same
+    /// call for a caller that wants the mesh without running a layout pass, which
+    /// is a test, or anything measuring what a node would emit.
     #[must_use]
-    pub fn geometry(&self, size: Vector2) -> VectorGeometry {
-        let mut builder = MeshBuilder::new();
-        if let Some(tolerance) = self.tolerance {
-            builder = builder.tolerance(tolerance);
-        }
-        let mut scaled: Vec<Shape> = Vec::with_capacity(self.shapes.len());
-        for shape in &self.shapes {
-            scaled.push(match &self.view_box {
-                Some(view) => {
-                    let Some(fit) = view_box_fit(view, size) else {
-                        continue;
-                    };
-                    Shape {
-                        // `p * scale + offset`, in that order. Mapping about the
-                        // *view box's* corner rather than the shape's own centre is
-                        // the whole point of a view box: the padding baked into
-                        // authored coordinates is part of the artwork, so an icon
-                        // drawn on a 24 unit grid keeps its 2 unit margin instead of
-                        // being scaled up to fill its box edge to edge.
-                        path: shape.path.scaled(fit.scale).translated(fit.offset),
-                        ..shape.clone()
-                    }
-                }
-                None => shape.clone(),
-            });
-        }
-        builder.shapes(&scaled);
-        builder.build()
+    pub fn mesh(&self, size: Vector2) -> Rc<VectorGeometry> {
+        build_mesh(&self.shapes, self.view_box, self.tolerance, size)
     }
-}
 
-/// Where a shape's centre goes and how much it is scaled by, to fit `box_rect`.
-/// How a view box of authored coordinates covers a node box of local pixels.
-struct ViewBoxFit {
-    /// How much a view box unit is worth in local pixels.
-    scale: f32,
-    /// Applied after the scale: it lands the view box's own top-left corner, so
-    /// that `scale * view.min + offset` is the top-left of the node box.
-    offset: Vector2,
-}
-
-/// Maps the `view_box` region onto `box_size`, SVG's `viewBox` with the default
-/// `preserveAspectRatio="xMidYMid meet"`.
-///
-/// The scale comes from the *view box*, not from the shape: that is the whole
-/// difference between a view box and scaling artwork to fit. An icon authored on a
-/// 24 unit grid with a 2 unit margin keeps that margin when drawn at 96px, whereas
-/// fitting its own bounds would zoom to the ink and eat it. Nothing is distorted,
-/// because the smaller ratio wins, and the scaled view box is centred in the node
-/// box - which leaves bars on the other axis, as SVG does.
-///
-/// A view box with no extent, or a node box with no extent, has no meaningful
-/// scale and yields nothing. Note that shapes *outside* the view box are still
-/// drawn, where SVG would clip them to the viewport: this framework has no
-/// viewport clip of its own, and inventing one here would hide artwork rather than
-/// misplace it.
-fn view_box_fit(view: &Rectangle, box_size: Vector2) -> Option<ViewBoxFit> {
-    if view.width <= 0.0 || view.height <= 0.0 || box_size.x <= 0.0 || box_size.y <= 0.0 {
-        return None;
+    /// The key this node's mesh is cached under.
+    fn mesh_key(&self, size: Vector2) -> MeshKey {
+        MeshKey {
+            shapes: self.shapes.clone(),
+            view_box: self.view_box,
+            tolerance: self.tolerance,
+            size,
+        }
     }
-    let scale = (box_size.x / view.width).min(box_size.y / view.height);
-    // Centre the scaled view box, then back the view box's own origin out of the
-    // translation so that `p * scale + offset` maps its min corner, not (0, 0).
-    let centred = Vector2::new(
-        (box_size.x - view.width * scale) * 0.5,
-        (box_size.y - view.height * scale) * 0.5,
-    );
-    Some(ViewBoxFit {
-        scale,
-        offset: centred - Vector2::new(view.x, view.y) * scale,
-    })
 }
 
 impl IntoElement for Vector {
@@ -555,10 +500,20 @@ impl Layout for VectorView {
     }
 
     fn layout(&self, tree: &mut LayoutTree, constraints: &BoxConstraints) -> SizedLayoutBox {
-        let geometry = self.vector.geometry(Vector2::new(
+        let size = Vector2::new(
             self.style.width.unwrap_or(constraints.max.x),
             self.style.height.unwrap_or(constraints.max.y),
-        ));
+        );
+        let geometry =
+            tree.meshes()
+                .get_or_build(self.vector.mesh_key(size), || {
+                    build_mesh(
+                        &self.vector.shapes,
+                        self.vector.view_box,
+                        self.vector.tolerance,
+                        size,
+                    )
+                });
 
         let mut width = self.style.width.unwrap_or(constraints.max.x);
         let mut height = self.style.height.unwrap_or(constraints.max.y);
@@ -578,7 +533,7 @@ impl Layout for VectorView {
             children: Vec::new(),
             // `then_some` gives `Some` when its condition holds, and the condition
             // here is that there is something to draw.
-            material: (!geometry.is_empty()).then_some(Material::Vector(Rc::new(geometry))),
+            material: (!geometry.is_empty()).then_some(Material::Vector(geometry)),
             // The identity, deliberately: `transform()` above already handed the
             // transform to the parent, which applies it to this very box.
             transform: Matrix3::identity(),
@@ -782,7 +737,7 @@ mod tests {
                 // 100 units of ink centred in a 200 unit view box: half of it is
                 // margin, and that margin is the thing being tested.
                 .shape(shape::rect(50.0, 50.0, 100.0, 100.0).fill(Color::RED))
-                .geometry(Vector2::new(200.0, 200.0))
+                .mesh(Vector2::new(200.0, 200.0))
                 .bounds
         };
         // A 200 unit view box in a 200px box is 1:1, so the ink lands where it was
@@ -804,7 +759,7 @@ mod tests {
             .view_box(Vector2::new(20.0, 30.0), 10.0, 10.0)
             // Exactly fills the view box, so it lands exactly on the node's box.
             .shape(shape::rect(20.0, 30.0, 10.0, 10.0).fill(Color::RED))
-            .geometry(Vector2::new(100.0, 100.0))
+            .mesh(Vector2::new(100.0, 100.0))
             .bounds;
         // The min corner lands on the box's min corner and the shape fills it.
         assert_eq!(bounds, Rectangle::new(0.0, 0.0, 100.0, 100.0));
@@ -817,7 +772,7 @@ mod tests {
             .height(0.0)
             .view_box(Vector2::zero(), 0.0, 0.0)
             .shape(shape::rect(0.0, 0.0, 10.0, 10.0).fill(Color::RED));
-        let geometry = vector.geometry(Vector2::zero());
+        let geometry = vector.mesh(Vector2::zero());
         assert!(geometry.is_empty() || geometry.bounds.width.is_finite());
     }
 
@@ -828,7 +783,7 @@ mod tests {
             .height(100.0)
             .view_box(Vector2::zero(), 0.0, 0.0)
             .shape(Shape::new(Path::new()).fill(Color::RED));
-        assert!(vector.geometry(Vector2::new(100.0, 100.0)).is_empty());
+        assert!(vector.mesh(Vector2::new(100.0, 100.0)).is_empty());
     }
 
     /// Scaling to the display happens once, in `post_render`, alongside the style.

@@ -61,7 +61,7 @@ fn the_view_box_is_what_scales_the_icon_at_draw_time() {
     let vector = parse_vector(ICON).expect("the icon parses");
     // 96px is four times the 24 unit view box, so the geometry the node uploads
     // is in its own pixels rather than in the document's units.
-    let geometry = vector.geometry(Vector2::new(96.0, 96.0));
+    let geometry = vector.mesh(Vector2::new(96.0, 96.0));
     assert!(
         geometry.stroke_vertices.len() >= STROKE_VERTEX_FLOATS,
         "there is a stroke to draw"

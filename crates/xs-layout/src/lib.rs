@@ -32,6 +32,9 @@ pub use style::*;
 mod text;
 pub use text::*;
 
+mod mesh_cache;
+pub use mesh_cache::*;
+
 mod vector;
 pub use vector::*;
 

@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::rc::Rc;
 
 use xs_layout::{BoxConstraints, Color, ImageFormat, LayoutBox, LayoutTree, TextProperties, View};
 use xs_math::Vector2;
@@ -121,8 +122,17 @@ pub trait Renderer {
         view_map[0].clone().unwrap()
     }
 
-    fn layout(&mut self, widget_tree: &View, width: f32, height: f32) -> LayoutTree {
-        let mut tree = LayoutTree::new();
+    /// `ctx` is here for the mesh cache and nothing else: a node that builds
+    /// geometry during layout has no other route to the app, and without it a
+    /// cache could not outlive the frame that filled it.
+    fn layout(
+        &mut self,
+        ctx: &AppContext,
+        widget_tree: &View,
+        width: f32,
+        height: f32,
+    ) -> LayoutTree {
+        let mut tree = LayoutTree::with_meshes(Rc::clone(&ctx.meshes));
         let constraints = BoxConstraints {
             min: Vector2::new(0.0, 0.0),
             max: Vector2::new(width, height),

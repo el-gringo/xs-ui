@@ -4,6 +4,7 @@ pub use vector::*;
 pub mod cpu_stroke;
 
 mod mesh;
+mod build;
 pub use mesh::*;
 
 mod path;
