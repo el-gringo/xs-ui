@@ -17,6 +17,68 @@ use crate::flatten::{Contour, DEFAULT_TOLERANCE, flatten};
 use crate::path::Path;
 use crate::stroke::{Stroke, emit_stroke};
 
+/// A linear gradient across a shape's own bounds.
+///
+/// The same two colours and one angle a `Div`'s `Background::Gradient` carries,
+/// and the same formula the quad shader runs - which is what makes a gradient in
+/// a shape and a gradient on a box the same gradient rather than two features
+/// that look nearly alike.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct LinearGradient {
+    pub start: Color,
+    pub end: Color,
+    /// The direction, in radians, in this crate's y-down space, so a quarter turn
+    /// runs down the screen.
+    pub angle: f32,
+}
+
+impl LinearGradient {
+    #[must_use]
+    pub fn new(start: Color, end: Color, angle: f32) -> Self {
+        Self { start, end, angle }
+    }
+
+    /// How far along the gradient `point` is, from 0 to 1.
+    ///
+    /// The projection of the box's four corners onto the direction, exactly as
+    /// `quad.glsl.frag` does it, so the two agree at the corners - which is the
+    /// only place a difference would be visible.
+    #[must_use]
+    pub fn factor(&self, point: Vector2, bounds: Rectangle) -> f32 {
+        let (sin, cos) = self.angle.sin_cos();
+        let along = |p: Vector2| p.x * cos + p.y * sin;
+        let corners = [
+            along(Vector2::new(bounds.x, bounds.y)),
+            along(Vector2::new(bounds.x + bounds.width, bounds.y)),
+            along(Vector2::new(bounds.x, bounds.y + bounds.height)),
+            along(Vector2::new(
+                bounds.x + bounds.width,
+                bounds.y + bounds.height,
+            )),
+        ];
+        let min = corners.iter().copied().fold(f32::INFINITY, f32::min);
+        let max = corners.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+        // A box with no extent along the direction has no gradient to run; the
+        // start colour is the whole of it.
+        if (max - min).abs() < f32::EPSILON {
+            return 0.0;
+        }
+        ((along(point) - min) / (max - min)).clamp(0.0, 1.0)
+    }
+
+    /// The colour at `factor` along it.
+    #[must_use]
+    pub fn at(&self, factor: f32) -> Color {
+        let t = factor.clamp(0.0, 1.0);
+        Color::rgba(
+            self.start.r + (self.end.r - self.start.r) * t,
+            self.start.g + (self.end.g - self.start.g) * t,
+            self.start.b + (self.end.b - self.start.b) * t,
+            self.start.a + (self.end.a - self.start.a) * t,
+        )
+    }
+}
+
 /// How a shape paints itself.
 ///
 /// A shape with neither paints nothing, which is a legitimate thing to ask for
@@ -24,12 +86,21 @@ use crate::stroke::{Stroke, emit_stroke};
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Fill {
     pub color: Color,
+    /// When set, `color` is only where the gradient starts: each vertex is
+    /// painted with its own colour along it, and the GPU's interpolation across
+    /// the triangle does the rest. There is no gradient in the shader because
+    /// there does not need to be - a colour that is linear in position is what a
+    /// varying already is.
+    pub gradient: Option<LinearGradient>,
 }
 
 impl Fill {
     #[must_use]
     pub fn new(color: Color) -> Self {
-        Self { color }
+        Self {
+            color,
+            gradient: None,
+        }
     }
 
     #[must_use]
@@ -146,11 +217,23 @@ impl MeshBuilder {
         }
         if let Some(fill) = fill {
             let triangles = triangulate(&self.scratch);
-            let color: [f32; 4] = fill.color.into();
+            // The bounds the gradient runs across, which is the geometry being
+            // filled rather than the whole node: that is what
+            // `gradientUnits="objectBoundingBox"` means, and it is what makes the
+            // same gradient look the same on a shape as on a box.
+            let bounds = contours_bounds(&self.scratch);
+            let flat: [f32; 4] = fill.color.into();
             for vertex in triangles {
+                let colour = match &fill.gradient {
+                    Some(gradient) => {
+                        let mixed: [f32; 4] = gradient.at(gradient.factor(vertex, bounds)).into();
+                        mixed
+                    }
+                    None => flat,
+                };
                 self.geometry.fill_vertices.push(vertex.x);
                 self.geometry.fill_vertices.push(vertex.y);
-                self.geometry.fill_vertices.extend_from_slice(&color);
+                self.geometry.fill_vertices.extend_from_slice(&colour);
             }
         }
         self
@@ -208,11 +291,93 @@ impl MeshBuilder {
     }
 }
 
+/// The box that contains every contour, which is what a gradient runs across.
+fn contours_bounds(contours: &[Contour]) -> Rectangle {
+    contours
+        .iter()
+        .flat_map(|contour| contour.points.iter())
+        .fold(None, |bounds: Option<Rectangle>, p| {
+            Some(match bounds {
+                None => Rectangle::new(p.x, p.y, 0.0, 0.0),
+                Some(b) => {
+                    let (min_x, max_x) = (b.x.min(p.x), (b.x + b.width).max(p.x));
+                    let (min_y, max_y) = (b.y.min(p.y), (b.y + b.height).max(p.y));
+                    Rectangle::new(min_x, min_y, max_x - min_x, max_y - min_y)
+                }
+            })
+        })
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::shape;
     use xs_layout::Color;
+
+    /// A gradient is a colour that is linear in position, and a fill's vertices
+    /// are already coloured one by one - so this checks that the corners come out
+    /// as the ramp's two ends.
+    #[test]
+    fn a_gradient_is_painted_into_the_vertices() {
+        let box_path = || {
+            Path::build(|p| {
+                p.move_to(0., 0.)
+                    .line_to(100., 0.)
+                    .line_to(100., 50.)
+                    .line_to(0., 50.);
+            })
+        };
+        let gradient = Shape {
+            path: box_path(),
+            fill: Some(Fill {
+                color: Color::RED,
+                gradient: Some(LinearGradient::new(Color::RED, Color::BLUE, 0.0)),
+            }),
+            ..Shape::default()
+        };
+        let mut builder = MeshBuilder::new();
+        builder.shape(&gradient);
+        let geometry = builder.build();
+
+        let colours: Vec<Color> = geometry
+            .fill_vertices
+            .chunks(FILL_VERTEX_FLOATS)
+            .map(|v| Color::rgba(v[2], v[3], v[4], v[5]))
+            .collect();
+        assert!(colours.contains(&Color::RED), "the start of the ramp");
+        assert!(colours.contains(&Color::BLUE), "the end of the ramp");
+
+        // A flat fill is still flat: the gradient is what varies the vertices.
+        let flat = Shape {
+            path: box_path(),
+            fill: Some(Fill::new(Color::GREEN)),
+            ..Shape::default()
+        };
+        let mut builder = MeshBuilder::new();
+        builder.shape(&flat);
+        let geometry = builder.build();
+        assert!(
+            geometry
+                .fill_vertices
+                .chunks(FILL_VERTEX_FLOATS)
+                .all(|v| v[2..5] == [0.0, 1.0, 0.0]),
+            "every vertex carries the one colour"
+        );
+    }
+
+    /// The corners are where a gradient and the quad shader have to agree, since
+    /// that is the only place the difference between the two formulas shows.
+    #[test]
+    fn a_gradient_factor_matches_the_shader_s_formula() {
+        let gradient = LinearGradient::new(Color::WHITE, Color::BLACK, 0.7);
+        let bounds = Rectangle::new(10., 20., 100., 50.);
+        assert_eq!(gradient.factor(Vector2::new(10., 20.), bounds), 0.0);
+        assert_eq!(gradient.factor(Vector2::new(110., 70.), bounds), 1.0);
+        // Halfway along the direction is halfway, wherever that lands.
+        let middle = gradient.factor(Vector2::new(60., 45.), bounds);
+        assert!((middle - 0.5).abs() < 1e-5, "halfway is {middle}");
+    }
 
     fn bounds_of(geometry: &VectorGeometry) -> Rectangle {
         geometry.bounds
@@ -227,7 +392,9 @@ mod tests {
         let mut builder = MeshBuilder::new();
         builder.shape(
             &Shape::new(Path::build(|path| {
-                path.move_to(0.0, 0.0).line_to(10.0, 0.0).line_to(10.0, 10.0);
+                path.move_to(0.0, 0.0)
+                    .line_to(10.0, 0.0)
+                    .line_to(10.0, 10.0);
             }))
             .fill(Color::RED),
         );

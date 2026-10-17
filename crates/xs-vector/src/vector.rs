@@ -768,7 +768,6 @@ mod tests {
 
     /// The view box is SVG's, and the scale has to be the smaller ratio or the
     /// shape is distorted.
-    #[test]
     /// The scale comes from the view box, not from the shape: the old
     /// implementation divided the node's size by the shape's own extent and read
     /// nothing at all out of `view_box`'s width and height, so all three of these
@@ -811,6 +810,7 @@ mod tests {
         assert_eq!(bounds, Rectangle::new(0.0, 0.0, 100.0, 100.0));
     }
 
+    #[test]
     fn a_degenerate_view_box_produces_nothing_rather_than_nonsense() {
         let vector = vector()
             .width(0.0)

@@ -58,8 +58,17 @@ pub fn triangulate(contours: &[Contour]) -> Vec<Vector2> {
     }
     let nesting = classify(&rings);
     orient(&mut rings, &nesting);
-    let bridged = bridge_holes(rings, &nesting);
-    clip(bridged)
+    // One polygon per ring, and each one clipped on its own: a hole is folded
+    // into its container by `bridge_holes`, but two *separate* contours have
+    // nothing to do with each other and concatenating them into one list hands
+    // the clipper a polygon whose edges run from one to the other. The triangles
+    // that come out span the gap between them - a sliver across the white space
+    // between two letters, or a notch where a bridge's doubled edge was expected
+    // to cancel.
+    bridge_holes(rings, &nesting)
+        .into_iter()
+        .flat_map(clip)
+        .collect()
 }
 
 /// Which ring is inside which, and how deep.
@@ -364,9 +373,12 @@ fn clip(points: Vec<Vector2>) -> Vec<Vector2> {
 /// and it is why the seam has no area and so paints nothing. It also works only
 /// because `orient` has already wound the hole opposite its container: that is
 /// what turns the spliced loop into a notch.
-fn bridge_holes(rings: Vec<Ring>, nesting: &Nesting) -> Vec<Vector2> {
+fn bridge_holes(rings: Vec<Ring>, nesting: &Nesting) -> Vec<Vec<Vector2>> {
     if rings.len() < 2 {
-        return rings.into_iter().next().map_or_else(Vec::new, |r| r.points);
+        return rings
+            .into_iter()
+            .next()
+            .map_or_else(Vec::new, |r| vec![r.points]);
     }
 
     let mut holes_of: Vec<Vec<usize>> = vec![Vec::new(); rings.len()];
@@ -401,16 +413,16 @@ fn bridge_holes(rings: Vec<Ring>, nesting: &Nesting) -> Vec<Vector2> {
         merged_in[nested] = true;
     }
 
-    let mut points = Vec::new();
+    let mut polygons = Vec::new();
     for (index, ring) in merged.into_iter().enumerate() {
         // A ring that was never spliced stands alone. One that *was* spliced is
-        // already part of its parent's list, and appending it again would paint it
+        // already part of its parent's list, and emitting it again would paint it
         // twice.
         if !merged_in[index] && ring.len() >= 3 {
-            points.extend(ring);
+            polygons.push(ring);
         }
     }
-    points
+    polygons
 }
 
 /// Splices `hole` into `container`, which it is known to sit inside.
@@ -504,6 +516,50 @@ mod tests {
         Contour {
             points: points.iter().map(|(x, y)| v(*x, *y)).collect(),
             closed: true,
+        }
+    }
+
+    /// Every triangle has to stay inside the ring it came from.
+    ///
+    /// This is the regression test for two *separate* contours in one shape being
+    /// clipped as one polygon: the triangles that came out spanned the white
+    /// space between them, which showed up as a hairline across the gap between
+    /// two letters of an SVG wordmark.
+    #[test]
+    fn separate_contours_are_clipped_separately() {
+        let left = ring(&[(0., 0.), (10., 0.), (10., 10.), (0., 10.)]);
+        let right = ring(&[(100., 0.), (110., 0.), (110., 10.), (100., 10.)]);
+        let triangles = triangulate(&[left, right]);
+
+        assert_eq!(triangles.len(), 12, "two squares, six vertices each");
+        for triangle in triangles.chunks(3) {
+            let inside = |p: Vector2| {
+                (0. ..=10.).contains(&p.x) && (0. ..=10.).contains(&p.y)
+                    || (100. ..=110.).contains(&p.x) && (0. ..=10.).contains(&p.y)
+            };
+            assert!(
+                triangle.iter().all(|p| inside(*p)),
+                "a triangle crossed the gap between the contours: {triangle:?}"
+            );
+        }
+    }
+
+    /// A hole is still cut, which is the other half of the same code path: the
+    /// bridge that cuts it must not spill outside the container either.
+    #[test]
+    fn a_bridged_hole_stays_inside_its_container() {
+        let outer = ring(&[(0., 0.), (100., 0.), (100., 100.), (0., 100.)]);
+        let hole = ring(&[(40., 40.), (60., 40.), (60., 60.), (40., 60.)]);
+        let triangles = triangulate(&[outer, hole]);
+
+        assert!(!triangles.is_empty());
+        for triangle in triangles.chunks(3) {
+            assert!(
+                triangle
+                    .iter()
+                    .all(|p| (0. ..=100.).contains(&p.x) && (0. ..=100.).contains(&p.y)),
+                "a triangle left the container: {triangle:?}"
+            );
         }
     }
 

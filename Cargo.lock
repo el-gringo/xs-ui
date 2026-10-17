@@ -137,6 +137,7 @@ dependencies = [
  "xs-log",
  "xs-primitive",
  "xs-renderer",
+ "xs-svg",
  "xs-text-system",
  "xs-vector",
 ]
@@ -414,6 +415,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "xs-svg"
+version = "0.1.0"
+dependencies = [
+ "xs-layout",
+ "xs-math",
+ "xs-vector",
+ "xs-xml",
+]
+
+[[package]]
 name = "xs-text-system"
 version = "0.1.0"
 dependencies = [
@@ -449,6 +460,10 @@ dependencies = [
  "xs-http",
  "xs-url",
 ]
+
+[[package]]
+name = "xs-xml"
+version = "0.1.0"
 
 [[package]]
 name = "yansi"
