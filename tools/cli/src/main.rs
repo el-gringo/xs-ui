@@ -1,6 +1,12 @@
 // `xs` is a native tool: it runs cargo, binds an http socket and hands out
 // websocket frames. It is never built for wasm32, so nothing here is gated on
 // the host.
+//
+// Unix, always: the one place it reaches past `std::net` is `watcher`, which puts
+// the build in its own process group and takes it down from a signal handler, and
+// there is nothing to be gained from pretending otherwise. A Windows port would
+// want a job object rather than a signal, so it would be a port rather than a
+// configuration.
 mod build;
 mod cargo_metadata;
 mod handle_static;
@@ -24,6 +30,10 @@ pub fn main() {
             std::process::exit(1);
         }
     };
+
+    // Before anything is spawned: `serve` starts a `cargo watch`, and this is the
+    // only thing that makes it go away when this process does.
+    watcher::terminate_on_signal();
 
     match options.command {
         Command::Help => println!("{USAGE}"),

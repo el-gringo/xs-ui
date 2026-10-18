@@ -2,6 +2,9 @@ use std::io::{BufRead, Read, Write};
 
 use crate::response::HttpResponse;
 
+/// How many header lines a request may carry before it is given up on.
+const MAX_HEADER_LINES: usize = 200;
+
 #[derive(Debug)]
 pub struct HttpRequest {
     pub method: String,
@@ -13,15 +16,31 @@ pub struct HttpRequest {
 }
 
 impl HttpRequest {
+    /// Reads the header block, one line at a time, up to the blank line that ends it.
+    ///
+    /// `read_line` reports end of input as `Ok(0)`, not as an error, so a peer
+    /// that connects and then closes - or never says anything at all - would
+    /// otherwise loop forever: the empty line matches neither stop condition and
+    /// the loop keeps pushing it, growing the `Vec` until the process is killed
+    /// for using all the memory. Browsers open and drop connections routinely, so
+    /// this is the common case rather than a corner one.
     fn read_header_lines(reader: &mut std::io::BufReader<&mut std::net::TcpStream>) -> Vec<String> {
         let mut header_lines: Vec<String> = Vec::new();
         let mut line = String::new();
-        while reader.read_line(&mut line).is_ok() {
-            if line == "\r\n" {
+        loop {
+            line.clear();
+            match reader.read_line(&mut line) {
+                Ok(0) => break,
+                Ok(_) if line == "\r\n" => break,
+                Ok(_) => header_lines.push(std::mem::take(&mut line)),
+                Err(_) => break,
+            }
+            // A request line plus headers is a few hundred bytes; anything past
+            // that is a client sending something that is not a request, and it
+            // is not worth the memory to keep reading it.
+            if header_lines.len() > MAX_HEADER_LINES {
                 break;
             }
-            header_lines.push(line.clone());
-            line.clear();
         }
         header_lines
     }
@@ -76,5 +95,61 @@ impl HttpRequest {
     pub fn respond(mut self, response: HttpResponse) {
         let buffer: Vec<u8> = response.into();
         if let Err(_error) = self.stream.write_all(&buffer) {};
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::{TcpListener, TcpStream};
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    /// A peer that connects and closes without saying anything must not be able to
+    /// spin the header reader: `read_line` calls that `Ok(0)`, and treating it as
+    /// progress grows a `Vec` until the process runs out of memory.
+    #[test]
+    fn a_peer_that_hangs_up_immediately_is_rejected() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+
+        let client = TcpStream::connect(address).unwrap();
+        drop(client);
+
+        let (accepted, _) = listener.accept().unwrap();
+        let (tx, rx) = mpsc::channel();
+        std::thread::spawn(move || {
+            let result = HttpRequest::read(accepted);
+            let _ = tx.send(result.is_err());
+        });
+
+        assert!(
+            rx.recv_timeout(Duration::from_secs(5)).is_ok(),
+            "reading a request from a closed connection never returned"
+        );
+    }
+
+    /// A request that is cut off part way through its headers is an error, not a
+    /// reason to keep reading.
+    #[test]
+    fn a_truncated_request_is_rejected() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+
+        let mut client = TcpStream::connect(address).unwrap();
+        client.write_all(b"GET / HTTP/1.1\r\nHost: x\r\n").unwrap();
+        drop(client);
+
+        let (accepted, _) = listener.accept().unwrap();
+        let (tx, rx) = mpsc::channel();
+        std::thread::spawn(move || {
+            let result = HttpRequest::read(accepted);
+            let _ = tx.send(result.is_err());
+        });
+
+        assert!(
+            rx.recv_timeout(Duration::from_secs(5)).is_ok(),
+            "reading a truncated request never returned"
+        );
     }
 }

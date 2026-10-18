@@ -17,8 +17,17 @@ use xs_websocket::{message::WebSocketMessage, opcode::OpCode};
 
 use crate::build::WASM_NAME;
 
+/// A page the server pushes rebuilds to.
+struct Client {
+    /// Names this connection to the thread reading it, so that thread can say when
+    /// it is over. The writer half is a different file descriptor to the reader's,
+    /// so the reader has no other way to reach the entry it made.
+    id: u32,
+    stream: TcpStream,
+}
+
 /// The browsers watching the dev server.
-type Clients = Arc<Mutex<Vec<TcpStream>>>;
+type Clients = Arc<Mutex<Vec<Client>>>;
 
 /// Serves the project over http, rebuilding it on change and pushing the new
 /// wasm url to every open page.
@@ -58,6 +67,7 @@ pub fn run(options: &Options) {
         .then(|| crate::watcher::watch(options, WASM_NAME));
     let version = Arc::new(AtomicU32::new(0));
     let clients: Clients = Arc::new(Mutex::new(Vec::new()));
+    let next_client = Arc::new(AtomicU32::new(0));
 
     let mut server = xs_http::HttpServer::listen(&options.host, options.port);
     println!(
@@ -69,6 +79,7 @@ pub fn run(options: &Options) {
 
     let page_version = version.clone();
     let page_clients = clients.clone();
+    let page_next_client = next_client.clone();
     std::thread::spawn(move || {
         for request in server.incoming_requests() {
             let (method, pathname) = (request.method.as_str(), request.pathname.as_str());
@@ -78,14 +89,26 @@ pub fn run(options: &Options) {
                         eprintln!("websocket handshake failed");
                         continue;
                     };
-                    match wss.stream.try_clone() {
-                        Ok(stream) => page_clients.lock().unwrap().push(stream),
-                        Err(error) => eprintln!("could not keep the socket: {error}"),
-                    }
+                    let stream = match wss.stream.try_clone() {
+                        Ok(stream) => stream,
+                        Err(error) => {
+                            eprintln!("could not keep the socket: {error}");
+                            continue;
+                        }
+                    };
+                    let id = page_next_client.fetch_add(1, Ordering::Relaxed);
+                    page_clients.lock().unwrap().push(Client { id, stream });
+                    let readers = page_clients.clone();
                     std::thread::spawn(move || {
                         for message in wss.incoming_messages() {
                             println!("received message: {:?} {:?}", message, message.op_code);
                         }
+                        // The page navigated, reloaded or closed its tab, and
+                        // nothing will ever answer this socket again. Without this
+                        // the entry waits for the next broadcast to fail on it, and
+                        // that is one file descriptor per page load - held for good
+                        // under `--no-watch`, where no rebuild ever comes to notice.
+                        readers.lock().unwrap().retain(|client| client.id != id);
                     });
                 }
                 ("GET", _) => {
@@ -125,12 +148,15 @@ fn url_version(url: &str) -> Option<u32> {
 fn broadcast(clients: &Clients, rebuild: &Rebuild) {
     let message = WebSocketMessage::new(OpCode::Text, None, rebuild.url.clone().into());
     let buffer: Vec<u8> = message.into();
-    // A browser that went away is dropped instead of failing every rebuild.
+    // A browser that went away is dropped instead of failing every rebuild. It is
+    // normally already gone - `serve` reloads the page on a rebuild, so this is the
+    // backstop for a page that reloaded without one, not the main path.
     let mut clients = clients.lock().unwrap();
     clients.retain_mut(|client| {
         client
+            .stream
             .write_all(&buffer)
-            .and_then(|_| client.flush())
+            .and_then(|_| client.stream.flush())
             .is_ok()
     });
 }
