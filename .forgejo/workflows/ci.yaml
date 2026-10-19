@@ -9,10 +9,10 @@ jobs:
           show-progress: true
 
       - name: Check
-        run: cargo check --target wasm32-unknown-unknown
+        run: cargo check --target wasm32-unknown-unknown -p peertube
 
       - name: Build and package
-        run: cargo run -p xs-cli -- build peertube --release --dist dist
+        run: cargo run -- build -p peertube --legacy --release
 
       - name: Publish
         if: github.ref != 'refs/heads/main'
