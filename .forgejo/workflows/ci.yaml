@@ -12,7 +12,7 @@ jobs:
         run: cargo check --target wasm32-unknown-unknown -p peertube
 
       - name: Build and package
-        run: cargo run -- build -p peertube --legacy --release
+        run: cargo run -- build -p peertube --platform web --legacy --release
 
       - name: Publish
         if: github.ref != 'refs/heads/main'
