@@ -10,7 +10,7 @@ mod theme;
 
 use xs::{
     AlignItems, Application, Color, Context, Div, Easing, JustifyContent, NavigationNode, Overflow,
-    ParentElement, Render, Spring, div, grid, text,
+    ParentElement, Render, div, grid, text,
 };
 
 use crate::{
