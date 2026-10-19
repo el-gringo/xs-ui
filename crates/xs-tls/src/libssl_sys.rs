@@ -12,7 +12,7 @@ xs_platform_linux::declare_module! {
 
     pub fn OPENSSL_init_ssl(u64, *const ()) -> i32,
 
-    pub fn OSSL_PROVIDER_load(*const (), *const i8) -> *mut (),
+    pub fn OSSL_PROVIDER_load(*const (), *const c_char) -> *mut (),
 
     pub fn ERR_load_SSL_strings(),
 
@@ -47,6 +47,10 @@ pub struct SSL_CIPHER(pub *mut ());
 pub type c_void = std::os::raw::c_void;
 pub type c_int = std::os::raw::c_int;
 pub type c_long = i64;
+// `char` is unsigned on ARM, so this is `u8` there and `i8` on x86_64. Never
+// hardcode `i8` in a declaration that a `CString::as_ptr()` is passed to: it
+// only compiles on one of the two.
+pub type c_char = std::os::raw::c_char;
 
 pub const BIO_CTRL_FLUSH: c_int = 11;
 pub const BIO_C_SET_CONNECT: c_int = 100;

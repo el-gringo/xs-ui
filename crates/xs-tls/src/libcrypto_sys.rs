@@ -8,7 +8,7 @@ xs_platform_linux::declare_module! {
 
     pub fn OPENSSL_init_crypto(u64, *const ()) -> i32,
 
-    pub fn OSSL_PROVIDER_load(*const (), *const i8) -> *mut (),
+    pub fn OSSL_PROVIDER_load(*const (), *const c_char) -> *mut (),
 
     pub fn EVP_CIPHER_CTX_new() -> *mut EVP_CIPHER_CTX,
     pub fn EVP_CIPHER_CTX_free(*mut EVP_CIPHER_CTX),
@@ -63,8 +63,8 @@ xs_platform_linux::declare_module! {
     pub fn EVP_sha1() -> *const EVP_MD,
     pub fn EVP_md5() -> *const EVP_MD,
 
-    pub fn EVP_get_cipherbyname(*const i8) -> *const EVP_CIPHER,
-    pub fn EVP_get_digestbyname(*const i8) -> *const EVP_MD,
+    pub fn EVP_get_cipherbyname(*const c_char) -> *const EVP_CIPHER,
+    pub fn EVP_get_digestbyname(*const c_char) -> *const EVP_MD,
 
     pub fn EVP_DigestInit_ex(
         *mut EVP_MD_CTX,
@@ -153,12 +153,17 @@ xs_platform_linux::declare_module! {
     ) -> i32,
 
     pub fn ERR_peek_error() -> u32,
-    pub fn ERR_error_string_n(u32, *mut i8, usize),
+    pub fn ERR_error_string_n(u32, *mut c_char, usize),
     pub fn ERR_clear_error(),
 
     ...
     ...
 }
+
+// `char` is unsigned on ARM, so this is `u8` there and `i8` on x86_64. Never
+// hardcode `i8` in a declaration that a `CString::as_ptr()` is passed to: it
+// only compiles on one of the two.
+pub type c_char = std::os::raw::c_char;
 
 #[derive(Clone, Default)]
 pub struct EVP_CIPHER_CTX(pub *mut ());
