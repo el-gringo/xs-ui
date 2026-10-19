@@ -277,11 +277,26 @@ impl Renderer for RendererOpenGl {
             let min = offset + origin + child.margin.min();
             let quad = Rectangle::new(min.x, min.y, child.bounds.width, child.bounds.height);
 
+            // A stored clip is already in screen coordinates, so the only thing
+            // that still needs transforming is this node's own box. Intersecting
+            // with the parent's clip before transforming it - which is what this
+            // used to do, transforming the result as well - applied the composed
+            // transform a second time to every inherited clip, so a descendant
+            // with a translate of its own was clipped against a rectangle shifted
+            // by that same translate and could draw straight out of its
+            // ancestor's `overflow: hidden`.
             let parent_clip = clip_rects[parent_id];
             let clip = if let Some(Quad(props)) = &child.material
                 && props.overflow == xs_layout::Overflow::Hidden
             {
                 let box_clip = Rectangle::new(min.x, min.y, quad.width, quad.height);
+                // The clip is stored axis-aligned, so a rotated ancestor's
+                // overflow region becomes the box around its transformed
+                // corners. That is conservative - it can clip slightly less than
+                // the exact rotated shape, never more - and it keeps the clip
+                // test a cheap four-way compare in every shader instead of a full
+                // inverse transform.
+                let box_clip = transform.transform_rect_bounds(box_clip);
                 Some(match parent_clip {
                     Some(p) => Self::intersect_rect(&p, &box_clip),
                     None => box_clip,
@@ -289,12 +304,6 @@ impl Renderer for RendererOpenGl {
             } else {
                 parent_clip
             };
-            // The clip is stored axis-aligned, so a rotated ancestor's overflow
-            // region becomes the box around its transformed corners. That is
-            // conservative - it can clip slightly less than the exact rotated
-            // shape, never more - and it keeps the clip test a cheap four-way
-            // compare in every shader instead of a full inverse transform.
-            let clip = clip.map(|rect| transform.transform_rect_bounds(rect));
             clip_rects[child_id] = clip;
 
             if child.material.is_some()
@@ -483,7 +492,11 @@ mod tests {
         if let Some(queued) = frame.current.take() {
             renderer.flush(&mut frame, queued);
         }
-        let draws: Vec<_> = frame.draws.iter().filter(|d| d.shader == SH_SIMPLE).collect();
+        let draws: Vec<_> = frame
+            .draws
+            .iter()
+            .filter(|d| d.shader == SH_SIMPLE)
+            .collect();
         assert_eq!(draws.len(), 1);
         // `first`/`count` are vertices, not floats, and the stride is the
         // vertex's own size - which is the other half of the reason the old 14 for

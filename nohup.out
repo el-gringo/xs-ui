@@ -1,0 +1,3 @@
+Error: ENOENT: no such file or directory, chdir '/home/cbosse/Workspaces/rust/xs-ui' -> 'web'
+    at chdir (unknown)
+    at <anonymous> (/$bunfs/root/chunk-ex8cqpvg.js:96:6417)
