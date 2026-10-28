@@ -82,6 +82,7 @@ struct AppEventLoop<R: Render> {
     root: R,
     tx: Sender<BackendResponse>,
     rx: std::rc::Rc<Receiver<BackendResponse>>,
+    last_dirty: u128,
 }
 
 impl<R: Render> AppEventLoop<R> {
@@ -93,6 +94,7 @@ impl<R: Render> AppEventLoop<R> {
             root,
             rx,
             tx,
+            last_dirty: 0,
         }
     }
     pub fn read_messages(&mut self, app_context: &mut AppContext) {
@@ -141,8 +143,9 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
         #[cfg(target_arch = "wasm32")]
         let frame_start = xs_js_sys::performance_now();
         self.read_messages(ctx);
-        if PENDING_UPDATE.swap(false, Ordering::Relaxed) {
+        if PENDING_UPDATE.swap(false, Ordering::Relaxed) || self.last_dirty - ctx.now > 1000 {
             ctx.dirty = true;
+            self.last_dirty = ctx.now;
         }
         if !ctx.dirty {
             return false;
@@ -180,9 +183,9 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
         let build_tree_ms = t1.wrapping_sub(t0).min(u32::MAX / 2);
         #[cfg(target_arch = "wasm32")]
         let t2 = xs_js_sys::performance_now();
-        let layout_tree =
-            self.renderer
-                .layout(ctx, &widget_tree, width as _, height as _);
+        let layout_tree = self
+            .renderer
+            .layout(ctx, &widget_tree, width as _, height as _);
         #[cfg(target_arch = "wasm32")]
         let layout_ms = t2.wrapping_sub(t1).min(u32::MAX / 2);
         #[cfg(target_arch = "wasm32")]
