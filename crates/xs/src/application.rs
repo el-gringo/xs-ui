@@ -143,7 +143,9 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
         #[cfg(target_arch = "wasm32")]
         let frame_start = xs_js_sys::performance_now();
         self.read_messages(ctx);
-        if PENDING_UPDATE.swap(false, Ordering::Relaxed) || self.last_dirty - ctx.now > 1000 {
+        if PENDING_UPDATE.swap(false, Ordering::Relaxed)
+            || ctx.now.saturating_sub(self.last_dirty) > 1000
+        {
             ctx.dirty = true;
             self.last_dirty = ctx.now;
         }
@@ -174,11 +176,14 @@ impl<R: Render + 'static> EventLoop for AppEventLoop<R> {
         #[cfg(target_arch = "wasm32")]
         let build_ms = t0.wrapping_sub(frame_start).min(u32::MAX / 2);
         let root_nav_id = node_ctx.nav_id;
+        let root_contexts = node_ctx.contexts.clone();
         drop(node_ctx);
         ctx.current_nav_node_id = root_nav_id;
         #[cfg(target_arch = "wasm32")]
         let t1 = xs_js_sys::performance_now();
-        let widget_tree = self.renderer.build_element_tree(ctx, root_element);
+        let widget_tree = self
+            .renderer
+            .build_element_tree(ctx, root_element, root_contexts);
         #[cfg(target_arch = "wasm32")]
         let build_tree_ms = t1.wrapping_sub(t0).min(u32::MAX / 2);
         #[cfg(target_arch = "wasm32")]

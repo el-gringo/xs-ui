@@ -1,8 +1,10 @@
+use std::rc::Rc;
+
 use xs_animation::Animate;
 use xs_layout::{BoxConstraints, Color, TextProperties, TextVertices};
 
 use crate::{
-    AnimationState, AppContext, FocusHandle, NavigationNode,
+    AnimationState, AppContext, ContextValues, FocusHandle, NavigationNode,
     navigation::NavigationNodeId,
     state::{AnyState, State},
 };
@@ -14,6 +16,13 @@ pub struct Context<'a> {
     pub text_properties: TextProperties,
     pub color: Color,
     pub constraints: BoxConstraints,
+    /// Values this element provides to its descendants.
+    ///
+    /// Seeded from [`AppContext::contexts`] and extended with
+    /// [`Context::provide`]. A sibling never sees what another sibling
+    /// provides, because the value is carried down the tree rather than stored
+    /// globally.
+    pub contexts: ContextValues,
 }
 
 impl<'a> Context<'a> {
@@ -25,6 +34,7 @@ impl<'a> Context<'a> {
         color: Color,
         constraints: BoxConstraints,
     ) -> Self {
+        let contexts = app_context.contexts.clone();
         Self {
             app_context,
             node_id,
@@ -32,7 +42,33 @@ impl<'a> Context<'a> {
             text_properties,
             color,
             constraints,
+            contexts,
         }
+    }
+
+    /// Makes `value` visible to this element's descendants.
+    ///
+    /// Values are keyed by type and nested scopes shadow outer ones, so a
+    /// route can provide its own `RouteContext` without disturbing a parent
+    /// route. The scope belongs to this element: a sibling of the element that
+    /// calls this cannot see the value.
+    pub fn provide<T: 'static>(&mut self, value: T) {
+        self.contexts = self.contexts.provide(value);
+    }
+
+    /// The innermost value of type `T` provided by an ancestor.
+    pub fn use_context<T: 'static>(&self) -> Option<Rc<T>> {
+        self.contexts.get::<T>()
+    }
+
+    /// The innermost value of type `T` provided by an ancestor.
+    ///
+    /// # Panics
+    ///
+    /// Panics when no ancestor provided one.
+    #[track_caller]
+    pub fn expect_context<T: 'static>(&self) -> Rc<T> {
+        self.contexts.expect::<T>()
     }
 
     #[track_caller]
@@ -79,6 +115,14 @@ impl<'a> Context<'a> {
         handle
     }
 
+    /// Creates a focus node under [`Context::nav_id`] and moves the cursor to it.
+    ///
+    /// The handle is keyed by this call site, so calling this in a loop reuses
+    /// the same node for every iteration; use [`Context::focus_handle_with_key`]
+    /// when a loop needs one node per item. Because the cursor moves to the new
+    /// node, a second call becomes its child: set `nav_id` back to the container
+    /// first to create siblings.
+    #[track_caller]
     pub fn focus_handle(&mut self, node: NavigationNode) -> FocusHandle {
         let handle_state = self.use_state::<FocusHandle>(|ctx| ctx.new_focus_handle(node));
         let result = handle_state.read().clone();
@@ -86,6 +130,12 @@ impl<'a> Context<'a> {
         result
     }
 
+    /// Creates a focus node distinguished from other calls at the same place.
+    ///
+    /// Use this for repeated nodes - the items of a menu, or a page shared by
+    /// several routes - where a call-site key would make them all one node.
+    /// Like [`Context::focus_handle`], it attaches under [`Context::nav_id`]
+    /// and moves the cursor to the new node.
     pub fn focus_handle_with_key(&mut self, key: &str, node: NavigationNode) -> FocusHandle {
         let state = self.use_keyed_state::<FocusHandle>(key, |ctx| ctx.new_focus_handle(node));
         let result = state.read().clone();
@@ -165,6 +215,27 @@ mod tests {
             Color::rgba(0., 0., 0., 1.),
             BoxConstraints::from_max((1000., 1000.)),
         )
+    }
+
+    #[derive(Debug, PartialEq)]
+    struct Theme(&'static str);
+
+    #[test]
+    fn the_render_context_starts_with_the_apps_root_scope() {
+        let mut app_context = AppContext::new(Box::new(TextSystemDummy::default()));
+        app_context.provide(Theme("dark"));
+
+        let ctx = Context::new(
+            &mut app_context,
+            (std::any::TypeId::of::<u8>(), 0, 0),
+            0,
+            TextProperties::default(),
+            Color::rgba(0., 0., 0., 1.),
+            BoxConstraints::from_max((1000., 1000.)),
+        );
+
+        assert_eq!(ctx.expect_context::<Theme>().0, "dark");
+        assert!(ctx.use_context::<u32>().is_none());
     }
 
     #[test]

@@ -90,6 +90,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "router"
+version = "0.1.0"
+dependencies = [
+ "xs",
+ "xs-router",
+]
+
+[[package]]
 name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -137,6 +145,7 @@ dependencies = [
  "xs-log",
  "xs-primitive",
  "xs-renderer",
+ "xs-router",
  "xs-svg",
  "xs-text-system",
  "xs-vector",
@@ -412,6 +421,15 @@ dependencies = [
  "xs-layout",
  "xs-math",
  "xs-platform-linux",
+]
+
+[[package]]
+name = "xs-router"
+version = "0.1.0"
+dependencies = [
+ "xs-core",
+ "xs-js-sys",
+ "xs-primitive",
 ]
 
 [[package]]

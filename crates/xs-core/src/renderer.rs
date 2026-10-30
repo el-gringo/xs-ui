@@ -5,7 +5,8 @@ use xs_layout::{BoxConstraints, Color, ImageFormat, LayoutBox, LayoutTree, TextP
 use xs_math::Vector2;
 
 use crate::{
-    AppContext, AtlasInfo, Context, core::NodeId, element::AnyElement, navigation::NavigationNodeId,
+    AppContext, AtlasInfo, Context, ContextValues, core::NodeId, element::AnyElement,
+    navigation::NavigationNodeId,
 };
 
 #[derive(Clone)]
@@ -17,6 +18,7 @@ struct StackItem {
     text_properties: TextProperties,
     color: Color,
     constraints: BoxConstraints,
+    contexts: ContextValues,
 }
 
 pub trait Renderer {
@@ -41,7 +43,12 @@ pub trait Renderer {
         image_format: ImageFormat,
     ) -> u32;
 
-    fn build_element_tree(&mut self, app_context: &mut AppContext, root: AnyElement) -> View {
+    fn build_element_tree(
+        &mut self,
+        app_context: &mut AppContext,
+        root: AnyElement,
+        root_contexts: ContextValues,
+    ) -> View {
         app_context.nav.update();
         // Layout runs in device pixels, because a style has already been scaled
         // into them by the time it gets here - so the root is constrained to the
@@ -60,6 +67,7 @@ pub trait Renderer {
             text_properties: TextProperties::default(),
             color: Color::rgba(0.0, 0.0, 0.0, 1.0),
             constraints: constraints.clone(),
+            contexts: root_contexts,
         });
 
         let mut rendered_elements: Vec<(Option<usize>, AnyElement)> = Default::default();
@@ -77,6 +85,10 @@ pub trait Renderer {
                 item.color,
                 item.constraints.clone(),
             );
+            // The root render already saw the app's root scope and anything the
+            // root element provided, such as a router's route context; each
+            // descendant then starts from what its parent provided.
+            ctx.contexts = item.contexts.clone();
 
             let mut element = item.element;
             while let Some(resolved) = element.inner.resolve(&mut ctx) {
@@ -94,6 +106,7 @@ pub trait Renderer {
                     text_properties: ctx.text_properties.clone(),
                     color: ctx.color,
                     constraints: ctx.constraints.clone(),
+                    contexts: ctx.contexts.clone(),
                 };
                 stack.push_back(new_item);
             }
@@ -118,7 +131,13 @@ pub trait Renderer {
             view_map[i] = Some(element.inner.paint(app_context, &child_views));
         }
 
-        app_context.nav.update();
+        if app_context.nav.update() {
+            // Focus is read while the tree is built, so a change made after
+            // that - a route turning the page card into a list, say - is not in
+            // this frame. Request another one rather than leaving the old focus
+            // on screen until the next key.
+            app_context.dirty = true;
+        }
         view_map[0].clone().unwrap()
     }
 
@@ -173,4 +192,108 @@ impl Renderer for RendererDummy {
     }
 
     fn render(&mut self, _ctx: &AppContext, _layout_tree: &LayoutTree) {}
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{any::TypeId, cell::RefCell, rc::Rc};
+
+    use xs_layout::{DummyContainer, View};
+
+    use crate::{
+        AnyElement, AppContext, Context, ElementObject, Renderer, RendererDummy, TextSystemDummy,
+    };
+
+    #[derive(Clone)]
+    struct Marker(&'static str);
+
+    type Seen = Rc<RefCell<Vec<(&'static str, Option<&'static str>)>>>;
+
+    /// An element that records the `Marker` it can see and optionally provides
+    /// one of its own. It defers everything to `post_render`, which is where a
+    /// real widget would read the context it needs.
+    #[derive(Clone)]
+    struct Probe {
+        label: &'static str,
+        provides: Option<Marker>,
+        children: Vec<AnyElement>,
+        seen: Seen,
+    }
+
+    impl Probe {
+        fn new(label: &'static str, seen: &Seen) -> Self {
+            Self {
+                label,
+                provides: None,
+                children: Vec::new(),
+                seen: Rc::clone(seen),
+            }
+        }
+
+        fn provides(mut self, marker: Marker) -> Self {
+            self.provides = Some(marker);
+            self
+        }
+
+        fn child(mut self, child: Probe) -> Self {
+            self.children.push(AnyElement::new(child));
+            self
+        }
+    }
+
+    impl ElementObject for Probe {
+        fn tag(&self) -> TypeId {
+            TypeId::of::<Marker>()
+        }
+
+        fn clone_box(&self) -> Box<dyn ElementObject> {
+            Box::new(self.clone())
+        }
+
+        fn children(&self) -> &[AnyElement] {
+            &self.children
+        }
+
+        fn post_render(&mut self, ctx: &mut Context) {
+            let seen = ctx.use_context::<Marker>().map(|marker| marker.0);
+            self.seen.borrow_mut().push((self.label, seen));
+            if let Some(marker) = self.provides.clone() {
+                ctx.provide(marker);
+            }
+        }
+
+        fn paint(&self, _app_context: &mut AppContext, _views: &[View]) -> View {
+            Rc::new(DummyContainer)
+        }
+    }
+
+    #[test]
+    fn a_provided_value_reaches_descendants_but_not_siblings() {
+        let seen: Seen = Rc::default();
+        let root = Probe::new("root", &seen)
+            .provides(Marker("outer"))
+            .child(
+                Probe::new("provider", &seen)
+                    .provides(Marker("inner"))
+                    .child(Probe::new("grandchild", &seen)),
+            )
+            .child(Probe::new("sibling", &seen));
+
+        let mut app_context = AppContext::new(Box::new(TextSystemDummy::default()));
+        let root_contexts = app_context.contexts.clone();
+        let mut renderer = RendererDummy;
+        renderer.build_element_tree(&mut app_context, AnyElement::new(root), root_contexts);
+
+        assert_eq!(
+            *seen.borrow(),
+            vec![
+                ("root", None),
+                ("provider", Some("outer")),
+                // The sibling is built before the provider's child, and must
+                // see the value the provider's parent gave, not the provider's.
+                ("sibling", Some("outer")),
+                ("grandchild", Some("inner")),
+            ]
+        );
+    }
 }

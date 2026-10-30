@@ -5,4 +5,4 @@ mod navigation_tree;
 
 pub use focus_handle::FocusHandle;
 pub use focus_manager::FocusManager;
-pub use navigation_node::{NavigationNode, NavigationNodeId};
+pub use navigation_node::{NavigationLayout, NavigationNode, NavigationNodeId};

@@ -8,7 +8,7 @@ use xs_layout::{Image, MeshCache, TextProperties};
 use xs_platform_event::KeyEvent;
 
 use crate::{
-    BackendRequest, FocusManager, TextSystem, TextSystemDummy, TextVertices,
+    BackendRequest, ContextValues, FocusManager, TextSystem, TextSystemDummy, TextVertices,
     core::NodeId,
     navigation::NavigationNodeId,
     state::{AnyState, StateId},
@@ -91,6 +91,14 @@ pub struct AppContext {
     pub states: HashMap<NodeId, HashMap<StateId, AnyState>>,
     pub current_node_id: NodeId,
     pub current_nav_node_id: NavigationNodeId,
+    /// Values every element in the app can read through
+    /// [`Context::use_context`](crate::Context::use_context).
+    ///
+    /// The app can add to this root scope in its initializer with
+    /// [`AppContext::provide`]; an element can add a nested scope with
+    /// [`Context::provide`](crate::Context::provide), which only its
+    /// descendants see.
+    pub contexts: ContextValues,
     pub text_system: Box<dyn TextSystem>,
     pub texts: HashMap<(String, TextProperties), Option<(TextVertices, u32)>>,
     pub textures: HashMap<String, Option<Image>>,
@@ -120,6 +128,7 @@ impl Default for AppContext {
             nav: FocusManager::new(),
             current_node_id: (TypeId::of::<Self>(), 0, 0),
             current_nav_node_id: 0,
+            contexts: ContextValues::default(),
             meshes: Rc::new(MeshCache::new()),
             nodes: Default::default(),
             states: Default::default(),
@@ -139,6 +148,30 @@ impl AppContext {
             text_system,
             ..Default::default()
         }
+    }
+
+    /// Makes `value` visible to every element in the app.
+    ///
+    /// Values are keyed by type and the innermost scope wins, so calling this
+    /// twice with a `Theme` shadows the first one. An element can do the same
+    /// for its own subtree with [`Context::provide`](crate::Context::provide).
+    pub fn provide<T: 'static>(&mut self, value: T) {
+        self.contexts = self.contexts.provide(value);
+    }
+
+    /// The value of type `T` from the app's root scope, if there is one.
+    pub fn use_context<T: 'static>(&self) -> Option<Rc<T>> {
+        self.contexts.get::<T>()
+    }
+
+    /// The value of type `T` from the app's root scope.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the app never provided one.
+    #[track_caller]
+    pub fn expect_context<T: 'static>(&self) -> Rc<T> {
+        self.contexts.expect::<T>()
     }
 
     pub fn dispatch(&mut self) {

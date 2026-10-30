@@ -30,7 +30,7 @@ impl Card {
 
 impl Render for Card {
     fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
-        let mut focus_handle = ctx.focus_handle(NavigationNode::new());
+        let mut focus_handle = ctx.focus_handle(NavigationNode::leaf());
 
         if let Some(callback) = &self.on_focus {
             let cb = callback.clone();

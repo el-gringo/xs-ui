@@ -63,6 +63,7 @@ function loadWasm(wasmUrl) {
         `${JS_DIR}/bindings/document.js`,
         `${JS_DIR}/bindings/element.js`,
         `${JS_DIR}/bindings/event.js`,
+        `${JS_DIR}/bindings/history.js`,
         `${JS_DIR}/bindings/node.js`,
         `${JS_DIR}/bindings/webgl.js`,
         `${JS_DIR}/bindings/window.js`,

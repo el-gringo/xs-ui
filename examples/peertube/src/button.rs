@@ -53,7 +53,7 @@ impl Button {
 
 impl Render for Button {
     fn render(&self, ctx: &mut Context) -> impl xs::IntoElement {
-        let mut node = NavigationNode::new();
+        let mut node = NavigationNode::leaf();
         if let Some(id) = self.id {
             node = node.id(id);
         }

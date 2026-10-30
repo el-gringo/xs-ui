@@ -16,7 +16,7 @@ impl Render for Counter {
     fn render(&self, ctx: &mut Context) -> impl IntoElement {
         let state = ctx.use_state(|_| CounterState::None);
         let state_value = ctx.use_state(|_| 0);
-        let mut handle = ctx.focus_handle(NavigationNode::new().vertical().id("counter"));
+        let mut handle = ctx.focus_handle(NavigationNode::vertical().id("counter"));
 
         let s = state.clone();
         let v = state_value.clone();

@@ -82,8 +82,7 @@ impl<T: Default + 'static> Grid<T> {
 
 impl<T: Default + 'static> Render for Grid<T> {
     fn render(&self, ctx: &mut Context) -> impl IntoElement {
-        let focus_handle =
-            ctx.focus_handle(NavigationNode::new().grid(self.columns as usize).id("grid"));
+        let focus_handle = ctx.focus_handle(NavigationNode::grid(self.columns as usize).id("grid"));
         let cell_renderer = &self.cell_renderer;
         let columns = self.columns as usize;
         let gap = self.gap;

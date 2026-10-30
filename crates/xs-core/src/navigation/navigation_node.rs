@@ -33,28 +33,36 @@ impl NavigationNode {
         Default::default()
     }
 
+    pub fn leaf() -> Self {
+        Self {
+            layout: Leaf,
+            ..Default::default()
+        }
+    }
+
+    pub fn horizontal() -> Self {
+        Self {
+            layout: Horizontal,
+            ..Default::default()
+        }
+    }
+
+    pub fn vertical() -> Self {
+        Self {
+            layout: Verical,
+            ..Default::default()
+        }
+    }
+
+    pub fn grid(columns: usize) -> Self {
+        Self {
+            layout: Grid { columns },
+            ..Default::default()
+        }
+    }
+
     pub fn id(mut self, id: &'static str) -> Self {
         self.id = Some(id);
-        self
-    }
-
-    pub fn vertical(mut self) -> Self {
-        self.layout = Verical;
-        self
-    }
-
-    pub fn horizontal(mut self) -> Self {
-        self.layout = Horizontal;
-        self
-    }
-
-    pub fn grid(mut self, columns: usize) -> Self {
-        self.layout = Grid { columns };
-        self
-    }
-
-    pub fn leaf(mut self) -> Self {
-        self.layout = Leaf;
         self
     }
 

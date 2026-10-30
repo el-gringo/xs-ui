@@ -14,6 +14,7 @@ xs-primitive.workspace = true
 xs-svg.workspace = true
 xs-vector.workspace = true
 xs-renderer.workspace = true
+xs-router.workspace = true
 xs-text-system.workspace = true
 xs-log.workspace = true
 xs-js-sys.workspace = true

@@ -1,0 +1,12 @@
+[package]
+name = "xs-router"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs-core.workspace = true
+xs-primitive.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+xs-js-sys.workspace = true

@@ -32,9 +32,9 @@ impl Render for Peertube {
 
         let _fetch = ctx.use_state(|_| Loader::new(loaded.clone()).load(VIDEO_COUNT));
 
-        let root = ctx.focus_handle_with_key("root", NavigationNode::new().horizontal().id("root"));
+        let root = ctx.focus_handle_with_key("root", NavigationNode::horizontal().id("root"));
         let sidebar_focus =
-            ctx.focus_handle_with_key("sidebar", NavigationNode::new().vertical().id("sidebar"));
+            ctx.focus_handle_with_key("sidebar", NavigationNode::vertical().id("sidebar"));
         ctx.nav_id = root.id;
 
         let data = loaded.read().clone();

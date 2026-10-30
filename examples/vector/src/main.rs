@@ -43,7 +43,7 @@ impl Render for VectorDemo {
         // framework's own sibling navigation, so there is no key handling here to
         // get wrong, and a slide that is navigated to takes focus - which is what
         // puts it on screen.
-        let _slides = ctx.focus_handle(NavigationNode::new().horizontal().id("slides"));
+        let _slides = ctx.focus_handle(NavigationNode::horizontal().id("slides"));
 
         // One spring drives everything that moves, so the two slides and the
         // arrow travel as one thing rather than as three animations kept in step.
@@ -193,7 +193,7 @@ struct Slide {
 
 impl Render for Slide {
     fn render(&self, ctx: &mut Context) -> impl IntoElement {
-        let mut handle = ctx.focus_handle(NavigationNode::new());
+        let mut handle = ctx.focus_handle(NavigationNode::leaf());
         let shown = self.shown.clone();
         let view = self.view;
         handle.on_focus(move || shown.set(view));

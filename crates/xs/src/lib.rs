@@ -7,11 +7,12 @@ static ALLOC: talc::wasm::WasmDynamicTalc = talc::wasm::new_wasm_dynamic_allocat
 pub use application::Application;
 pub use xs_animation::{Animate, AnimationDirection, Easing, Spring};
 pub use xs_core::{
-    AnyElement, AppConfig, AppContext, Context, ElementObject, FocusHandle, IntoElement, KeyCode,
-    NavigationNode, ParentElement, Render, State,
+    AnyElement, AppConfig, AppContext, Context, ContextValues, ElementObject, FocusHandle,
+    IntoElement, KeyCode, NavigationLayout, NavigationNode, ParentElement, Render, State,
 };
 pub use xs_layout::*;
 pub use xs_primitive::*;
+pub use xs_router::*;
 // Named rather than globbed: `xs_vector` also has a `parse` - the one that reads
 // a `d` attribute - and a document parser beside it is worth telling apart.
 pub use xs_svg::{
@@ -22,8 +23,9 @@ pub use xs_vector::*;
 
 pub mod prelude {
     pub use crate::{
-        Animate, AnyElement, Color, Context, Easing, ElementObject, IntoElement, ParentElement,
-        Render, Spring, WithAnimation, div, grid, parse_svg, parse_svg_vector, shape, text,
-        vector,
+        Animate, AnyElement, Color, Context, ContextValues, Easing, ElementObject, IntoElement,
+        Link, ParentElement, Render, Route, RouteComponent, RouteContext, Router, Spring,
+        WithAnimation, div, grid, index, layout, link, outlet, parse_svg, parse_svg_vector, route,
+        router, shape, text, use_location, use_params, use_route, use_router, vector,
     };
 }

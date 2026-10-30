@@ -1,0 +1,9 @@
+[package]
+name = "router"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+xs.workspace = true
+xs-router.workspace = true
