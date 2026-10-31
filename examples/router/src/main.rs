@@ -6,6 +6,7 @@
 
 use xs::{
     AlignItems, Application, Context, Div, JustifyContent, KeyCode, NavigationNode, prelude::*,
+    rgba,
 };
 
 const USERS: usize = 5;
@@ -43,7 +44,7 @@ impl Render for Layout {
             .column()
             .width(screen.width as f32)
             .height(screen.height as f32)
-            .background_color(Color::rgba(0.09, 0.10, 0.13, 1.0))
+            .background_color(rgba(0.09, 0.10, 0.13, 1.0))
             .child(menu())
             .child(
                 div()
@@ -61,7 +62,7 @@ impl Render for Layout {
                     .justify_content(JustifyContent::Center)
                     .align_items(AlignItems::Center)
                     .font_size(15)
-                    .color(Color::rgba(1.0, 1.0, 1.0, 0.35))
+                    .color(rgba(1.0, 1.0, 1.0, 0.35))
                     .child(text(
                         "Left/Right move  ·  Down enters a page  ·  Enter selects",
                     )),
@@ -84,8 +85,8 @@ impl Render for Menu {
             .height(NAV_HEIGHT)
             .gap(8.0)
             .align_items(AlignItems::Center)
-            .background_color(Color::rgba(0.06, 0.07, 0.09, 1.0))
-            .border_bottom(Color::rgba(1.0, 1.0, 1.0, 0.07), 1.0)
+            .background_color(rgba(0.06, 0.07, 0.09, 1.0))
+            .border_bottom(rgba(1.0, 1.0, 1.0, 0.07), 1.0)
             .child(div().width(32.0).height(NAV_HEIGHT - 1.0))
             .child(
                 div()
@@ -94,7 +95,7 @@ impl Render for Menu {
                     .height(NAV_HEIGHT - 1.0)
                     .justify_content(JustifyContent::Center)
                     .font_size(18)
-                    .color(Color::rgba(1.0, 1.0, 1.0, 0.45))
+                    .color(rgba(1.0, 1.0, 1.0, 0.45))
                     .child(text("XS ROUTER")),
             )
             .child(div().grow(1.0, 1.0))
@@ -150,12 +151,12 @@ where
         .color(if handle.has_focus() || active {
             Color::WHITE
         } else {
-            Color::rgba(1.0, 1.0, 1.0, 0.62)
+            rgba(1.0, 1.0, 1.0, 0.62)
         })
         .background_color(if handle.has_focus() {
-            Color::rgba(0.28, 0.47, 0.92, 1.0)
+            rgba(0.28, 0.47, 0.92, 1.0)
         } else if active {
-            Color::rgba(0.16, 0.20, 0.31, 1.0)
+            rgba(0.16, 0.20, 0.31, 1.0)
         } else {
             Color::TRANSPARENT
         })
@@ -194,18 +195,18 @@ impl Render for Page {
             .border_radius_all(18.0)
             .border(
                 if focused {
-                    Color::rgba(0.36, 0.55, 1.0, 1.0)
+                    rgba(0.36, 0.55, 1.0, 1.0)
                 } else {
-                    Color::rgba(1.0, 1.0, 1.0, 0.08)
+                    rgba(1.0, 1.0, 1.0, 0.08)
                 },
                 1.0,
             )
             .background_color(if focused {
-                Color::rgba(0.13, 0.16, 0.22, 1.0)
+                rgba(0.13, 0.16, 0.22, 1.0)
             } else {
-                Color::rgba(0.11, 0.12, 0.16, 1.0)
+                rgba(0.11, 0.12, 0.16, 1.0)
             })
-            .box_shadow(0.0, 12.0, 32.0, 0.0, Color::rgba(0.0, 0.0, 0.0, 0.28))
+            .box_shadow(0.0, 12.0, 32.0, 0.0, rgba(0.0, 0.0, 0.0, 0.28))
             .child(
                 div().column().width(CARD_CONTENT).height(4.0).child(
                     div()
@@ -213,9 +214,9 @@ impl Render for Page {
                         .height(4.0)
                         .border_radius_all(2.0)
                         .background_color(if focused {
-                            Color::rgba(0.42, 0.62, 1.0, 1.0)
+                            rgba(0.42, 0.62, 1.0, 1.0)
                         } else {
-                            Color::rgba(0.28, 0.35, 0.55, 1.0)
+                            rgba(0.28, 0.35, 0.55, 1.0)
                         }),
                 ),
             )
@@ -236,7 +237,7 @@ impl Render for Page {
                     .height(26.0)
                     .justify_content(JustifyContent::Center)
                     .font_size(24)
-                    .color(Color::rgba(1.0, 1.0, 1.0, 0.3))
+                    .color(rgba(1.0, 1.0, 1.0, 0.3))
                     .child(text(&self.body)),
             )
             .children(self.children.clone())
@@ -298,11 +299,11 @@ impl Render for UserRow {
             .align_items(AlignItems::Center)
             .border_radius_all(10.0)
             .background_color(if highlight {
-                Color::rgba(0.22, 0.34, 0.62, 1.0)
+                rgba(0.22, 0.34, 0.62, 1.0)
             } else if active {
-                Color::rgba(0.15, 0.18, 0.26, 1.0)
+                rgba(0.15, 0.18, 0.26, 1.0)
             } else {
-                Color::rgba(0.12, 0.13, 0.17, 1.0)
+                rgba(0.12, 0.13, 0.17, 1.0)
             })
             .child(
                 div()
@@ -314,9 +315,9 @@ impl Render for UserRow {
                     .font_size(15)
                     .color(Color::WHITE)
                     .background_color(if highlight {
-                        Color::rgba(0.36, 0.55, 1.0, 1.0)
+                        rgba(0.36, 0.55, 1.0, 1.0)
                     } else {
-                        Color::rgba(0.27, 0.30, 0.38, 1.0)
+                        rgba(0.27, 0.30, 0.38, 1.0)
                     })
                     .child(text(self.user_id.to_string())),
             )
@@ -334,7 +335,7 @@ impl Render for UserRow {
                             .color(if highlight {
                                 Color::WHITE
                             } else {
-                                Color::rgba(1.0, 1.0, 1.0, 0.76)
+                                rgba(1.0, 1.0, 1.0, 0.76)
                             })
                             .child(text(format!("User {}", self.user_id))),
                     )
@@ -344,12 +345,7 @@ impl Render for UserRow {
                             .height(22.0)
                             .justify_content(JustifyContent::Center)
                             .font_size(18)
-                            .color(Color::rgba(
-                                1.0,
-                                1.0,
-                                1.0,
-                                if highlight { 0.7 } else { 0.35 },
-                            ))
+                            .color(rgba(1.0, 1.0, 1.0, if highlight { 0.7 } else { 0.35 }))
                             .child(text("View profile")),
                     ),
             )
@@ -361,12 +357,7 @@ impl Render for UserRow {
                     .justify_content(JustifyContent::Center)
                     .align_items(AlignItems::Center)
                     .font_size(18)
-                    .color(Color::rgba(
-                        1.0,
-                        1.0,
-                        1.0,
-                        if highlight { 0.8 } else { 0.25 },
-                    ))
+                    .color(rgba(1.0, 1.0, 1.0, if highlight { 0.8 } else { 0.25 }))
                     .child(text("→")),
             )
     }
@@ -406,7 +397,7 @@ impl Render for PageUser {
                             .border_radius_all(36.0)
                             .font_size(30)
                             .color(Color::WHITE)
-                            .background_color(Color::rgba(0.28, 0.47, 0.92, 1.0))
+                            .background_color(rgba(0.28, 0.47, 0.92, 1.0))
                             .child(text(id)),
                     )
                     .child(
@@ -429,7 +420,7 @@ impl Render for PageUser {
                                     .height(22.0)
                                     .justify_content(JustifyContent::Center)
                                     .font_size(16)
-                                    .color(Color::rgba(1.0, 1.0, 1.0, 0.45))
+                                    .color(rgba(1.0, 1.0, 1.0, 0.45))
                                     .child(text("Profile")),
                             ),
                     ),
@@ -441,7 +432,7 @@ impl Render for PageUser {
                     .height(24.0)
                     .justify_content(JustifyContent::Center)
                     .font_size(16)
-                    .color(Color::rgba(1.0, 1.0, 1.0, 0.4))
+                    .color(rgba(1.0, 1.0, 1.0, 0.4))
                     .child(text("Use the browser's back button to return to the list.")),
             )
     }
@@ -480,13 +471,13 @@ fn feature(title: &str, body: &str) -> Div {
             div()
                 .height(30.)
                 .font_size(26)
-                .color(Color::rgba(1.0, 1.0, 1.0, 0.88))
+                .color(rgba(1.0, 1.0, 1.0, 0.88))
                 .child(text(title)),
         )
         .child(
             div()
                 .font_size(28)
-                .color(Color::rgba(1.0, 1.0, 1.0, 0.45))
+                .color(rgba(1.0, 1.0, 1.0, 0.45))
                 .child(text(body)),
         )
 }

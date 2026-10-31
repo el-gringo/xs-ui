@@ -60,3 +60,7 @@ impl From<Color> for [f32; 4] {
         [value.r, value.g, value.b, value.a]
     }
 }
+
+pub fn rgba(r: ColorComponent, g: ColorComponent, b: ColorComponent, a: ColorComponent) -> Color {
+    Color::rgba(r, g, b, a)
+}
