@@ -120,7 +120,10 @@ pub fn handle_static(request: HttpRequest, site: &Site, version: u32) {
                 Some(body) => respond(200, get_content_type(&path), body),
                 None => not_found(),
             },
-            None => not_found(),
+            None => match site.render(&site.wasm_url(version)) {
+                Ok(page) => respond(200, "text/html; charset=utf8", page.into_bytes()),
+                Err(error) => server_error(&error),
+            },
         }
     };
 
