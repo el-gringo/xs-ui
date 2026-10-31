@@ -5,7 +5,7 @@ use xs_platform_event::KeyCode;
 use crate::{
     FocusHandle, NavigationNode,
     navigation::{
-        navigation_node::{Grid, Horizontal, Leaf, NavigationNodeId, Verical},
+        navigation_node::{Grid, Horizontal, NavigationNodeId, Verical},
         navigation_tree::NavigationTree,
     },
 };
@@ -119,21 +119,13 @@ impl FocusManager {
         self.tree.borrow().debug(0, 0);
     }
 
-    /// Synchronises focus with the tree's selection.
-    ///
-    /// Returns whether any node's `has_focus` changed. A caller that updates
-    /// before building a frame can ignore it, since the frame reads the new
-    /// state; a caller that updates after building one has to request another,
-    /// or the frame keeps showing the old focus.
-    pub fn update(&mut self) -> bool {
-        let mut changed = false;
+    pub fn update(&mut self) {
         let tree = self.tree.borrow();
         for (parent, index, child) in tree.iter() {
             // clamp selected_index to valid range in case children were removed
             let children_len;
             let selected_index;
             let parent_has_focus;
-            let parent_is_container;
             {
                 let mut parent_node = parent.borrow_mut();
                 children_len = parent_node.children.len();
@@ -142,19 +134,13 @@ impl FocusManager {
                 }
                 selected_index = parent_node.selected_index;
                 parent_has_focus = parent_node.has_focus;
-                parent_is_container = parent_node.layout != Leaf;
             }
             if parent_has_focus {
-                // A leaf never hands focus to its children. That keeps a row
-                // list from taking focus on a route that renders the same
-                // parent as a plain card.
-                if parent_is_container && index == selected_index && index < children_len {
+                if index == selected_index && index < children_len {
                     let should_have_focus = true;
                     let mut child_node = child.borrow_mut();
                     let had_focus = child_node.has_focus;
-                    let child_is_leaf = child_node.layout == Leaf;
                     child_node.has_focus = should_have_focus;
-                    changed |= had_focus != should_have_focus;
                     if should_have_focus
                         && !had_focus
                         && let Some(cb) = child_node.focus_handler.clone()
@@ -162,20 +148,15 @@ impl FocusManager {
                         cb()
                     }
                     drop(child_node);
-                    if child_is_leaf || child.borrow().children.is_empty() {
+                    if child.borrow().children.is_empty() {
                         self.active_element_id = parent.borrow().children[selected_index];
                     }
                 } else {
-                    let mut child_node = child.borrow_mut();
-                    changed |= child_node.has_focus;
-                    child_node.has_focus = false;
+                    child.borrow_mut().has_focus = false;
                 }
             } else {
-                let mut child_node = child.borrow_mut();
-                changed |= child_node.has_focus;
-                child_node.has_focus = false;
+                child.borrow_mut().has_focus = false;
             }
         }
-        changed
     }
 }

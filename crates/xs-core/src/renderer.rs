@@ -131,13 +131,6 @@ pub trait Renderer {
             view_map[i] = Some(element.inner.paint(app_context, &child_views));
         }
 
-        if app_context.nav.update() {
-            // Focus is read while the tree is built, so a change made after
-            // that - a route turning the page card into a list, say - is not in
-            // this frame. Request another one rather than leaving the old focus
-            // on screen until the next key.
-            app_context.dirty = true;
-        }
         view_map[0].clone().unwrap()
     }
 

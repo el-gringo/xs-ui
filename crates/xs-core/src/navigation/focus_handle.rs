@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use xs_platform_event::KeyCode;
 
 use crate::{
-    NavigationLayout, NavigationNode,
+    NavigationNode,
     navigation::{navigation_node::NavigationNodeId, navigation_tree::NavigationTree},
 };
 
@@ -34,15 +34,6 @@ impl FocusHandle {
         let parent_id = tree.get(self.id).unwrap().borrow().parent;
         let parent = tree.get(parent_id).unwrap().borrow();
         parent.children.get(parent.selected_index) == Some(&self.id)
-    }
-
-    /// Changes how this node arranges its children.
-    ///
-    /// A [`NavigationLayout::Leaf`] never passes focus down to its children,
-    /// so a node shared by several routes can hold a list on one route and
-    /// behave as a plain leaf on the others.
-    pub fn set_layout(&self, layout: NavigationLayout) {
-        self.tree.borrow().get(self.id).unwrap().borrow_mut().layout = layout;
     }
 
     pub fn set_focus(&mut self, has_focus: bool) {
@@ -143,36 +134,5 @@ mod tests {
         manager.process_key(KeyCode::Left);
         manager.update();
         assert!(second.has_focus(), "focus returns where it was left");
-    }
-
-    /// A page shared by two routes can be a list on one and a plain card on the
-    /// other. Rows left in the tree must not keep focus when that page turns
-    /// back into a leaf, and the update has to report the change: it happens
-    /// after the frame that read the old focus was built.
-    #[test]
-    fn a_leaf_never_hands_focus_to_its_stale_children() {
-        let mut manager = FocusManager::new();
-        manager.update();
-
-        let root =
-            manager.create_handle(manager.current_container_id, NavigationNode::horizontal());
-        let page = manager.create_handle(root.id, NavigationNode::leaf());
-        let first = manager.create_handle(page.id, NavigationNode::leaf());
-        let second = manager.create_handle(page.id, NavigationNode::leaf());
-
-        assert!(manager.update(), "a leaf drops the focus it handed out");
-        assert!(!first.has_focus(), "a row under a leaf holds no focus");
-        assert!(!second.has_focus());
-
-        page.set_layout(NavigationLayout::Verical);
-        assert!(manager.update(), "turning the card into a list is a change");
-        assert!(first.has_focus(), "the selected row takes focus");
-        assert!(!second.has_focus());
-
-        page.set_layout(NavigationLayout::Leaf);
-        assert!(manager.update(), "turning it back into a card is a change");
-        assert!(page.has_focus());
-        assert!(!first.has_focus());
-        assert!(!manager.update(), "a settled tree asks for no more frames");
     }
 }
