@@ -20,7 +20,7 @@ const FOOTER_HEIGHT: f32 = 44.0;
 const CARD_WIDTH: f32 = 640.0;
 const CARD_CONTENT: f32 = 576.0;
 
-const ROW_HEIGHT: f32 = 56.0;
+const ROW_HEIGHT: f32 = 72.0;
 
 fn main() {
     Application::new().title("xs-router").run(|_ctx| {
@@ -61,7 +61,7 @@ impl Render for Layout {
                     .height(FOOTER_HEIGHT)
                     .justify_content(JustifyContent::Center)
                     .align_items(AlignItems::Center)
-                    .font_size(15)
+                    .font_size(32)
                     .color(rgba(1.0, 1.0, 1.0, 0.35))
                     .child(text(
                         "Left/Right move  ·  Down enters a page  ·  Enter selects",
@@ -94,7 +94,7 @@ impl Render for Menu {
                     .width(120.0)
                     .height(NAV_HEIGHT - 1.0)
                     .justify_content(JustifyContent::Center)
-                    .font_size(18)
+                    .font_size(32)
                     .color(rgba(1.0, 1.0, 1.0, 0.45))
                     .child(text("XS ROUTER")),
             )
@@ -147,7 +147,7 @@ where
         .justify_content(JustifyContent::Center)
         .align_items(AlignItems::Center)
         .border_radius_all(10.0)
-        .font_size(20)
+        .font_size(28)
         .color(if handle.has_focus() || active {
             Color::WHITE
         } else {
@@ -234,9 +234,9 @@ impl Render for Page {
                 div()
                     .column()
                     .width(CARD_CONTENT)
-                    .height(26.0)
+                    .height(60.0)
                     .justify_content(JustifyContent::Center)
-                    .font_size(24)
+                    .font_size(26)
                     .color(rgba(1.0, 1.0, 1.0, 0.3))
                     .child(text(&self.body)),
             )
@@ -312,7 +312,7 @@ impl Render for UserRow {
                     .justify_content(JustifyContent::Center)
                     .align_items(AlignItems::Center)
                     .border_radius_all(16.0)
-                    .font_size(15)
+                    .font_size(20)
                     .color(Color::WHITE)
                     .background_color(if highlight {
                         rgba(0.36, 0.55, 1.0, 1.0)
@@ -331,7 +331,7 @@ impl Render for UserRow {
                             .column()
                             .height(30.0)
                             .justify_content(JustifyContent::Center)
-                            .font_size(26)
+                            .font_size(28)
                             .color(if highlight {
                                 Color::WHITE
                             } else {
@@ -344,7 +344,7 @@ impl Render for UserRow {
                             .column()
                             .height(22.0)
                             .justify_content(JustifyContent::Center)
-                            .font_size(18)
+                            .font_size(24)
                             .color(rgba(1.0, 1.0, 1.0, if highlight { 0.7 } else { 0.35 }))
                             .child(text("View profile")),
                     ),
@@ -356,7 +356,7 @@ impl Render for UserRow {
                     .height(ROW_HEIGHT)
                     .justify_content(JustifyContent::Center)
                     .align_items(AlignItems::Center)
-                    .font_size(18)
+                    .font_size(24)
                     .color(rgba(1.0, 1.0, 1.0, if highlight { 0.8 } else { 0.25 }))
                     .child(text("→")),
             )
@@ -464,7 +464,7 @@ fn not_found() -> impl IntoElement {
 fn feature(title: &str, body: &str) -> Div {
     div()
         .column()
-        .height(80.)
+        .height(100.)
         .width(CARD_CONTENT)
         .gap(3.0)
         .child(
