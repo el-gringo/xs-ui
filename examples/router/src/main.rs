@@ -24,12 +24,12 @@ const ROW_HEIGHT: f32 = 56.0;
 fn main() {
     Application::new().title("xs-router").run(|_ctx| {
         router(
-            route("/", layout)
-                .child(index(home))
-                .child(route("users", users))
-                .child(route("users/:id", user))
-                .child(route("about", about))
-                .child(route("*", not_found)),
+            route("/", layout())
+                .child(index(home()))
+                .child(route("users", users()))
+                .child(route("users/:id", user()))
+                .child(route("about", about()))
+                .child(route("*", not_found())),
         )
     });
 }
@@ -239,6 +239,7 @@ impl Render for Page {
                     .color(Color::rgba(1.0, 1.0, 1.0, 0.3))
                     .child(text(&self.body)),
             )
+            .children(self.children.clone())
     }
 }
 

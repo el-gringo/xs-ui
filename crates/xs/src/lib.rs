@@ -24,8 +24,8 @@ pub use xs_vector::*;
 pub mod prelude {
     pub use crate::{
         Animate, AnyElement, Color, Context, ContextValues, Easing, ElementObject, IntoElement,
-        Link, ParentElement, Render, Route, RouteComponent, RouteContext, Router, Spring,
-        WithAnimation, div, grid, index, layout, link, outlet, parse_svg, parse_svg_vector, route,
-        router, shape, text, use_location, use_params, use_route, use_router, vector,
+        Link, ParentElement, Render, Route, RouteContext, Router, Spring, WithAnimation, div, grid,
+        index, layout, link, outlet, parse_svg, parse_svg_vector, route, router, shape, text,
+        use_location, use_params, use_route, use_router, vector,
     };
 }

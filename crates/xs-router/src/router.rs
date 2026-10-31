@@ -1,10 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 
-use xs_core::{AnyElement, Context, IntoElement, Render, State};
-use xs_primitive::div;
+use xs_core::{AnyElement, Context, Render, State};
 
 use crate::{
-    Location, Route, RouteComponent,
+    Location, Route,
     history::{History, platform_history},
     route::{Rendered, RouteContext, empty},
     routing::{MatchedRoute, match_routes},
@@ -29,7 +28,7 @@ impl RouterInner {
         matched: &MatchedRoute,
         depth: usize,
         location: &Location,
-    ) -> impl IntoElement {
+    ) -> AnyElement {
         let route = RouteContext {
             router: router.clone(),
             params: matched.params.clone(),
@@ -41,7 +40,7 @@ impl RouterInner {
         // element's render context, so it reaches the component's whole subtree
         // and a nested route shadows it instead of leaking back out.
         ctx.provide(route.clone());
-        Rendered(matched.component.clone())
+        matched.component.clone()
     }
 }
 
@@ -54,7 +53,7 @@ impl RouterInner {
 ///
 /// ```ignore
 /// Application::new().run(|_ctx| {
-///     router(route("/", || div()))
+///     router(route("/", div()))
 /// });
 /// ```
 ///
@@ -118,9 +117,9 @@ impl Router {
 ///
 /// ```ignore
 /// router(
-///     route("/", layout)
-///         .child(index(home))
-///         .child(route("users", users)),
+///     route("/", layout())
+///         .child(index(home()))
+///         .child(route("users", users())),
 /// )
 /// ```
 #[must_use]
@@ -144,7 +143,7 @@ impl Render for Router {
             None => empty(),
         };
 
-        element
+        Rendered(element)
     }
 }
 
@@ -198,7 +197,7 @@ impl RouterHandle {
         current.pathname == current.resolve(to).pathname
     }
 
-    pub(crate) fn render_matched(&self, ctx: &mut Context, index: usize) -> impl IntoElement {
+    pub(crate) fn render_matched(&self, ctx: &mut Context, index: usize) -> AnyElement {
         let matched = self.inner.matched.borrow().clone();
         let location = self.location();
         match matched.get(index) {
@@ -224,12 +223,12 @@ mod tests {
     fn test_router() -> Router {
         Router::with_history(
             layout("")
-                .child(route("/", component))
-                .child(route("/users/:id", component))
+                .child(route("/", component()))
+                .child(route("/users/:id", component()))
                 .child(
-                    route("/dashboard", component)
-                        .child(index(component))
-                        .child(route("settings", component)),
+                    route("/dashboard", component())
+                        .child(index(component()))
+                        .child(route("settings", component())),
                 ),
             MemoryHistory::new("/"),
         )
@@ -283,7 +282,7 @@ mod tests {
 
     #[test]
     fn the_router_helper_mounts_a_tree() {
-        let mounted = router(layout("").child(route("/", component)));
+        let mounted = router(layout("").child(route("/", component())));
         assert_eq!(mounted.handle().location().pathname, "/");
     }
 }

@@ -1,62 +1,7 @@
-use std::rc::Rc;
-
 use xs_core::{AnyElement, Context, IntoElement, Render};
 use xs_primitive::div;
 
 use crate::{Location, Params, RouterHandle, pattern::Pattern};
-
-/// Renders one route.
-///
-/// A route component is a zero-argument function, and its result can be
-/// anything that resolves to an [`AnyElement`] - a plain element, a
-/// [`Render`] type, or an already-built [`AnyElement`]:
-///
-/// ```ignore
-/// fn about() -> impl IntoElement {
-///     div().child(text("About"))
-/// }
-///
-/// struct User;
-/// impl Render for User {
-///     fn render(&self, ctx: &mut Context) -> impl IntoElement {
-///         let id = use_params(ctx).param("id");
-///         div().child(text(id))
-///     }
-/// }
-///
-/// fn user() -> User {
-///     User
-/// }
-/// ```
-///
-/// A zero-argument function has no context of its own, so anything that needs
-/// one - an outlet, a hook - lives in the element it returns, usually a
-/// [`Render`] type as above.
-pub trait RouteComponent: 'static {
-    fn render(&self) -> AnyElement;
-}
-
-impl<F, E> RouteComponent for F
-where
-    F: Fn() -> E + 'static,
-    E: Into<AnyElement> + 'static,
-{
-    fn render(&self) -> AnyElement {
-        (self)().into()
-    }
-}
-
-impl RouteComponent for AnyElement {
-    fn render(&self) -> AnyElement {
-        self.clone()
-    }
-}
-
-impl RouteComponent for Rc<dyn RouteComponent> {
-    fn render(&self) -> AnyElement {
-        (**self).render()
-    }
-}
 
 /// Everything a route component knows about the match it is rendering.
 #[derive(Clone)]
@@ -107,6 +52,29 @@ impl RouteContext {
 /// A route has a path relative to its parent, a component, and optionally
 /// children. An index route matches its parent exactly and is what makes a
 /// layout route render something at its own path.
+///
+/// The component is an [`AnyElement`], so it is built once when the tree is
+/// declared. To make it track state, build it from a [`Render`] type or a
+/// function returning one - that deferred element resolves again on every
+/// frame:
+///
+/// ```ignore
+/// fn about() -> impl IntoElement {
+///     div().child(text("About"))
+/// }
+///
+/// struct User;
+/// impl Render for User {
+///     fn render(&self, ctx: &mut Context) -> impl IntoElement {
+///         let id = use_params(ctx).param("id");
+///         div().child(text(id))
+///     }
+/// }
+///
+/// fn user() -> User {
+///     User
+/// }
+/// ```
 #[derive(Clone)]
 pub struct Route {
     path: String,
@@ -197,9 +165,9 @@ impl Route {
 ///
 /// ```ignore
 /// router(
-///     route("/", layout)
-///         .child(index(home))
-///         .child(route("users", users)),
+///     route("/", layout())
+///         .child(index(home()))
+///         .child(route("users", users())),
 /// )
 /// ```
 #[must_use]
@@ -274,9 +242,13 @@ pub fn use_location(ctx: &Context) -> Location {
 ///     }
 /// }
 ///
-/// route("/users", users)
-///     .child(index(all_users))
-///     .child(route(":id", user))
+/// fn users() -> Users {
+///     Users
+/// }
+///
+/// route("/users", users())
+///     .child(index(all_users()))
+///     .child(route(":id", user()))
 /// ```
 ///
 /// [`crate::Route::layout`] has no component, so there is no component to put
@@ -307,7 +279,7 @@ impl Render for Outlet {
     }
 
     fn render(&self, ctx: &mut Context) -> impl IntoElement {
-        self.router.render_matched(ctx, self.next)
+        Rendered(self.router.render_matched(ctx, self.next))
     }
 }
 
@@ -325,8 +297,8 @@ impl IntoElement for Rendered {
 }
 
 /// The empty element a route renders when there is no child to show.
-pub(crate) fn empty() -> impl IntoElement {
-    div()
+pub(crate) fn empty() -> AnyElement {
+    div().into_element()
 }
 
 #[cfg(test)]
@@ -372,10 +344,10 @@ mod tests {
 
     #[test]
     fn a_route_tree_keeps_children_in_order() {
-        let root = layout("").child(route("/", component)).child(
+        let root = layout("").child(route("/", component())).child(
             layout("/users")
-                .child(index(component))
-                .child(route(":id", component)),
+                .child(index(component()))
+                .child(route(":id", component())),
         );
 
         assert_eq!(root.child_routes().len(), 2);
@@ -384,7 +356,7 @@ mod tests {
 
     #[test]
     fn a_route_component_can_return_an_any_element() {
-        let root = route("/", any_component).child(route("users", any_component()));
+        let root = route("/", any_component()).child(route("users", any_component()));
 
         assert_eq!(root.child_routes().len(), 1);
         assert!(root.component().is_some());

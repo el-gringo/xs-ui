@@ -12,10 +12,10 @@
 //! fn main() {
 //!     Application::new().run(|_ctx| {
 //!         router(
-//!             route("/", layout)
-//!                 .child(index(home))
-//!                 .child(route("users", users))
-//!                 .child(route("*", not_found)),
+//!             route("/", layout())
+//!                 .child(index(home()))
+//!                 .child(route("users", users()))
+//!                 .child(route("*", not_found())),
 //!         )
 //!     });
 //! }
@@ -23,13 +23,13 @@
 //!
 //! [`route`], [`index`], [`layout`] and [`router`] are the constructors,
 //! equivalent to [`Route::new`], [`Route::index`], [`Route::layout`] and
-//! [`Router::new`]. A route component is any zero-argument function whose
-//! result turns into an [`xs_core::AnyElement`], which includes a [`Render`]
-//! type and an already-built element.
+//! [`Router::new`]. They take an [`xs_core::AnyElement`], so a route component
+//! is built by calling a function that returns one - usually a [`Render`] type
+//! so that the element resolves again on every frame.
 //!
 //! A route that has children renders them through [`outlet`]. The component
 //! needs the render context for that, so it is a [`Render`] type rather than a
-//! closure:
+//! plain element:
 //!
 //! ```ignore
 //! struct Users;
@@ -39,9 +39,13 @@
 //!     }
 //! }
 //!
-//! route("users", users)
-//!     .child(index(all_users))
-//!     .child(route(":id", user))
+//! fn users() -> Users {
+//!     Users
+//! }
+//!
+//! route("users", users())
+//!     .child(index(all_users()))
+//!     .child(route(":id", user()))
 //! ```
 //!
 //! [`Route::layout`] is only a shared path prefix: it has no component, so it
@@ -79,8 +83,8 @@ pub use link::{Link, link};
 pub use location::Location;
 pub use params::Params;
 pub use route::{
-    Outlet, Route, RouteComponent, RouteContext, index, layout, outlet, route, use_location,
-    use_params, use_route, use_router,
+    Outlet, Route, RouteContext, index, layout, outlet, route, use_location, use_params, use_route,
+    use_router,
 };
 pub use router::{Router, RouterHandle, router};
 

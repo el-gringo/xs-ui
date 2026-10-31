@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, rc::Rc};
+use std::cmp::Ordering;
 
 use xs_core::AnyElement;
 
@@ -158,8 +158,8 @@ mod tests {
     #[test]
     fn a_static_route_matches_its_path() {
         let root = layout("")
-            .child(route("/", component))
-            .child(route("/about", component));
+            .child(route("/", component()))
+            .child(route("/about", component()));
         assert_eq!(paths(&root, "/"), vec!["/"]);
         assert_eq!(paths(&root, "/about"), vec!["/about"]);
         assert!(paths(&root, "/missing").is_empty());
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn a_parameter_is_captured() {
-        let root = route("/users/:id", component);
+        let root = route("/users/:id", component());
         let matched = match_routes(&root, "/users/42");
         assert_eq!(matched.len(), 1);
         assert_eq!(matched[0].params.param("id"), "42");
@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn a_splat_captures_the_remainder() {
-        let root = route("/files/*", component);
+        let root = route("/files/*", component());
         let matched = match_routes(&root, "/files/a/b/c.txt");
         assert_eq!(matched.len(), 1);
         assert_eq!(matched[0].params.param("*"), "a/b/c.txt");
@@ -185,8 +185,8 @@ mod tests {
     #[test]
     fn a_static_segment_beats_a_parameter() {
         let root = layout("")
-            .child(route("/users/:id", component))
-            .child(route("/users/me", component));
+            .child(route("/users/:id", component()))
+            .child(route("/users/me", component()));
         let matched = match_routes(&root, "/users/me");
         assert_eq!(matched[0].path, "/users/me");
     }
@@ -194,8 +194,8 @@ mod tests {
     #[test]
     fn a_parameter_beats_a_splat() {
         let root = layout("")
-            .child(route("/files/*", component))
-            .child(route("/files/:name", component));
+            .child(route("/files/*", component()))
+            .child(route("/files/:name", component()));
         let matched = match_routes(&root, "/files/report");
         assert_eq!(matched[0].path, "/files/:name");
     }
@@ -203,8 +203,8 @@ mod tests {
     #[test]
     fn a_root_route_beats_a_zero_length_splat() {
         let root = layout("")
-            .child(route("/", component))
-            .child(route("*", component));
+            .child(route("/", component()))
+            .child(route("*", component()));
         let matched = match_routes(&root, "/");
         assert_eq!(matched[0].path, "/");
     }
@@ -212,30 +212,30 @@ mod tests {
     #[test]
     fn the_more_specific_of_two_parameters_wins() {
         let root = layout("")
-            .child(route("/:section/:id", component))
-            .child(route("/users/:id", component));
+            .child(route("/:section/:id", component()))
+            .child(route("/users/:id", component()));
         let matched = match_routes(&root, "/users/42");
         assert_eq!(matched[0].path, "/users/:id");
     }
 
     #[test]
     fn query_and_fragment_do_not_affect_matching() {
-        let root = route("/users", component);
+        let root = route("/users", component());
         assert_eq!(paths(&root, "/users"), vec!["/users"]);
     }
 
     #[test]
     fn a_trailing_slash_matches_the_same_route() {
-        let root = route("/users", component);
+        let root = route("/users", component());
         assert_eq!(paths(&root, "/users/"), vec!["/users"]);
     }
 
     #[test]
     fn nested_routes_join_their_paths() {
-        let root = route("/dashboard", component)
-            .child(index(component))
-            .child(route("settings", component))
-            .child(route("users/:id", component));
+        let root = route("/dashboard", component())
+            .child(index(component()))
+            .child(route("settings", component()))
+            .child(route("users/:id", component()));
 
         assert_eq!(paths(&root, "/dashboard"), vec!["/dashboard", "/dashboard"]);
         assert_eq!(
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn a_child_inherits_parent_parameters() {
-        let root = route("/users/:user", component).child(route("posts/:post", component));
+        let root = route("/users/:user", component()).child(route("posts/:post", component()));
         let matched = match_routes(&root, "/users/42/posts/7");
         assert_eq!(matched.len(), 2);
         assert_eq!(matched[0].params.param("user"), "42");
@@ -260,7 +260,7 @@ mod tests {
 
     #[test]
     fn an_index_route_is_preferred_over_its_layout_alone() {
-        let root = route("/dashboard", component).child(index(component));
+        let root = route("/dashboard", component()).child(index(component()));
         assert_eq!(paths(&root, "/dashboard"), vec!["/dashboard", "/dashboard"]);
         assert_eq!(
             match_routes(&root, "/dashboard").len(),
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn a_layout_without_an_index_does_not_match_its_own_path() {
-        let root = layout("/dashboard").child(route("settings", component));
+        let root = layout("/dashboard").child(route("settings", component()));
         assert!(paths(&root, "/dashboard").is_empty());
         assert_eq!(
             paths(&root, "/dashboard/settings"),
@@ -281,19 +281,19 @@ mod tests {
 
     #[test]
     fn a_component_route_with_children_matches_its_own_path_even_without_an_index() {
-        let root = route("/dashboard", component).child(route("settings", component));
+        let root = route("/dashboard", component()).child(route("settings", component()));
         assert_eq!(paths(&root, "/dashboard"), vec!["/dashboard"]);
     }
 
     #[test]
     fn a_pathless_layout_wraps_a_child() {
-        let root = layout("").child(route("/dashboard", component));
+        let root = layout("").child(route("/dashboard", component()));
         assert_eq!(paths(&root, "/dashboard"), vec!["/dashboard"]);
     }
 
     #[test]
     fn a_pathless_layout_with_a_component_is_rendered() {
-        let root = route("", component).child(route("/dashboard", component));
+        let root = route("", component()).child(route("/dashboard", component()));
         assert_eq!(paths(&root, "/dashboard"), vec!["/", "/dashboard"]);
     }
 }
