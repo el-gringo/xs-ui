@@ -24,8 +24,8 @@ const HEADER_HEIGHT: f32 = 75.;
 const SIDEBAR_HEIGHT: f32 = 1080.;
 const MENU_HEIGHT: f32 = SIDEBAR_HEIGHT - HEADER_HEIGHT;
 
-const MENU_TOP: f32 = 24.;
-const MENU_BOTTOM: f32 = 24.;
+const MENU_TOP: f32 = 64.;
+const MENU_BOTTOM: f32 = 64.;
 const MENU_GAP: f32 = 16.;
 
 const VISIBLE_CATEGORIES: usize = 5;
